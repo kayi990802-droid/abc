@@ -96,12 +96,14 @@
     </main>
 
     <script>
-        // 已自動填入你提供的 ngrok 網址
+        // 使用您 ngrok 監控中確認的位址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+        // 使用 ngrok 記錄中顯示的集合 ID
+        const collectionId = 'pbc_1836797931';
 
         async function loadDocs() {
             try {
-                const records = await pb.collection('contracts').getFullList({ sort: '-created' });
+                const records = await pb.collection(collectionId).getFullList({ sort: '-created' });
                 const container = document.getElementById('docContainer');
                 container.innerHTML = '';
                 document.getElementById('totalDocs').innerText = records.length;
@@ -119,7 +121,7 @@
                             <div class="flex items-center gap-4">
                                 <i class="far fa-file-alt text-teal-500 text-2xl"></i>
                                 <div>
-                                    <h4 class="text-sm font-bold text-slate-800">${doc.name}</h4>
+                                    <h4 class="text-sm font-bold text-slate-800">${doc.name || '未命名'}</h4>
                                     <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created).toLocaleDateString()} · 類別：${doc.category || '未分類'}</p>
                                 </div>
                             </div>
@@ -139,6 +141,7 @@
                 });
             } catch (error) {
                 document.getElementById('syncStatus').innerText = "連線失敗";
+                console.error("讀取錯誤:", error);
             }
         }
 
@@ -153,7 +156,7 @@
 
             try {
                 document.getElementById('syncStatus').innerText = "上傳中...";
-                await pb.collection('contracts').create(formData);
+                await pb.collection(collectionId).create(formData);
                 input.value = '';
                 loadDocs();
             } catch (err) {
@@ -164,7 +167,7 @@
         async function deleteDoc(id) {
             if (!confirm('確定要永久刪除此文件嗎？')) return;
             try {
-                await pb.collection('contracts').delete(id);
+                await pb.collection(collectionId).delete(id);
                 loadDocs();
             } catch (err) {
                 alert("刪除失敗");
