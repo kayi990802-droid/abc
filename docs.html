@@ -1,19 +1,103 @@
-<script>
-        // 1. 使用您目前的 ngrok 網址
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 公司合約文件管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; }
+        .nav-link:hover { background: #242e3d; color: white; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; flex-shrink: 0; }
+        .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; }
+        .doc-item { transition: all 0.2s; border-radius: 12px; border: 1px solid #f1f5f9; }
+        .doc-item:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateX(5px); }
+        .status-signed { background: #f0fdf4; color: #166534; }
+        .status-pending { background: #fff7ed; color: #c2410c; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link">總覽面板</a>
+            <a href="project.html" class="nav-link">工地管理</a>
+            <a href="staff.html" class="nav-link">人員管理</a>
+            <a href="docs.html" class="nav-link active">公司合約文件</a>
+            <a href="settings.html" class="nav-link">系統參數設定</a>
+        </nav>
+        <div class="p-8">
+            <div class="text-[10px] font-bold text-teal-500 border border-teal-800/30 rounded p-2 text-center">
+                雲端連線狀態：<span id="syncStatus">檢查中</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-stage">
+        <header class="top-header">
+            <div class="flex items-center gap-4">
+                <i class="far fa-copy text-slate-400"></i>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">文件歸檔中心</h2>
+            </div>
+            <div class="flex gap-3">
+                <input type="file" id="fileSelector" class="hidden" onchange="uploadNewFile(this)">
+                <button onclick="document.getElementById('fileSelector').click()" class="bg-slate-900 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition shadow-lg">
+                    <i class="fas fa-upload mr-2"></i>上傳新檔案
+                </button>
+            </div>
+        </header>
+
+        <div class="content-scroll">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">目前檔案總數</p>
+                        <p id="totalDocs" class="text-xl font-black text-slate-800">-- <span class="text-xs font-normal">份</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">雲端檔案列表</h3>
+                    <button onclick="loadDocs()" class="text-[10px] font-bold text-teal-600 hover:text-teal-700">重新整理</button>
+                </div>
+                <div id="docContainer" class="p-4 space-y-2">
+                    <div class="text-center py-10 text-slate-400 text-xs">讀取中...</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
+            <p>© 2026 JINDE CLOUD DOCUMENT STORAGE</p>
+            <p>加密安全等級：AES-256</p>
+        </footer>
+    </main>
+
+    <script>
+        // 使用 ngrok 監控中確認的位址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
         
-        // 2. 使用 API Preview 顯示的正確名稱 (注意大寫 C)
-        // 或是使用 ID 'pbc_1836797931'
-        const COLLECTION_ID = 'Contracts';
+        // 使用 ngrok 記錄中頻繁出現並成功的 Collection ID
+        const collectionId = 'pbc_1836797931';
 
         async function loadDocs() {
             try {
-                // 改為抓取完整清單，這能避開單一 ID 請求失敗的 204 錯誤
-                const records = await pb.collection(COLLECTION_ID).getFullList({ 
-                    sort: '-created',
-                    $autoCancel: false // 防止快速切換導致的取消錯誤
-                });
-                
+                // 抓取整個清單而非特定單一 ID，避免 204 錯誤
+                const records = await pb.collection(collectionId).getFullList({ sort: '-created' });
                 const container = document.getElementById('docContainer');
                 container.innerHTML = '';
                 document.getElementById('totalDocs').innerText = records.length;
@@ -25,21 +109,18 @@
                 }
 
                 records.forEach(doc => {
-                    // 自動尋找檔案欄位，對應後台顯示的檔案圖示
-                    const fileName = doc.file || "";
-                    const fileUrl = fileName ? pb.files.getUrl(doc, fileName) : "#";
-                    
+                    const fileUrl = pb.files.getUrl(doc, doc.file);
                     const itemHtml = `
                         <div class="doc-item p-4 flex items-center justify-between">
                             <div class="flex items-center gap-4">
                                 <i class="far fa-file-alt text-teal-500 text-2xl"></i>
                                 <div>
-                                    <h4 class="text-sm font-bold text-slate-800">${doc.name || '未命名文件'}</h4>
+                                    <h4 class="text-sm font-bold text-slate-800">${doc.name || '未命名'}</h4>
                                     <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created).toLocaleDateString()} · 類別：${doc.category || '未分類'}</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-6">
-                                <span class="${doc.status === '已用印' ? 'status-signed' : 'status-pending'} text-[10px] font-black px-3 py-1 rounded-full uppercase">${doc.status || '新檔案'}</span>
+                                <span class="${doc.status === '已用印' ? 'status-signed' : 'status-pending'} text-[10px] font-black px-3 py-1 rounded-full uppercase">${doc.status || '等待審核'}</span>
                                 <div class="flex gap-2">
                                     <a href="${fileUrl}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-teal-600 transition flex items-center justify-center">
                                         <i class="fas fa-external-link-alt text-xs"></i>
@@ -54,7 +135,6 @@
                 });
             } catch (error) {
                 document.getElementById('syncStatus').innerText = "連線失敗";
-                console.error("載入失敗:", error);
             }
         }
 
@@ -69,25 +149,25 @@
 
             try {
                 document.getElementById('syncStatus').innerText = "上傳中...";
-                await pb.collection(COLLECTION_ID).create(formData);
+                await pb.collection(collectionId).create(formData);
                 input.value = '';
                 loadDocs();
             } catch (err) {
                 alert("上傳失敗：" + err.message);
-                loadDocs();
             }
         }
 
         async function deleteDoc(id) {
             if (!confirm('確定要永久刪除此文件嗎？')) return;
             try {
-                await pb.collection(COLLECTION_ID).delete(id);
+                await pb.collection(collectionId).delete(id);
                 loadDocs();
             } catch (err) {
                 alert("刪除失敗");
             }
         }
 
-        // 初始化載入
         loadDocs();
     </script>
+</body>
+</html>
