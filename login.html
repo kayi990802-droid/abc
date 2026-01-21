@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理系統登入 | JINDE 錦德工程</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+</head>
+<body class="bg-slate-900 h-screen flex items-center justify-center p-6">
+    <div class="bg-white p-8 rounded-2xl w-full max-w-sm shadow-2xl">
+        <h1 class="text-3xl font-black text-center mb-8">JINDE<span class="text-teal-500">.</span></h1>
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+            <input type="text" id="userInput" placeholder="帳號" class="w-full p-4 bg-slate-100 rounded-xl outline-none" required>
+            <input type="password" id="passInput" placeholder="密碼" class="w-full p-4 bg-slate-100 rounded-xl outline-none" required>
+            <button type="submit" id="submitBtn" class="w-full py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-teal-600 transition">進入系統</button>
+            <p id="msg" class="text-center text-xs text-rose-500 font-bold h-4"></p>
+        </form>
+    </div>
+
+    <script>
+        // 根據你的截圖自動填入的 ngrok 網址
+        const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('userInput').value;
+            const p = document.getElementById('passInput').value;
+            const msg = document.getElementById('msg');
+            const btn = document.getElementById('submitBtn');
+
+            msg.innerText = "驗證中...";
+            btn.disabled = true;
+
+            try {
+                // 向 PocketBase 請求驗證
+                const authData = await pb.collection('users').authWithPassword(u, p);
+
+                if (pb.authStore.isValid) {
+                    // 登入成功，儲存資訊並跳轉
+                    localStorage.setItem('jinde_auth_status', 'verified');
+                    localStorage.setItem('jinde_user_name', authData.record.username || '管理員');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                msg.innerText = "帳號或密碼錯誤";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+</html>
