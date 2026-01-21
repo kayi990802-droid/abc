@@ -88,13 +88,16 @@
     </main>
 
     <script>
+        // 1. 使用您目前的 ngrok 網址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
-        // 強制指定您 ngrok 監控中確認成功的 ID
-        const targetCollection = 'pbc_1836797931';
+        
+        // 2. 根據截圖修正為正確的 Collection ID
+        const COLLECTION_ID = 'pbc_1836797931';
 
         async function loadDocs() {
             try {
-                const records = await pb.collection(targetCollection).getFullList({ sort: '-created' });
+                // 抓取資料
+                const records = await pb.collection(COLLECTION_ID).getFullList({ sort: '-created' });
                 const container = document.getElementById('docContainer');
                 container.innerHTML = '';
                 document.getElementById('totalDocs').innerText = records.length;
@@ -106,13 +109,16 @@
                 }
 
                 records.forEach(doc => {
-                    const fileUrl = pb.files.getUrl(doc, doc.file);
+                    // 自動尋找檔案欄位，防止名稱不匹配
+                    const fileName = doc.file || doc.field || "";
+                    const fileUrl = fileName ? pb.files.getUrl(doc, fileName) : "#";
+                    
                     const itemHtml = `
                         <div class="doc-item p-4 flex items-center justify-between">
                             <div class="flex items-center gap-4">
                                 <i class="far fa-file-alt text-teal-500 text-2xl"></i>
                                 <div>
-                                    <h4 class="text-sm font-bold text-slate-800">${doc.name || '未命名'}</h4>
+                                    <h4 class="text-sm font-bold text-slate-800">${doc.name || '未命名文件'}</h4>
                                     <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created).toLocaleDateString()} · 類別：${doc.category || '未分類'}</p>
                                 </div>
                             </div>
@@ -132,7 +138,7 @@
                 });
             } catch (error) {
                 document.getElementById('syncStatus').innerText = "連線失敗";
-                console.error("錯誤細節:", error);
+                console.error("Debug:", error);
             }
         }
 
@@ -147,23 +153,25 @@
 
             try {
                 document.getElementById('syncStatus').innerText = "上傳中...";
-                await pb.collection(targetCollection).create(formData);
+                await pb.collection(COLLECTION_ID).create(formData);
                 input.value = '';
                 loadDocs();
             } catch (err) {
                 alert("上傳失敗：" + err.message);
+                loadDocs();
             }
         }
 
         async function deleteDoc(id) {
             if (!confirm('確定要永久刪除此文件嗎？')) return;
             try {
-                await pb.collection(targetCollection).delete(id);
+                await pb.collection(COLLECTION_ID).delete(id);
                 loadDocs();
             } catch (err) {
                 alert("刪除失敗");
             }
         }
+
         loadDocs();
     </script>
 </body>
