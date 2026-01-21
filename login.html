@@ -12,72 +12,66 @@
     </style>
 </head>
 <body class="bg-slate-900 h-screen flex items-center justify-center p-6">
-    <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl">
+    <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-100">
         <div class="text-center mb-10">
-            <h1 class="text-4xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">錦德工程管理系統</p>
+            <h1 class="text-4xl font-black tracking-tighter text-slate-900">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">錦德工程雲端管理</p>
         </div>
 
         <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
-                <input type="text" id="userInput" placeholder="帳號" 
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">帳號 (Email)</label>
+                <input type="text" id="userInput" placeholder="請輸入 Email" 
                     class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition text-sm" required>
             </div>
             <div>
-                <input type="password" id="passInput" placeholder="密碼" 
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">密碼</label>
+                <input type="password" id="passInput" placeholder="請輸入密碼" 
                     class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition text-sm" required>
             </div>
             
             <button type="submit" id="submitBtn" 
-                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transform active:scale-95 transition shadow-lg text-sm uppercase tracking-widest">
+                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transform active:scale-95 transition shadow-lg text-sm uppercase tracking-widest mt-4">
                 進入系統
             </button>
             
             <p id="msg" class="text-center text-[11px] text-rose-500 font-bold h-4 mt-2"></p>
         </form>
-        
-        <div class="mt-8 pt-6 border-t border-slate-50 text-center">
-            <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Secure Cloud Connection (via users1)</p>
-        </div>
     </div>
 
     <script>
-        // 對接家中的 PocketBase 網址
+        // 對接您目前的 ngrok 網址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
 
         async function handleLogin(e) {
             e.preventDefault();
-            const u = document.getElementById('userInput').value;
-            const p = document.getElementById('passInput').value;
+            const identity = document.getElementById('userInput').value.trim();
+            const password = document.getElementById('passInput').value;
             const msg = document.getElementById('msg');
             const btn = document.getElementById('submitBtn');
 
-            msg.innerText = "正在建立加密連線...";
+            msg.innerText = "驗證中...";
             btn.disabled = true;
-            btn.classList.add('opacity-50');
 
             try {
-                // 【核心修正】將預設的 users 改為您自定義的 users1
-                const authData = await pb.collection('users1').authWithPassword(u, p);
+                // 使用 authWithPassword 進行驗證
+                const authData = await pb.collection('users1').authWithPassword(identity, password);
 
                 if (pb.authStore.isValid) {
-                    // 登入成功，儲存資訊
                     localStorage.setItem('jinde_auth_status', 'verified');
-                    // 存入使用者名稱，若無則顯示管理員
                     localStorage.setItem('jinde_user_name', authData.record.username || '管理員');
                     
-                    msg.className = "text-center text-[11px] text-teal-500 font-bold h-4 mt-2";
-                    msg.innerText = "驗證成功，正在跳轉...";
+                    msg.style.color = "#0d9488";
+                    msg.innerText = "驗證成功！正在登入...";
                     
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 800);
                 }
             } catch (error) {
-                console.error("登入錯誤細節:", error);
+                msg.style.color = "#f43f5e";
                 msg.innerText = "帳號、密碼錯誤或伺服器離線";
                 btn.disabled = false;
-                btn.classList.remove('opacity-50');
             }
         }
     </script>
