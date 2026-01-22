@@ -29,13 +29,13 @@
         }
 
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 20px md:padding: 0 40px; background: white; flex-shrink: 0; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
         
         .grid-container { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
             gap: 20px; 
-            padding: 20px md:padding: 30px; 
+            padding: 30px; 
             overflow-y: auto; 
             flex-grow: 1;
         }
@@ -154,13 +154,14 @@
     </main>
 
     <script>
+        // --- 初始化 (使用正確的 Legacy Anon Key) ---
         const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const SUPABASE_KEY = '您的_ANON_KEY'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function checkStatus() {
             try {
-                // 直接測試讀取 staff 表格，同時這也能檢驗 RLS 是否已關閉
+                // 測試連線並取得人員總數
                 const { count, error } = await _supabase
                     .from('staff')
                     .select('*', { count: 'exact', head: true });
@@ -171,6 +172,7 @@
                 document.getElementById('status-dot').className = "w-2 h-2 bg-emerald-500 rounded-full";
                 document.getElementById('status-text').innerText = "雲端連線正常";
             } catch (err) {
+                console.error("連線偵測失敗:", err);
                 document.getElementById('status-dot').className = "w-2 h-2 bg-rose-500 rounded-full";
                 document.getElementById('status-text').innerText = "伺服器連線中斷";
             }
@@ -183,7 +185,6 @@
         }
         
         function logout() { 
-            // 簡化模式：直接清空本地標記即可
             localStorage.clear(); 
             window.location.href = 'login.html'; 
         }
