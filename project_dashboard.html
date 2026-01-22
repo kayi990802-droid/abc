@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 案場進度管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl border relative">
+        
+        <div class="flex flex-col md:flex-row justify-between items-end mb-10 border-b-2 border-slate-900 pb-8">
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2">專案進度看板</h1>
+                <div class="h-1.5 w-24 bg-blue-600"></div>
+                <p class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Project Progress Management</p>
+            </div>
+            <div class="text-right no-print flex gap-3 mt-6 md:mt-0">
+                <a href="staff.html" class="px-5 py-2.5 border border-slate-200 rounded-full text-sm font-bold hover:bg-slate-50 transition-all flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> 返回總覽
+                </a>
+                <button onclick="openModal()" class="bg-slate-900 text-white px-8 py-2.5 rounded-full font-bold text-sm hover:bg-blue-600 transition shadow-lg flex items-center gap-2">
+                    <i class="fas fa-plus"></i> 建立新專案
+                </button>
+            </div>
+        </div>
+
+        <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            </div>
+
+        <div id="loading" class="text-center py-20 text-slate-400">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+            <p class="font-bold">載入案場資料中...</p>
+        </div>
+    </div>
+
+    <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+        <div class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl animate__animated animate__zoomIn">
+            <h2 class="text-2xl font-black mb-6 text-slate-800">新增工程案場</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">案場名稱</label>
+                    <input type="text" id="p_name" placeholder="例如：西屯區王宅防水工程" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">合約總額 (TWD)</label>
+                    <input type="number" id="p_amount" placeholder="輸入金額" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">預計完工日期</label>
+                    <input type="date" id="p_date" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500">
+                </div>
+                <div class="flex gap-3 pt-6">
+                    <button onclick="closeModal()" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-all">取消</button>
+                    <button onclick="saveProject()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">確認建立</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 設定
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        // 抓取案場資料
+        async function fetchProjects() {
+            const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
+            
+            document.getElementById('loading').classList.add('hidden');
+            if (error) { console.error(error); return; }
+
+            const grid = document.getElementById('projectGrid');
+            grid.innerHTML = data.map(p => {
+                const isDone = p.progress >= 100 || p.status === '已完工';
+                return `
+                <div class="bg-white border border-slate-100 p-8 rounded-2xl card-hover relative overflow-hidden shadow-sm">
+                    <div class="absolute top-0 right-0 p-4">
+                        <span class="text-[10px] font-black uppercase tracking-wider ${isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'} px-3 py-1 rounded-full shadow-sm">
+                            ${isDone ? '已完工' : '施工中'}
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-900 mb-1">${p.name}</h3>
+                    <p class="text-xs text-slate-400 mb-8 font-mono font-bold tracking-widest">${p.project_no}</p>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between text-xs font-black mb-2">
+                                <span class="text-slate-500 uppercase">工程進度</span>
+                                <span class="text-blue-600">${p.progress}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-50">
+                                <div class="progress-bar ${isDone ? 'bg-emerald-500' : 'bg-blue-600'} h-full shadow-inner" style="width: ${p.progress}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                            <div>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">合約總額</p>
+                                <p class="text-lg font-mono font-black text-slate-800">$${Number(p.contract_amount || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">預計完工</p>
+                                <p class="text-lg font-mono font-black text-slate-800">${p.end_date || '未定'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex gap-3 no-print">
+                        <button onclick="updateProgress('${p.id}', ${p.progress})" class="flex-1 text-xs font-bold bg-slate-50 text-slate-600 py-3 rounded-xl hover:bg-slate-900 hover:text-white transition-all border border-slate-100">
+                            <i class="fas fa-sync-alt mr-1"></i> 更新進度
+                        </button>
+                        <a href="billing.html?ref=${p.project_no}" class="flex-1 text-xs font-bold bg-blue-50 text-blue-600 py-3 rounded-xl hover:bg-blue-600 hover:text-white transition-all text-center border border-blue-100">
+                            <i class="fas fa-file-invoice-dollar mr-1"></i> 建立請款
+                        </a>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // 儲存新案場
+        async function saveProject() {
+            const name = document.getElementById('p_name').value;
+            const amount = document.getElementById('p_amount').value;
+            const date = document.getElementById('p_date').value;
+            
+            if (!name) return alert("請輸入案場名稱");
+
+            // 生成專業案號格式
+            const project_no = "PJ-" + Math.floor(Math.random() * 900000 + 100000);
+
+            const { error } = await _supabase.from('projects').insert([{
+                name, 
+                project_no, 
+                contract_amount: amount, 
+                end_date: date, 
+                progress: 0,
+                status: '進行中'
+            }]);
+
+            if (error) {
+                alert("建立失敗：" + error.message);
+            } else {
+                closeModal();
+                fetchProjects();
+                // 清空輸入欄
+                document.getElementById('p_name').value = '';
+                document.getElementById('p_amount').value = '';
+            }
+        }
+
+        // 更新進度邏輯
+        async function updateProgress(id, current) {
+            const val = prompt("請輸入最新進度百分比 (0-100):", current);
+            if (val === null || val === "") return;
+            
+            const progressVal = parseInt(val);
+            if (isNaN(progressVal) || progressVal < 0 || progressVal > 100) {
+                alert("請輸入有效的數字 (0-100)");
+                return;
+            }
+
+            const status = progressVal >= 100 ? '已完工' : '進行中';
+
+            const { error } = await _supabase.from('projects').update({ 
+                progress: progressVal,
+                status: status 
+            }).eq('id', id);
+
+            if (error) alert("更新失敗");
+            fetchProjects();
+        }
+
+        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); document.getElementById('projectModal').classList.add('flex'); }
+        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); document.getElementById('projectModal').classList.remove('flex'); }
+
+        window.onload = fetchProjects;
+    </script>
+</body>
+</html>
