@@ -2,132 +2,96 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>人員管理 | JINDE 錦德工程</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 | JINDE 錦德工程</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-
-    <nav class="bg-[#1a222d] text-white p-4 shadow-lg flex justify-between items-center px-8">
-        <div class="flex items-center gap-4">
-            <button onclick="location.href='index.html'" class="hover:text-teal-400 transition">
-                <i class="fas fa-arrow-left"></i> 回中台
+<body class="bg-slate-900 h-screen flex items-center justify-center p-6">
+    <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl">
+        <h1 class="text-3xl font-black text-center mb-8 italic text-slate-900">JINDE<span class="text-teal-500">.</span></h1>
+        
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">帳號 (Email)</label>
+                <input type="email" id="email" placeholder="yuz46501@gmail.com" 
+                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition" required>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">密碼 (Password)</label>
+                <input type="password" id="password" placeholder="••••••••" 
+                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition" required>
+            </div>
+            
+            <button type="submit" id="btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg mt-4">
+                進入系統
             </button>
-            <h1 class="text-xl font-black italic tracking-tighter">JINDE<span class="text-teal-500">.</span> STAFF</h1>
-        </div>
-        <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition">
-            <i class="fas fa-plus mr-2"></i>新增人員
-        </button>
-    </nav>
-
-    <main class="p-6 md:p-12 max-w-6xl mx-auto">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-black">
-                    <tr>
-                        <th class="px-6 py-4">姓名</th>
-                        <th class="px-6 py-4">職稱 / Email</th>
-                        <th class="px-6 py-4">預設密碼</th>
-                        <th class="px-6 py-4">日薪 (點工)</th>
-                        <th class="px-6 py-4 text-right">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="staff-list" class="divide-y divide-slate-100 text-sm">
-                    </tbody>
-            </table>
-            <div id="loading" class="p-10 text-center text-slate-400 font-bold">讀取雲端資料中...</div>
-        </div>
-    </main>
-
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-black mb-6">新增員工資料</h2>
-            <form onsubmit="addStaff(event)" class="space-y-4">
-                <input type="text" id="newName" placeholder="姓名 (必填)" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500" required>
-                <input type="email" id="newEmail" placeholder="Email (帳號)" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500" required>
-                <input type="text" id="newPassword" placeholder="登入密碼 (預設 123456)" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500">
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="newPos" placeholder="職稱 (如：師傅)">
-                    <input type="number" id="newRate" placeholder="日薪">
-                </div>
-                <div class="flex gap-3 mt-6">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold">取消</button>
-                    <button type="submit" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-500">確認儲存</button>
-                </div>
-            </form>
-        </div>
+            
+            <p id="msg" class="text-center text-[11px] text-rose-500 font-bold mt-2 h-4"></p>
+        </form>
     </div>
 
     <script>
-        const _supabase = supabase.createClient('https://wdpxgichzvfebhlukbrl.supabase.co', '您的_ANON_KEY');
+        // --- 1. 配置區域 ---
+        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
+        const SUPABASE_KEY = '這裡貼上您的_ANON_KEY'; // 請務必貼上您的 anon public key
 
-        // 1. 讀取名單
-        async function fetchStaff() {
-            const { data, error } = await _supabase
-                .from('staff')
-                .select('*')
-                .order('created_at', { ascending: false });
+        // --- 2. 初始化 Supabase (修正初始化報錯的關鍵) ---
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            document.getElementById('loading').classList.add('hidden');
-            const list = document.getElementById('staff-list');
-            list.innerHTML = '';
-
-            if (data) {
-                data.forEach(person => {
-                    list.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 font-bold text-slate-800">${person.name}</td>
-                            <td class="px-6 py-4">
-                                <div class="text-xs font-bold text-teal-600">${person.position || '一般員工'}</div>
-                                <div class="text-slate-400 text-xs">${person.email}</div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-xs text-slate-400">${person.password}</td>
-                            <td class="px-6 py-4 text-slate-600 font-bold">$${person.daily_rate || 0}</td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="deleteStaff('${person.id}')" class="text-rose-400 hover:text-rose-600 p-2">
-                                    <i class="far fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-        }
-
-        // 2. 新增人員
-        async function addStaff(e) {
+        // --- 3. 登入邏輯 (採用 SQL 直接比對模式) ---
+        async function handleLogin(e) {
             e.preventDefault();
-            const payload = {
-                name: document.getElementById('newName').value,
-                email: document.getElementById('newEmail').value,
-                password: document.getElementById('newPassword').value || '123456',
-                position: document.getElementById('newPos').value || '師傅',
-                daily_rate: document.getElementById('newRate').value || 0
-            };
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+            const btn = document.getElementById('btn');
 
-            const { error } = await _supabase.from('staff').insert([payload]);
-            if (error) alert('新增失敗：' + error.message);
-            else {
-                closeModal();
-                fetchStaff();
+            msg.innerText = "驗證授權中...";
+            msg.className = "text-center text-[11px] text-slate-400 font-bold mt-2 h-4";
+            btn.disabled = true;
+
+            try {
+                // 直接去 staff 資料表比對 Email 和 Password
+                const { data: user, error } = await _supabase
+                    .from('staff')
+                    .select('name')
+                    .eq('email', email)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !user) {
+                    throw new Error("帳號或密碼錯誤");
+                }
+
+                // 驗證成功：存入 LocalStorage
+                localStorage.setItem('jinde_verified', 'true');
+                localStorage.setItem('user_name', user.name);
+                
+                msg.className = "text-center text-[11px] text-emerald-500 font-bold mt-2 h-4";
+                msg.innerText = "登入成功，正在跳轉...";
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 800);
+
+            } catch (error) {
+                msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2 h-4";
+                msg.innerText = error.message;
+                btn.disabled = false;
             }
         }
 
-        // 3. 刪除人員
-        async function deleteStaff(id) {
-            if (confirm('確定要刪除這位員工嗎？刪除後無法恢復。')) {
-                await _supabase.from('staff').delete().eq('id', id);
-                fetchStaff();
+        // 預檢：如果已經登入，直接導向首頁
+        window.onload = () => {
+            if (localStorage.getItem('jinde_verified') === 'true') {
+                window.location.href = 'index.html';
             }
-        }
-
-        // 彈窗控制
-        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-
-        // 初始化
-        window.onload = fetchStaff;
+        };
     </script>
 </body>
 </html>
