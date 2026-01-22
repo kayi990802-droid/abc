@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 數位保固驗證系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .gradient-bg { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .status-card { border-radius: 30px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="loading" class="text-slate-400 animate-pulse">
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p>正在連線數位驗證節點...</p>
+        </div>
+    </div>
+
+    <div id="result_card" class="hidden w-full max-w-md bg-white status-card overflow-hidden animate__animated animate__fadeInUp">
+        <div class="gradient-bg p-8 text-center text-white">
+            <div class="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black tracking-widest">保固驗證成功</h1>
+            <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter">Verified Authentic Document</p>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div class="flex justify-between items-center border-b pb-4">
+                <span class="text-slate-400 text-sm">保固編號</span>
+                <span id="res_id" class="font-mono font-bold text-lg text-slate-800"></span>
+            </div>
+            
+            <div class="space-y-1">
+                <span class="text-slate-400 text-sm">案場名稱</span>
+                <div id="res_project" class="text-slate-800 font-bold text-lg leading-tight"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-4 rounded-2xl">
+                    <span class="text-slate-400 text-xs block mb-1">保固年限</span>
+                    <span class="font-black text-slate-800"><span id="res_years">0</span> 年</span>
+                </div>
+                <div class="bg-teal-50 p-4 rounded-2xl">
+                    <span class="text-teal-600 text-xs block mb-1">狀態</span>
+                    <span class="font-black text-teal-700">有效保固中</span>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 border-l-4 border-orange-400 p-4 text-sm text-orange-800">
+                ⚠️ 本憑證經由錦德工程行雲端系統核發，具備法律效力。如有任何疑問，請撥打服務專線。
+            </div>
+        </div>
+
+        <div class="p-6 pt-0">
+            <a href="tel:042247XXXX" class="block w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-center py-4 rounded-xl font-bold transition-all">
+                聯繫技術部支援
+            </a>
+        </div>
+    </div>
+
+    <div id="error_card" class="hidden w-full max-w-md bg-white status-card p-10 text-center animate__animated animate__shakeX">
+        <div class="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800">查無此保固紀錄</h2>
+        <p class="text-slate-500 mt-2">請確認 QR Code 是否清晰，或聯繫工程行確認核發狀態。</p>
+        <button onclick="location.reload()" class="mt-8 px-8 py-3 bg-slate-800 text-white rounded-full font-bold">重新嘗試</button>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function verify() {
+            // 從網址抓取 ID 參數 (?id=JD-XXXXX)
+            const urlParams = new URLSearchParams(window.location.search);
+            const doc_id = urlParams.get('id');
+
+            if (!doc_id) {
+                showError();
+                return;
+            }
+
+            try {
+                // 串連查詢：從 warranties 抓取資料，並關聯 projects 表取得案場名稱
+                const { data, error } = await _supabase
+                    .from('warranties')
+                    .select(`
+                        doc_id,
+                        warranty_years,
+                        status,
+                        projects ( name )
+                    `)
+                    .eq('doc_id', doc_id)
+                    .single();
+
+                if (error || !data) throw new Error("Data not found");
+
+                // 顯示結果
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('result_card').classList.remove('hidden');
+                
+                document.getElementById('res_id').innerText = data.doc_id;
+                document.getElementById('res_project').innerText = data.projects ? data.projects.name : "一般防水工程";
+                document.getElementById('res_years').innerText = data.warranty_years;
+
+            } catch (err) {
+                showError();
+            }
+        }
+
+        function showError() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error_card').classList.remove('hidden');
+        }
+
+        window.onload = verify;
+    </script>
+</body>
+</html>
