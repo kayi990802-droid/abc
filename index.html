@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JINDE | 錦德工程雲端管理中台</title>
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
     <script>
-        // 【權限檢查】若未登入則導向登入頁
         if (localStorage.getItem('jinde_auth_status') !== 'verified') {
             window.location.href = 'login.html';
         }
@@ -16,14 +16,30 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
         
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; }
+        /* 響應式側邊欄 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; }
+        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar span, .sidebar p, .sidebar h1 { display: none; }
+            .nav-link { text-align: center; padding: 15px 0; }
+            .nav-link i { margin: 0 !important; font-size: 18px; }
+        }
 
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 20px md:padding: 0 40px; background: white; flex-shrink: 0; }
         
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 30px; overflow-y: auto; }
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px; 
+            padding: 20px md:padding: 30px; 
+            overflow-y: auto; 
+            flex-grow: 1;
+        }
+
         .pro-card { background: white; border: 1px solid #eef2f6; padding: 24px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 8px; position: relative; }
         .pro-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); border-color: #0d9488; }
         .pro-card i { font-size: 22px; color: #1a222d; margin-bottom: 16px; }
@@ -38,24 +54,24 @@
     <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-info" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
+            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
         </div>
         <nav class="flex-grow overflow-y-auto">
-            <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i>中台總覽</div>
-            <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i>客戶資料管理</div>
-            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5"></i>工地管理</div>
-            <div class="nav-link" onclick="location.href='docs.html'"><i class="far fa-copy mr-3 w-5"></i>公司合約文件</div>
-            <div class="nav-link" onclick="location.href='quote.html'"><i class="fas fa-file-invoice mr-3 w-5"></i>報價系統</div>
-            <div class="nav-link" onclick="location.href='warranty.html'"><i class="fas fa-certificate mr-3 w-5"></i>保固書管理</div>
-            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5"></i>請款管理</div>
-            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-chart-pie mr-3 w-5"></i>財務收支</div>
-            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5"></i>人員管理</div>
-            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5"></i>系統設定</div>
+            <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></div>
+            <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i><span>客戶資料管理</span></div>
+            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5"></i><span>工地管理</span></div>
+            <div class="nav-link" onclick="location.href='docs.html'"><i class="far fa-copy mr-3 w-5"></i><span>公司合約文件</span></div>
+            <div class="nav-link" onclick="location.href='quote.html'"><i class="fas fa-file-invoice mr-3 w-5"></i><span>報價系統</span></div>
+            <div class="nav-link" onclick="location.href='warranty.html'"><i class="fas fa-certificate mr-3 w-5"></i><span>保固書管理</span></div>
+            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5"></i><span>請款管理</span></div>
+            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-chart-pie mr-3 w-5"></i><span>財務收支</span></div>
+            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5"></i><span>人員管理</span></div>
+            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5"></i><span>系統設定</span></div>
         </nav>
         <div class="p-8 border-t border-slate-800">
             <div class="text-[9px] font-black text-slate-500 flex items-center gap-2 uppercase tracking-tighter">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 
-                <span>系統連線正常</span>
+                <span id="status-dot" class="w-2 h-2 bg-slate-500 rounded-full"></span> 
+                <span id="status-text">連線偵測中</span>
             </div>
         </div>
     </aside>
@@ -63,10 +79,10 @@
     <main class="main-stage">
         <header class="top-header">
             <div class="flex items-center gap-3">
-                <span class="text-[10px] bg-slate-100 px-3 py-1 rounded font-mono text-slate-500 uppercase">JINDE Management Hub</span>
+                <span class="text-[10px] bg-slate-100 px-3 py-1 rounded font-mono text-slate-500 uppercase">JINDE Hub</span>
             </div>
-            <div class="flex items-center gap-8">
-                <div class="text-right">
+            <div class="flex items-center gap-4 md:gap-8">
+                <div class="text-right hidden sm:block">
                     <p id="live-date" class="text-[10px] font-bold text-slate-400"></p>
                     <p id="live-time" class="text-sm font-black text-slate-800"></p>
                 </div>
@@ -76,96 +92,97 @@
             </div>
         </header>
 
-      <section class="grid-container">
-    <div class="pro-card" onclick="location.href='customer.html'">
-        <i class="far fa-address-book"></i>
-        <h3>客戶資料管理</h3>
-        <p>歷史客戶聯絡資訊與案場維護紀錄</p>
-    </div>
+        <section class="grid-container">
+            <div class="pro-card" onclick="location.href='customer.html'">
+                <i class="far fa-address-book"></i>
+                <h3>客戶資料管理</h3>
+                <p>歷史客戶聯絡資訊與案場維護紀錄</p>
+            </div>
+            <div class="pro-card" onclick="location.href='project.html'">
+                <span class="tag tag-teal">工地</span>
+                <i class="fas fa-hard-hat text-teal-600"></i>
+                <h3>工程案場管理</h3>
+                <p>案場進度監控、地址與預計完工日</p>
+            </div>
+            <div class="pro-card" onclick="location.href='docs.html'">
+                <i class="far fa-file-alt text-teal-500"></i>
+                <h3>公司合約文件</h3>
+                <p>雲端合約儲存、勞務保險與內部表單歸檔</p>
+            </div>
+            <div class="pro-card" onclick="location.href='quote.html'">
+                <i class="far fa-file-alt text-blue-600"></i>
+                <h3>正式報價系統</h3>
+                <p>標準報價單生成，支援 5% 稅率計算</p>
+            </div>
+            <div class="pro-card" onclick="location.href='warranty.html'">
+                <span class="tag tag-teal">證書</span>
+                <i class="fas fa-certificate text-emerald-600"></i>
+                <h3>工程保固產生器</h3>
+                <p id="warranty-info">自動生成保固書，支援線上簽署</p>
+            </div>
+            <div class="pro-card" onclick="location.href='billing.html'">
+                <i class="fas fa-money-check-alt text-rose-500"></i>
+                <h3>工程請款核銷</h3>
+                <p>分期請款單據管理、實收額與餘額追蹤</p>
+            </div>
+            <div class="pro-card" onclick="location.href='finance.html'">
+                <i class="fas fa-chart-line text-blue-600"></i>
+                <h3>財務損益中心</h3>
+                <p>公司利潤結算與月度損益</p>
+            </div>
+            <div class="pro-card" onclick="location.href='staff.html'">
+                <i class="fas fa-users-cog"></i>
+                <h3>人員與點工</h3>
+                <p>派工紀錄與工資計算中心</p>
+            </div>
+            <div class="pro-card" onclick="location.href='record.html'">
+                <i class="fas fa-clipboard-list text-slate-500"></i>
+                <h3>保固書紀錄查詢</h3>
+                <p>瀏覽歷史核發清單與雲端備份狀態</p>
+            </div>
+            <div class="pro-card" onclick="location.href='settings.html'">
+                <i class="fas fa-cogs text-slate-400"></i>
+                <h3>系統參數設定</h3>
+                <p>調整公司資訊與 ngrok 後端網址</p>
+            </div>
+        </section>
 
-    <div class="pro-card" onclick="location.href='project.html'">
-        <span class="tag tag-teal">工地</span>
-        <i class="fas fa-hard-hat text-teal-600"></i>
-        <h3>工程案場管理</h3>
-        <p>案場進度監控、地址與預計完工日</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='docs.html'">
-        <i class="far fa-file-alt text-teal-500"></i>
-        <h3>公司合約文件</h3>
-        <p>雲端合約儲存、勞務保險與內部表單歸檔</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='quote.html'">
-        <i class="far fa-file-alt text-blue-600"></i>
-        <h3>正式報價系統</h3>
-        <p>標準報價單生成，支援 5% 稅率計算</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='warranty.html'">
-        <span class="tag tag-teal">證書</span>
-        <i class="fas fa-certificate text-emerald-600"></i>
-        <h3>工程保固產生器</h3>
-        <p>自動生成正式保固書，支援線上簽署與 PDF 匯出</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='billing.html'">
-        <i class="fas fa-money-check-alt text-rose-500"></i>
-        <h3>工程請款核銷</h3>
-        <p>分期請款單據管理、實收額與餘額追蹤</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='finance.html'">
-        <i class="fas fa-chart-line text-blue-600"></i>
-        <h3>財務損益中心</h3>
-        <p>公司利潤結算與月度損益</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='staff.html'">
-        <i class="fas fa-users-cog"></i>
-        <h3>人員與點工</h3>
-        <p>派工紀錄與工資計算中心</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='record.html'">
-        <i class="fas fa-clipboard-list text-slate-500"></i>
-        <h3>保固書紀錄查詢</h3>
-        <p>瀏覽歷史核發清單與雲端備份狀態</p>
-    </div>
-
-    <div class="pro-card" onclick="location.href='settings.html'">
-        <i class="fas fa-cogs text-slate-400"></i>
-        <h3>系統參數設定</h3>
-        <p>調整稅率、公司資訊與 ngrok 後端網址</p>
-    </div>
-</section>
-
-        <footer class="mt-auto p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
+        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
             <span>JINDE Engineering Hub</span>
-            <span>V4.0.5 - ONLINE</span>
+            <span class="hidden sm:inline">V4.1.0 - LIVE</span>
         </footer>
     </main>
 
     <script>
-        // 1. 更新時鐘
+        // 初始化 PocketBase
+        const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+
+        async function checkStatus() {
+            try {
+                const records = await pb.collection('WarrantyRecords').getList(1, 1);
+                document.getElementById('warranty-info').innerText = `雲端已有 ${records.totalItems} 份核發紀錄`;
+                document.getElementById('status-dot').className = "w-2 h-2 bg-emerald-500 rounded-full";
+                document.getElementById('status-text').innerText = "雲端連線正常";
+            } catch (err) {
+                document.getElementById('status-dot').className = "w-2 h-2 bg-rose-500 rounded-full";
+                document.getElementById('status-text').innerText = "伺服器連線中斷";
+            }
+        }
+
         function updateClock() {
             const now = new Date();
             document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW');
             document.getElementById('live-time').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
-        setInterval(updateClock, 1000); 
-        updateClock();
+        
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
 
-        // 2. 登出邏輯
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        }
-
-        // 3. 初始化顯示
         window.onload = function() {
             const user = localStorage.getItem('jinde_user_name') || '管理員';
-            document.getElementById('user-info').innerText = "使用者：" + user;
+            document.getElementById('user-info-side').innerText = "使用者：" + user;
+            updateClock();
+            setInterval(updateClock, 1000);
+            checkStatus();
         }
     </script>
 </body>
