@@ -5,46 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JINDE | 工地管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        if (localStorage.getItem('jinde_verified') !== 'true') {
-            window.location.href = 'login.html';
-        }
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: block; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; }
-        .pro-card { background: white; border: 1px solid #eef2f6; padding: 24px; border-radius: 8px; transition: 0.3s; }
-        .modal-bg { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; }
+        .pro-card { background: white; border: 1px solid #eef2f6; padding: 20px; border-radius: 8px; shadow: 0 4px 6px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="p-8"><h1 class="text-2xl font-black text-white">JINDE<span class="text-teal-500">.</span></h1></div>
-        <nav class="flex-grow">
-            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i>中台總覽</div>
-            <div class="nav-link active"><i class="fas fa-hammer mr-3 w-5"></i>工地管理</div>
-        </nav>
+    <aside class="sidebar p-8">
+        <h1 class="text-2xl font-black text-white">JINDE<span class="text-teal-500">.</span></h1>
+        <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">工程管理系統</p>
     </aside>
 
     <main class="main-stage">
-        <header class="top-header">
-            <span class="text-[10px] font-mono text-slate-400">PROJECT MANAGEMENT</span>
-            <button onclick="openModal()" class="bg-slate-900 text-white px-5 py-2 rounded font-bold text-xs hover:bg-teal-600 transition">建立新案場</button>
+        <header class="h-[70px] border-bottom border-slate-100 flex items-center justify-between px-10 bg-white">
+            <span class="text-xs font-bold text-slate-400">工地管理 / 案場列表</span>
+            <button onclick="openModal()" class="bg-slate-900 text-white px-6 py-2 rounded text-xs font-bold hover:bg-teal-600 transition">建立新案場</button>
         </header>
-        <div class="flex-grow overflow-y-auto p-10">
-            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            <div id="loading" class="text-center py-20 text-slate-400 font-bold text-xs uppercase">載入中...</div>
+
+        <div class="p-10 overflow-y-auto">
+            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            <div id="loading" class="text-center py-10 text-slate-400 text-xs font-bold">資料同步中...</div>
         </div>
     </main>
 
-    <div id="projectModal" class="hidden fixed inset-0 modal-bg z-50 items-center justify-center p-4">
+    <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-lg w-full max-w-md shadow-2xl">
             <h2 class="text-xl font-black mb-6 text-slate-800">建立案場資料</h2>
             <div class="space-y-4">
@@ -62,30 +52,31 @@
                 </div>
                 <div class="flex gap-4 pt-6">
                     <button onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-bold text-xs">取消</button>
-                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded font-bold text-xs hover:bg-teal-600 transition">確認儲存</button>
+                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded font-bold text-xs hover:bg-teal-600 transition shadow-lg">確認儲存</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
 
         async function fetchProjects() {
             const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
             document.getElementById('loading').style.display = 'none';
             if (error) return;
+
             const grid = document.getElementById('projectGrid');
             grid.innerHTML = data.map(p => `
                 <div class="pro-card">
-                    <h3 class="text-lg font-black text-slate-800">${p.name || '未命名案場'}</h3>
-                    <p class="text-[10px] font-mono text-slate-400 mb-4">${p.project_no || 'NO ID'}</p>
-                    <div class="border-t pt-4">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Client / Address</p>
-                        <p class="text-sm font-bold text-slate-700 mt-1">${p.client_name || '無客戶'} - ${p.address || '無地址'}</p>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-black text-slate-800">${p.name || '未命名'}</h3>
+                        <span class="text-[9px] font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">${p.project_no}</span>
                     </div>
+                    <p class="text-xs text-slate-500 mb-1">客戶：${p.client_name || '-'}</p>
+                    <p class="text-xs text-slate-500">地址：${p.address || '-'}</p>
                 </div>
             `).join('');
         }
@@ -98,8 +89,9 @@
 
             if (!name) return alert("請輸入案場名稱");
             saveBtn.disabled = true;
+            saveBtn.innerText = "儲存中...";
 
-            // 只傳送您截圖中確有的欄位
+            // 【重點】只傳送資料庫截圖中現有的欄位
             const { error } = await _supabase.from('projects').insert([{
                 name: name,
                 project_no: "PJ-" + Math.floor(Math.random() * 900000 + 100000),
@@ -108,16 +100,22 @@
             }]);
 
             if (error) {
-                alert("儲存失敗: " + error.message);
+                console.error("Supabase Error:", error);
+                alert("儲存失敗：" + error.message);
             } else {
                 closeModal();
                 fetchProjects();
+                // 清空
+                document.getElementById('p_name').value = '';
+                document.getElementById('p_client').value = '';
+                document.getElementById('p_address').value = '';
             }
             saveBtn.disabled = false;
+            saveBtn.innerText = "確認儲存";
         }
 
-        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); document.getElementById('projectModal').classList.add('flex'); }
-        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); document.getElementById('projectModal').classList.remove('flex'); }
+        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); }
         window.onload = fetchProjects;
     </script>
 </body>
