@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>JINDE | 保固書生產系統</title>
+    <title>JINDE | 智能保固內頁生產系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,15 +12,14 @@
         body { background-color: #0f172a; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
         @page { size: A4; margin: 0; }
 
-        /* 左側管理面板 */
+        /* 管理面板樣式 */
         .admin-panel {
-            width: 380px; height: 100vh;
-            background: #1e293b; padding: 30px; z-index: 1000; 
-            border-right: 1px solid rgba(255,255,255,0.1);
+            width: 380px; height: 100vh; background: #1e293b; padding: 30px; 
+            z-index: 1000; border-right: 1px solid rgba(255,255,255,0.1);
             overflow-y: auto; color: white; flex-shrink: 0;
         }
 
-        /* A4 預覽區 */
+        /* 預覽區樣式 */
         .preview-area { flex-grow: 1; height: 100vh; overflow-y: auto; padding: 40px; display: flex; justify-content: center; background: #0f172a; }
 
         .a4-page {
@@ -30,20 +29,16 @@
             flex-shrink: 0;
         }
 
-        /* 返回按鈕樣式 */
-        .back-home {
-            display: flex; align-items: center; gap: 8px; color: #94a3b8;
-            font-size: 14px; font-weight: 600; margin-bottom: 2rem;
-            transition: 0.3s; cursor: pointer; text-decoration: none;
-        }
+        .back-home { display: flex; align-items: center; gap: 8px; color: #94a3b8; font-size: 14px; margin-bottom: 2rem; transition: 0.3s; text-decoration: none; }
         .back-home:hover { color: #2dd4bf; transform: translateX(-4px); }
 
-        /* A4 內容排版 */
+        /* A4 內頁精細排版 */
         .page-header { border-bottom: 2px solid #000; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
         .main-title { font-size: 38pt; font-weight: 900; text-align: center; margin: 35pt 0; letter-spacing: 0.5em; }
         .content-body { font-size: 14.5pt; line-height: 2.2; text-align: justify; margin-bottom: 25pt; }
         .underline-input { font-weight: 700; border-bottom: 2px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center; }
-        table { width: 100%; border-collapse: collapse; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
         td { border: 1.5pt solid #000; padding: 12pt; font-size: 13pt; }
         .bg-gray { background-color: #f5f5f5; font-weight: 700; width: 125px; text-align: center; font-family: 'Noto Sans TC'; }
 
@@ -60,34 +55,31 @@
 </head>
 <body>
     <div class="no-print admin-panel">
-        <a href="warranty.html" class="back-home">
-            <i class="fas fa-arrow-left"></i> 返回保固中控
-        </a>
-
-        <h2 class="text-2xl font-black mb-6 text-teal-400">內頁生產器 <span class="text-xs text-slate-500 font-normal ml-2">v4.1 SB</span></h2>
+        <a href="index.html" class="back-home"><i class="fas fa-home"></i> 返回首頁</a>
+        <h2 class="text-2xl font-black mb-6 text-teal-400">內頁生產系統</h2>
         
         <div class="space-y-5">
             <div class="bg-slate-800 p-4 rounded-2xl border border-teal-900/50">
-                <label class="block text-xs font-bold text-teal-500 mb-2 uppercase tracking-widest">從案場清單載入</label>
+                <label class="block text-xs font-bold text-teal-500 mb-2">1. 選擇案場 (從資料庫)</label>
                 <select id="projectSelect" onchange="loadProjectData()" class="w-full bg-slate-900 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
-                    <option value="">-- 請選擇現有案場 --</option>
+                    <option value="">-- 請選擇案場 --</option>
                 </select>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-slate-400 font-bold">1. 公司 Logo</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'logo_preview')"></div>
-                <div><label class="text-[10px] text-red-400 font-bold">2. 公司印章</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'seal_preview')"></div>
+                <div><label class="text-[10px] text-slate-400 font-bold">Logo 上傳</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'logo_preview')"></div>
+                <div><label class="text-[10px] text-red-400 font-bold">印章上傳</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'seal_preview')"></div>
             </div>
             
             <hr class="border-slate-700">
             
             <div><label class="text-xs text-slate-400 font-bold">客戶姓名</label><input type="text" id="in_client" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></div>
-            <div><label class="text-xs text-slate-400 font-bold">案場名稱與地址</label><textarea id="in_p_name" rows="2" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></textarea></div>
-            <div><label class="text-xs text-slate-400 font-bold">保固期限 (年)</label><input type="number" id="in_years" value="3" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></div>
+            <div><label class="text-xs text-slate-400 font-bold">案場地址</label><textarea id="in_p_name" rows="2" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></textarea></div>
+            <div><label class="text-xs text-slate-400 font-bold">保固年限</label><input type="number" id="in_years" value="3" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></div>
             
             <div class="pt-4">
-                <button onclick="window.print()" class="w-full bg-teal-500 hover:bg-teal-400 text-white py-4 rounded-2xl font-black text-lg shadow-lg transition-all active:scale-95">
-                    <i class="fas fa-print mr-2"></i> 列印保固內頁
+                <button id="printBtn" onclick="saveAndPrint()" class="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg transition-all active:scale-95">
+                    <i class="fas fa-save mr-2"></i> 存檔並列印
                 </button>
             </div>
         </div>
@@ -117,21 +109,19 @@
 
             <div class="absolute bottom-[35mm] left-[22mm] flex items-center gap-4">
                 <div class="border border-black p-1 bg-white"><img id="qr_img" src="" class="w-20 h-20"></div>
-                <div class="text-[9pt] leading-relaxed">數位保固驗證系統<br>核發編號：<span id="doc_id" class="font-mono font-bold"></span><br><span class="text-gray-400 tracking-tighter uppercase">Quality Guaranteed</span></div>
+                <div class="text-[9pt] leading-relaxed">數位保固驗證系統<br>核發編號：<span id="doc_id" class="font-mono font-bold text-blue-600"></span><br><span class="text-gray-400 uppercase">Quality Authenticated</span></div>
             </div>
 
             <img id="seal_preview" src="">
 
             <div class="absolute bottom-[35mm] right-[22mm] text-right">
-                <p class="font-bold text-lg mb-20 text-gray-200">業主簽署處：____________________</p>
+                <p class="font-bold text-lg mb-20 text-gray-100">業主簽署處：____________________</p>
                 <p class="font-black text-2xl tracking-tight">中 華 民 國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日</p>
             </div>
-            <div class="absolute bottom-[10mm] left-0 right-0 text-center font-sans text-gray-300 text-sm tracking-[0.5em] uppercase">Security Document</div>
         </div>
     </div>
 
     <script>
-        // Supabase 設定
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
@@ -139,8 +129,7 @@
         let projectList = [];
 
         async function init() {
-            // 從 Supabase 抓取案場資料
-            const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
+            const { data } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
             if (data) {
                 projectList = data;
                 const select = document.getElementById('projectSelect');
@@ -159,7 +148,7 @@
             const project = projectList.find(p => p.id == pid);
             if (project) {
                 document.getElementById('in_client').value = project.client_name || "業主";
-                document.getElementById('in_p_name').value = project.name;
+                document.getElementById('in_p_name').value = project.location || project.name;
                 sync();
             }
         }
@@ -177,11 +166,12 @@
             document.getElementById('out_p_name').innerText = document.getElementById('in_p_name').value;
             document.getElementById('out_years').innerText = document.getElementById('in_years').value;
             
-            // 固定這份保固書的 ID
             if(!window.docId) window.docId = "JD-" + Math.random().toString(36).substr(2, 7).toUpperCase();
-            
             document.getElementById('doc_id').innerText = window.docId;
-            document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jinde.com/verify/${window.docId}`;
+
+            // QR Code：指向驗證頁面
+            const verifyUrl = `https://jinde-eng.com.tw/verify.html?id=${window.docId}`;
+            document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
             
             const now = new Date();
             const y = now.getFullYear() - 1911;
@@ -190,6 +180,39 @@
             document.querySelectorAll('.d_y').forEach(el => el.innerText = y);
             document.querySelectorAll('.d_m').forEach(el => el.innerText = m);
             document.querySelectorAll('.d_d').forEach(el => el.innerText = d);
+        }
+
+        async function saveAndPrint() {
+            const btn = document.getElementById('printBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在存檔...';
+            btn.disabled = true;
+
+            const pid = document.getElementById('projectSelect').value;
+            const doc_id = window.docId;
+            const years = document.getElementById('in_years').value;
+
+            try {
+                // 存入 warranties 表
+                const { error } = await _supabase.from('warranties').insert([
+                    { 
+                        doc_id: doc_id, 
+                        project_id: pid || null, 
+                        warranty_years: parseInt(years),
+                        status: '已核發'
+                    }
+                ]);
+                if (error) throw error;
+
+                btn.innerHTML = '<i class="fas fa-print"></i> 存檔成功，列印中...';
+                setTimeout(() => {
+                    window.print();
+                    btn.innerHTML = '<i class="fas fa-save"></i> 存檔並列印';
+                    btn.disabled = false;
+                }, 800);
+            } catch (err) {
+                alert("存檔出錯：" + err.message);
+                btn.disabled = false;
+            }
         }
 
         window.onload = init;
