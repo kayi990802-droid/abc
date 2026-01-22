@@ -16,7 +16,6 @@
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto bg-white p-8 md:p-12 rounded-sm shadow-xl border relative">
-        
         <div class="flex flex-col md:flex-row justify-between items-end mb-12 border-b-2 border-slate-900 pb-8">
             <div>
                 <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2">專案進度看板</h1>
@@ -37,14 +36,14 @@
 
     <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm items-center justify-center z-50">
         <div class="bg-white p-8 rounded-xl w-full max-w-md shadow-2xl">
-            <h2 class="text-xl font-black mb-6">新增案場</h2>
+            <h2 class="text-xl font-black mb-6">新增案場與合約</h2>
             <div class="space-y-4">
                 <input type="text" id="p_name" placeholder="案場名稱 (如：西屯王宅)" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500">
                 <input type="number" id="p_amount" placeholder="合約金額" class="w-full p-3 border rounded-lg outline-none">
                 <input type="date" id="p_date" class="w-full p-3 border rounded-lg outline-none">
                 
-                <div class="p-3 border rounded-lg">
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">合約或附件上傳</label>
+                <div class="border-2 border-dashed border-slate-200 p-4 rounded-lg">
+                    <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">附件 (合約/圖面)</label>
                     <input type="file" id="p_file" class="text-xs w-full">
                 </div>
 
@@ -70,12 +69,13 @@
             grid.innerHTML = data.map(p => `
                 <div class="border border-slate-100 bg-slate-50 p-6 rounded-sm card-hover relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-2">
-                        <span class="text-[10px] font-bold ${p.status === '已完工' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'} px-2 py-1 rounded">
-                            ${p.status}
+                        <span class="text-[10px] font-bold ${p.progress >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'} px-2 py-1 rounded">
+                            ${p.progress >= 100 ? '已完工' : '進行中'}
                         </span>
                     </div>
                     <h3 class="text-xl font-black text-slate-900 mb-1">${p.name}</h3>
                     <p class="text-xs text-slate-400 mb-6 font-mono">${p.project_no}</p>
+                    
                     <div class="space-y-4">
                         <div>
                             <div class="flex justify-between text-xs font-bold mb-2">
@@ -86,6 +86,7 @@
                                 <div class="progress-bar bg-blue-600 h-full" style="width: ${p.progress}%"></div>
                             </div>
                         </div>
+
                         <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200">
                             <div>
                                 <p class="text-[10px] text-slate-400 uppercase font-bold">合約總額</p>
@@ -99,7 +100,7 @@
                     </div>
                     <div class="mt-6 flex gap-3 no-print">
                         <button onclick="updateProgress('${p.id}', ${p.progress})" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white">更新進度</button>
-                        ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-emerald-600">檢視文件</a>` : ''}
+                        ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-emerald-600">檢視合約</a>` : ''}
                         <a href="billing.html?ref=${p.project_no}" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-blue-600">建立請款</a>
                     </div>
                 </div>
@@ -111,39 +112,58 @@
             const amount = document.getElementById('p_amount').value;
             const date = document.getElementById('p_date').value;
             const fileInput = document.getElementById('p_file');
-            const file = fileInput.files[0];
-
-            if (!name) return alert("請輸入名稱");
-
             const saveBtn = document.getElementById('saveBtn');
+
+            if (!name) return alert("請輸入案場名稱");
+
             saveBtn.disabled = true;
-            saveBtn.innerText = "處理中...";
+            saveBtn.innerText = "上傳中...";
 
-            let uploadedUrl = null;
+            let fileUrl = null;
 
-            // 實體上傳到 Supabase Storage
-            if (file) {
+            // 1. 如果有檔案，先上傳到 Storage
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
+                const fileName = `${Date.now()}.${fileExt}`;
+                
+                // 這裡假設你的 Storage Bucket 名字叫做 "project-files"
                 const { data: uploadData, error: uploadError } = await _supabase.storage
-                    .from('project-files') // 注意：你必須在 Supabase 後台建立名為 'project-files' 的 Bucket
+                    .from('project-files')
                     .upload(fileName, file);
 
-                if (!uploadError) {
-                    const { data: linkData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
-                    uploadedUrl = linkData.publicUrl;
+                if (uploadError) {
+                    alert("檔案上傳失敗：" + uploadError.message);
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = "確認建立";
+                    return;
                 }
+
+                // 取得公開連結
+                const { data: publicUrlData } = _supabase.storage
+                    .from('project-files')
+                    .getPublicUrl(fileName);
+                
+                fileUrl = publicUrlData.publicUrl;
             }
 
+            // 2. 將資料（含檔案連結）存入資料庫
             const project_no = "PJ-" + Math.floor(Math.random() * 900000 + 100000);
-            const { error } = await _supabase.from('projects').insert([{
-                name, project_no, contract_amount: amount, end_date: date, 
-                progress: 0, status: '進行中', file_url: uploadedUrl
+            const { error: dbError } = await _supabase.from('projects').insert([{
+                name, 
+                project_no, 
+                contract_amount: amount, 
+                end_date: date, 
+                progress: 0,
+                file_url: fileUrl // 確保你的資料表有這個欄位
             }]);
 
-            if (!error) { 
-                closeModal(); 
-                fetchProjects(); 
+            if (dbError) {
+                alert("建立失敗：" + dbError.message);
+            } else {
+                closeModal();
+                fetchProjects();
+                // 清空欄位
                 document.getElementById('p_name').value = '';
                 document.getElementById('p_amount').value = '';
                 document.getElementById('p_file').value = '';
@@ -152,17 +172,16 @@
             saveBtn.innerText = "確認建立";
         }
 
-        // ... 其餘函數(updateProgress, openModal, closeModal) 保持不變 ...
         async function updateProgress(id, current) {
             const val = prompt("請輸入最新進度 (0-100):", current);
             if (val === null || val === "") return;
-            const pVal = parseInt(val);
-            const status = pVal >= 100 ? '已完工' : '進行中';
-            await _supabase.from('projects').update({ progress: pVal, status: status }).eq('id', id);
+            await _supabase.from('projects').update({ progress: parseInt(val) }).eq('id', id);
             fetchProjects();
         }
-        function openModal() { document.getElementById('projectModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
+
+        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); }
+
         window.onload = fetchProjects;
     </script>
 </body>
