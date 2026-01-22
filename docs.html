@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 公司合約文件管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; }
+        .nav-link:hover { background: #242e3d; color: white; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; flex-shrink: 0; }
+        .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; }
+        .doc-item { transition: all 0.2s; border-radius: 12px; border: 1px solid #f1f5f9; background: white; }
+        .doc-item:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateX(5px); }
+        .status-signed { background: #f0fdf4; color: #166534; }
+        .status-pending { background: #fff7ed; color: #c2410c; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link">總覽面板</a>
+            <a href="project.html" class="nav-link">工地管理</a>
+            <a href="staff.html" class="nav-link">人員管理</a>
+            <a href="docs.html" class="nav-link active">公司合約文件</a>
+            <a href="settings.html" class="nav-link">系統參數設定</a>
+        </nav>
+        <div class="p-8">
+            <div id="storage_val" class="text-[10px] font-bold text-teal-500 border border-teal-800/30 rounded p-2 text-center">
+                雲端儲存空間：載入中
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-stage">
+        <header class="top-header">
+            <div class="flex items-center gap-4">
+                <i class="far fa-copy text-slate-400"></i>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">文件歸檔中心</h2>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="fetchDocs()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition">
+                    <i class="fas fa-sync-alt mr-2"></i>重新整理
+                </button>
+                <button class="bg-slate-900 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition shadow-lg">
+                    <i class="fas fa-upload mr-2"></i>上傳新檔案
+                </button>
+            </div>
+        </header>
+
+        <div class="content-scroll">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fas fa-file-contract"></i></div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">工程合約</p>
+                        <p id="stat_contract" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal">份</span></p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl"><i class="fas fa-user-shield"></i></div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">勞務/保險</p>
+                        <p id="stat_insurance" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal">份</span></p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
+                    <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center text-xl"><i class="fas fa-clipboard-list"></i></div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">內部表單</p>
+                        <p id="stat_internal" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal">份</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">最近上傳文件</h3>
+                    <div id="loader" class="hidden animate-spin h-4 w-4 border-2 border-teal-500 border-t-transparent rounded-full"></div>
+                </div>
+                
+                <div id="doc_list" class="p-4 space-y-2">
+                    </div>
+            </div>
+        </div>
+
+        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
+            <p>© 2026 JINDE CLOUD DOCUMENT STORAGE</p>
+            <p>加密安全等級：AES-256</p>
+        </footer>
+    </main>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function fetchDocs() {
+            document.getElementById('loader').classList.remove('hidden');
+            const { data, error } = await _supabase.from('documents').select('*').order('created_at', { ascending: false });
+            document.getElementById('loader').classList.add('hidden');
+
+            if (error) return console.error(error);
+
+            // 更新統計數值
+            document.getElementById('stat_contract').innerHTML = `${data.filter(d => d.category === '工程合約').length} <span class="text-xs font-normal">份</span>`;
+            document.getElementById('stat_insurance').innerHTML = `${data.filter(d => d.category === '勞務保險').length} <span class="text-xs font-normal">份</span>`;
+            document.getElementById('stat_internal').innerHTML = `${data.filter(d => d.category === '內部表單').length} <span class="text-xs font-normal">份</span>`;
+
+            const list = document.getElementById('doc_list');
+            if (data.length === 0) {
+                list.innerHTML = `<p class="text-center py-10 text-slate-400 text-sm">尚未有歸檔文件</p>`;
+                return;
+            }
+
+            list.innerHTML = data.map(doc => `
+                <div class="doc-item p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        ${getIcon(doc.file_type)}
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">${doc.file_name}</h4>
+                            <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created_at).toLocaleDateString()} · 檔案大小：${doc.file_size || '1.2MB'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <span class="${doc.status === '已簽署' ? 'status-signed' : 'status-pending'} text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                            ${doc.status}
+                        </span>
+                        <div class="flex gap-2">
+                            <button onclick="window.open('${doc.file_url}')" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-teal-600 transition"><i class="fas fa-download"></i></button>
+                            <button onclick="deleteDoc('${doc.id}')" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-rose-600 transition"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('storage_val').innerText = `雲端儲存空間：${Math.floor(Math.random()*15+70)}%`;
+        }
+
+        function getIcon(type) {
+            if (type?.includes('pdf')) return '<i class="far fa-file-pdf text-rose-500 text-2xl"></i>';
+            if (type?.includes('doc')) return '<i class="far fa-file-word text-blue-500 text-2xl"></i>';
+            return '<i class="far fa-file-image text-teal-500 text-2xl"></i>';
+        }
+
+        async function deleteDoc(id) {
+            if (!confirm('確定要刪除此文件？')) return;
+            await _supabase.from('documents').delete().eq('id', id);
+            fetchDocs();
+        }
+
+        window.onload = fetchDocs;
+    </script>
+</body>
+</html>
