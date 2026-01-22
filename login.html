@@ -19,13 +19,18 @@
     </div>
 
     <script>
-        // 1. 初始化 (請換成您自己的 Key)
-        const _supabase = supabase.createClient('https://wdpxgichzvfebhlukbrl.supabase.co', '您的_ANON_KEY');
+        // 【重要】請在此處貼上您的密鑰，並確保前後沒有空格
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = '請替換成您的_ANON_KEY'; 
+
+        // 自動過濾非合法字元，防止 Headers 報錯
+        const cleanKey = S_KEY.replace(/[^\x00-\x7F]/g, "").trim();
+        const _supabase = supabase.createClient(S_URL, cleanKey);
 
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('u_email').value.trim();
-            const password = document.getElementById('u_pw').value;
+            const password = document.getElementById('u_pw').value.trim();
             const msg = document.getElementById('msg');
             const btn = document.getElementById('btn');
 
@@ -33,27 +38,26 @@
             btn.disabled = true;
 
             try {
-                // 2. 依照截圖欄位名稱直接查詢
                 const { data, error } = await _supabase
                     .from('staff')
                     .select('name')
-                    .eq('email', email)     // 對應截圖中的 email 欄位
-                    .eq('password', password) // 對應截圖中的 password 欄位
+                    .eq('email', email)
+                    .eq('password', password)
                     .maybeSingle();
 
                 if (error) throw error;
 
                 if (!data) {
-                    msg.innerText = "帳號或密碼不正確";
+                    msg.innerText = "帳號或密碼錯誤";
                     btn.disabled = false;
                 } else {
-                    // 3. 成功
                     localStorage.setItem('jinde_verified', 'true');
                     localStorage.setItem('user_name', data.name);
                     window.location.href = 'index.html';
                 }
             } catch (err) {
-                msg.innerText = "連線失敗：" + err.message;
+                console.error(err);
+                msg.innerText = "系統錯誤，請檢查 API Key 設定";
                 btn.disabled = false;
             }
         }
