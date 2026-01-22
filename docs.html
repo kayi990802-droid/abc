@@ -24,7 +24,6 @@
     </style>
 </head>
 <body>
-
     <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
@@ -38,8 +37,8 @@
             <a href="settings.html" class="nav-link">系統參數設定</a>
         </nav>
         <div class="p-8">
-            <div id="storage_val" class="text-[10px] font-bold text-teal-500 border border-teal-800/30 rounded p-2 text-center">
-                雲端儲存空間：載入中
+            <div id="storage_val" class="text-[10px] font-bold text-teal-500 border border-teal-800/30 rounded p-2 text-center uppercase">
+                Storage: Secured
             </div>
         </div>
     </aside>
@@ -54,7 +53,7 @@
                 <button onclick="fetchDocs()" class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition">
                     <i class="fas fa-sync-alt mr-2"></i>重新整理
                 </button>
-                <button class="bg-slate-900 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition shadow-lg">
+                <button onclick="openUploadModal()" class="bg-slate-900 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition shadow-lg">
                     <i class="fas fa-upload mr-2"></i>上傳新檔案
                 </button>
             </div>
@@ -90,7 +89,6 @@
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">最近上傳文件</h3>
                     <div id="loader" class="hidden animate-spin h-4 w-4 border-2 border-teal-500 border-t-transparent rounded-full"></div>
                 </div>
-                
                 <div id="doc_list" class="p-4 space-y-2">
                     </div>
             </div>
@@ -102,11 +100,40 @@
         </footer>
     </main>
 
+    <div id="uploadModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-8">
+            <h3 class="text-xl font-black text-slate-800 mb-6 tracking-tight">上傳新文件</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">文件顯示名稱</label>
+                    <input type="text" id="f_name" placeholder="例如：115年度防水工程合約" class="w-full border-b-2 p-2 outline-none focus:border-teal-500 font-bold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">歸檔類別</label>
+                    <select id="f_category" class="w-full bg-slate-50 p-2 rounded text-sm font-bold outline-none">
+                        <option value="工程合約">工程合約</option>
+                        <option value="勞務保險">勞務保險</option>
+                        <option value="內部表單">內部表單</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">選擇檔案 (PDF/Image)</label>
+                    <input type="file" id="f_file" class="block w-full text-xs text-slate-500 mt-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                </div>
+            </div>
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeUploadModal()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">取消</button>
+                <button id="uploadBtn" onclick="uploadFile()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase hover:bg-teal-600 transition shadow-lg">開始上傳</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
+        // 初始化與讀取
         async function fetchDocs() {
             document.getElementById('loader').classList.remove('hidden');
             const { data, error } = await _supabase.from('documents').select('*').order('created_at', { ascending: false });
@@ -120,8 +147,8 @@
             document.getElementById('stat_internal').innerHTML = `${data.filter(d => d.category === '內部表單').length} <span class="text-xs font-normal">份</span>`;
 
             const list = document.getElementById('doc_list');
-            if (data.length === 0) {
-                list.innerHTML = `<p class="text-center py-10 text-slate-400 text-sm">尚未有歸檔文件</p>`;
+            if (!data || data.length === 0) {
+                list.innerHTML = `<p class="text-center py-10 text-slate-400 text-sm italic tracking-widest uppercase">No documents found</p>`;
                 return;
             }
 
@@ -131,7 +158,7 @@
                         ${getIcon(doc.file_type)}
                         <div>
                             <h4 class="text-sm font-bold text-slate-800">${doc.file_name}</h4>
-                            <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created_at).toLocaleDateString()} · 檔案大小：${doc.file_size || '1.2MB'}</p>
+                            <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created_at).toLocaleDateString()} · 大小：${doc.file_size || '--'}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-6">
@@ -145,19 +172,76 @@
                     </div>
                 </div>
             `).join('');
+        }
 
-            document.getElementById('storage_val').innerText = `雲端儲存空間：${Math.floor(Math.random()*15+70)}%`;
+        // 上傳彈窗控制
+        function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
+        function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); }
+
+        // 執行檔案上傳
+        async function uploadFile() {
+            const fileInput = document.getElementById('f_file');
+            const fileName = document.getElementById('f_name').value;
+            const category = document.getElementById('f_category').value;
+            const btn = document.getElementById('uploadBtn');
+
+            if (!fileInput.files[0] || !fileName) return alert('請填寫文件名稱並選擇檔案');
+
+            btn.disabled = true;
+            btn.innerText = "上傳中...";
+
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const filePath = `docs/${Date.now()}_${file.name}`; // 使用時間戳防止重複
+
+            try {
+                // 1. 上傳至 Storage
+                const { data: upData, error: upError } = await _supabase.storage
+                    .from('project-files')
+                    .upload(filePath, file);
+
+                if (upError) throw upError;
+
+                // 2. 獲取連結
+                const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(filePath);
+
+                // 3. 寫入資料庫
+                const { error: dbError } = await _supabase.from('documents').insert([{
+                    file_name: fileName,
+                    category: category,
+                    file_type: fileExt.toLowerCase(),
+                    file_url: urlData.publicUrl,
+                    file_size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                    status: '待處理'
+                }]);
+
+                if (dbError) throw dbError;
+
+                alert('文件歸檔成功！');
+                closeUploadModal();
+                fetchDocs();
+            } catch (err) {
+                console.error(err);
+                alert('上傳失敗：' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "開始上傳";
+                document.getElementById('f_name').value = '';
+                document.getElementById('f_file').value = '';
+            }
         }
 
         function getIcon(type) {
-            if (type?.includes('pdf')) return '<i class="far fa-file-pdf text-rose-500 text-2xl"></i>';
-            if (type?.includes('doc')) return '<i class="far fa-file-word text-blue-500 text-2xl"></i>';
+            const t = type?.toLowerCase();
+            if (t === 'pdf') return '<i class="far fa-file-pdf text-rose-500 text-2xl"></i>';
+            if (t === 'doc' || t === 'docx') return '<i class="far fa-file-word text-blue-500 text-2xl"></i>';
             return '<i class="far fa-file-image text-teal-500 text-2xl"></i>';
         }
 
         async function deleteDoc(id) {
-            if (!confirm('確定要刪除此文件？')) return;
-            await _supabase.from('documents').delete().eq('id', id);
+            if (!confirm('確定要從雲端永久刪除此文件？')) return;
+            const { error } = await _supabase.from('documents').delete().eq('id', id);
+            if (error) alert('刪除失敗');
             fetchDocs();
         }
 
