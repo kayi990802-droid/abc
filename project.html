@@ -3,141 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 工地管理系統</title>
+    <title>JINDE | 工地管理系統 (含附件)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        if (localStorage.getItem('jinde_verified') !== 'true') {
-            window.location.href = 'login.html';
-        }
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        
-        /* 側邊欄樣式 - 完全同步 Index */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
-        /* 主舞台 */
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; }
-        
-        /* 卡片設計：對齊 Index 質感 */
-        .pro-card { background: white; border: 1px solid #eef2f6; padding: 24px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 8px; position: relative; text-align: left; }
-        .pro-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.05); border-color: #0d9488; }
-        
-        /* 進度條細節 */
-        .progress-bg { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #0d9488; transition: width 1s ease-in-out; }
-
-        /* 彈窗背景：改為與截圖一致的深藍半透明 */
-        .modal-overlay { background: rgba(26, 34, 45, 0.7); backdrop-filter: blur(4px); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; }
+        .pro-card { background: white; border: 1px solid #eef2f6; padding: 20px; border-radius: 8px; transition: 0.3s; }
+        .pro-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">USER: ADMIN</p>
-        </div>
-        <nav class="flex-grow overflow-y-auto">
-            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></div>
-            <div class="nav-link active"><i class="fas fa-hammer mr-3 w-5"></i><span>工地管理</span></div>
-            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5"></i><span>請款管理</span></div>
-        </nav>
-        <div class="p-8 border-t border-slate-800 text-[9px] font-black text-slate-500 uppercase tracking-tighter">
-            <span id="status-text">SYSTEM ONLINE</span>
-        </div>
+    <aside class="sidebar p-8">
+        <h1 class="text-2xl font-black text-white">JINDE<span class="text-teal-500">.</span></h1>
+        <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">工程管理系統</p>
     </aside>
 
     <main class="main-stage">
-        <header class="top-header">
-            <span class="text-[10px] bg-slate-100 px-3 py-1 rounded font-mono text-slate-500 uppercase">Project / Live Tracking</span>
-            <div class="flex gap-3">
-                <button onclick="openModal()" class="bg-slate-900 text-white px-5 py-2 rounded-sm font-bold text-xs hover:bg-teal-600 transition">+ 建立案場資料</button>
-                <button onclick="logout()" class="text-slate-400 hover:text-rose-500"><i class="fas fa-power-off"></i></button>
-            </div>
+        <header class="h-[70px] border-b border-slate-100 flex items-center justify-between px-10 bg-white">
+            <span class="text-xs font-bold text-slate-400 uppercase">Project / Document Management</span>
+            <button onclick="openModal()" class="bg-slate-900 text-white px-6 py-2 rounded text-xs font-bold hover:bg-teal-600 transition">建立新案場</button>
         </header>
 
-        <section class="flex-grow overflow-y-auto p-10">
-            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
-            <div id="loading" class="text-center py-20 text-slate-300 font-black tracking-widest uppercase text-xs">Fetching Data...</div>
-        </section>
+        <div class="p-10 overflow-y-auto">
+            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="loading" class="text-center py-10 text-slate-400 text-xs font-bold">載入中...</div>
+        </div>
     </main>
 
-    <div id="projectModal" class="hidden fixed inset-0 modal-overlay items-center justify-center z-50 p-4">
-        <div class="bg-white p-10 rounded-sm w-full max-w-md shadow-2xl border-t-4 border-teal-500">
-            <h2 class="text-2xl font-black mb-8 text-slate-800 tracking-tight">建立新案場資料</h2>
-            <div class="space-y-6">
+    <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-lg w-full max-w-md shadow-2xl">
+            <h2 class="text-xl font-black mb-6 text-slate-800">建立案場與附件</h2>
+            <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">案場名稱</label>
-                    <input type="text" id="p_name" class="w-full p-3 bg-slate-50 border-b border-slate-200 outline-none focus:border-teal-500 font-bold">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">合約金額</label>
-                        <input type="number" id="p_amount" class="w-full p-3 bg-slate-50 border-b border-slate-200 outline-none font-mono font-bold">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">預計完工</label>
-                        <input type="date" id="p_date" class="w-full p-3 bg-slate-50 border-b border-slate-200 outline-none font-bold">
-                    </div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">案場名稱</label>
+                    <input type="text" id="p_name" class="w-full p-3 bg-slate-50 border-b-2 border-slate-200 outline-none focus:border-teal-500 font-bold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">合約附件 (PDF)</label>
-                    <input type="file" id="p_file" class="text-xs font-bold text-slate-500 file:mr-4 file:py-2 file:px-4 file:bg-slate-900 file:text-white file:border-0 file:text-[10px] cursor-pointer">
+                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">合約附件 (PDF)</label>
+                    <input type="file" id="p_file" accept=".pdf" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
                 </div>
                 <div class="flex gap-4 pt-6">
-                    <button onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-black text-xs uppercase tracking-widest">取消</button>
-                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-teal-600 transition shadow-lg">確認儲存</button>
+                    <button onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">取消</button>
+                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded font-bold text-xs uppercase hover:bg-teal-600 transition">確認儲存</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Supabase 設定保持不變
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         async function fetchProjects() {
             const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
-            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('loading').style.display = 'none';
             if (error) return;
 
             const grid = document.getElementById('projectGrid');
             grid.innerHTML = data.map(p => `
                 <div class="pro-card">
                     <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-lg font-black text-slate-800 tracking-tight">${p.name}</h3>
-                            <p class="text-[10px] font-mono font-bold text-slate-400 uppercase">${p.project_no}</p>
-                        </div>
-                        <span class="text-[9px] font-black px-2 py-1 rounded ${p.progress >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'} uppercase">
-                            ${p.progress >= 100 ? 'Completed' : 'On Going'}
-                        </span>
+                        <h3 class="text-lg font-black text-slate-800">${p.name || '未命名'}</h3>
+                        ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="w-8 h-8 rounded bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition flex items-center justify-center"><i class="fas fa-file-pdf"></i></a>` : '<span class="text-[9px] text-slate-300 italic">無附件</span>'}
                     </div>
-                    <div class="mb-6">
-                        <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
-                            <span>CURRENT PROGRESS</span>
-                            <span class="text-slate-900">${p.progress}%</span>
-                        </div>
-                        <div class="progress-bg"><div class="progress-fill" style="width: ${p.progress}%"></div></div>
-                    </div>
-                    <div class="flex justify-between border-t border-slate-50 pt-4">
-                        <div>
-                            <p class="text-[9px] font-black text-slate-400 uppercase">Amount</p>
-                            <p class="text-sm font-mono font-bold">$${Number(p.contract_amount || 0).toLocaleString()}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="updateProgress('${p.id}', ${p.progress})" class="w-8 h-8 rounded bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition text-xs"><i class="fas fa-sync-alt"></i></button>
-                            ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="w-8 h-8 rounded bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition flex items-center justify-center text-xs"><i class="fas fa-file-pdf"></i></a>` : ''}
-                        </div>
+                    <div class="border-t border-slate-50 pt-4 flex justify-between items-center">
+                        <span class="text-[10px] font-mono text-slate-400">${p.project_no}</span>
+                        <button onclick="deleteProject('${p.id}')" class="text-slate-300 hover:text-rose-500 transition"><i class="fas fa-trash-alt text-[10px]"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -145,67 +81,61 @@
 
         async function saveProject() {
             const name = document.getElementById('p_name').value;
-            const amount = document.getElementById('p_amount').value;
-            const date = document.getElementById('p_date').value;
             const fileInput = document.getElementById('p_file');
             const saveBtn = document.getElementById('saveBtn');
 
             if (!name) return alert("請輸入案場名稱");
             saveBtn.disabled = true;
-            saveBtn.innerText = "UPLOADING...";
+            saveBtn.innerText = "檔案上傳中...";
 
             let fileUrl = null;
+
+            // 處理 PDF 上傳
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                const fileName = `PJ_${Date.now()}_${file.name}`;
+                const fileName = `PDF_${Date.now()}_${file.name}`;
                 
-                // 確保 Bucket 名稱正確
-                const { data: upData, error: upErr } = await _supabase.storage.from('project-files').upload(fileName, file);
-                
-                if (!upErr) {
+                const { data: upData, error: upErr } = await _supabase.storage
+                    .from('project-files')
+                    .upload(fileName, file);
+
+                if (upErr) {
+                    console.error("Storage Error:", upErr);
+                    alert("檔案上傳失敗，請確認 Storage Bucket 是否為 Public 且 Policies 已設定。");
+                } else {
                     const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
                     fileUrl = urlData.publicUrl;
-                } else {
-                    console.error("Storage Error:", upErr);
                 }
             }
 
+            saveBtn.innerText = "資料儲存中...";
             const { error } = await _supabase.from('projects').insert([{
-                name, 
-                project_no: "PJ-" + Math.floor(100000 + Math.random() * 900000),
-                contract_amount: amount, 
-                end_date: date, 
-                progress: 0,
-                file_url: fileUrl
+                name: name,
+                project_no: "PJ-" + Math.floor(Math.random() * 900000 + 100000),
+                file_url: fileUrl // 請務必確認資料庫已有此欄位
             }]);
 
-            if (!error) {
+            if (error) {
+                alert("儲存失敗：\n" + error.message + "\n(提示：請確認 projects 資料表是否有 file_url 欄位)");
+            } else {
                 closeModal();
                 fetchProjects();
-            } else {
-                alert("儲存失敗，請檢查欄位格式");
+                document.getElementById('p_name').value = '';
+                document.getElementById('p_file').value = '';
             }
             saveBtn.disabled = false;
             saveBtn.innerText = "確認儲存";
         }
 
-        async function updateProgress(id, cur) {
-            const val = prompt("更新進度 (0-100):", cur);
-            if (val !== null && val !== "") {
-                await _supabase.from('projects').update({ progress: parseInt(val) }).eq('id', id);
-                fetchProjects();
-            }
+        async function deleteProject(id) {
+            if (!confirm("確定要刪除此案場嗎？")) return;
+            await _supabase.from('projects').delete().eq('id', id);
+            fetchProjects();
         }
 
-        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); document.getElementById('projectModal').classList.add('flex'); }
-        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); document.getElementById('projectModal').classList.remove('flex'); }
-        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
-        
-        window.onload = () => {
-            const user = localStorage.getItem('user_name') || 'ADMIN';
-            document.getElementById('user-info-side').innerText = "USER: " + user.toUpperCase();
-            fetchProjects();
-        };
+        function openModal() { document.getElementById('projectModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('projectModal').classList.add('hidden'); }
+        window.onload = fetchProjects;
     </script>
 </body>
 </html>
