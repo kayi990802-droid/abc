@@ -3,80 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 | JINDE 錦德工程</title>
+    <title>管理系統登入 | JINDE 錦德工程</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 h-screen flex items-center justify-center p-6 text-slate-800 font-sans">
-    <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl text-center">
-        <h1 class="text-3xl font-black mb-2 italic">JINDE<span class="text-teal-500">.</span></h1>
-        <p class="text-slate-400 text-xs mb-8 tracking-widest uppercase">Management System</p>
+<body class="bg-slate-900 h-screen flex items-center justify-center p-6 text-slate-800">
+    <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl">
+        <h1 class="text-3xl font-black text-center mb-8 italic">JINDE<span class="text-teal-500">.</span></h1>
         
-        <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+        <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Email Address</label>
-                <input type="email" id="email" placeholder="請輸入管理員信箱" 
-                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition" required>
+                <label class="text-[10px] font-bold text-slate-400 ml-2">管理員信箱</label>
+                <input type="email" id="emailInput" placeholder="example@gmail.com" 
+                    class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 ml-2">密碼</label>
+                <input type="password" id="passInput" placeholder="••••••••" 
+                    class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
             </div>
             
-            <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Password</label>
-                <input type="password" id="password" placeholder="請輸入密碼" 
-                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition" required>
-            </div>
-
-            <button type="submit" id="btn" 
-                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 active:scale-95 transition-all duration-200 mt-4 shadow-lg shadow-slate-200">
+            <button type="submit" id="submitBtn" 
+                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg">
                 進入系統
             </button>
             
             <p id="msg" class="text-center text-[11px] text-rose-500 font-bold mt-2 h-4"></p>
         </form>
-        
-        <p class="text-[10px] text-slate-300 mt-8">© 2026 JINDE ENGINEERING. All rights reserved.</p>
     </div>
 
     <script>
-        // 2. 這裡填入您從 Supabase Settings > API 複製的資訊
-        const SUPABASE_URL = 'https://您的專案ID.supabase.co';
+        // 初始化 Supabase
+        const SUPABASE_URL = '您的URL'; 
         const SUPABASE_KEY = '您的ANON_KEY';
-        
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function handleLogin(e) {
             e.preventDefault();
-            const btn = document.getElementById('btn');
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passInput').value;
             const msg = document.getElementById('msg');
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
 
-            // 鎖定按鈕防止重複點擊
+            msg.innerText = "驗證授權中...";
             btn.disabled = true;
-            btn.innerText = "驗證中...";
-            msg.innerText = "";
 
             try {
-                // 3. 呼叫 Supabase 身份驗證 API
-                const { data, error } = await _supabase.auth.signInWithPassword({
+                // 1. 驗證身份 (Authentication)
+                const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
                 });
 
-                if (error) {
-                    // 登入失敗：通常是帳密錯誤或 Email 未驗證
-                    msg.innerText = "驗證失敗：" + error.message;
-                    btn.disabled = false;
-                    btn.innerText = "重新登入";
-                } else {
-                    // 登入成功：存入 LocalStorage 並跳轉
-                    localStorage.setItem('jinde_verified', 'true');
-                    localStorage.setItem('jinde_user_email', data.user.email);
-                    window.location.href = 'index.html';
+                if (authError) throw new Error("帳號或密碼錯誤");
+
+                // 2. 檢查資料表授權 (Table Check)
+                // 只有 email 存在於 staff 表中才允許進入
+                const { data: staffData, error: staffError } = await _supabase
+                    .from('staff')
+                    .select('name, email')
+                    .eq('email', email)
+                    .single();
+
+                if (staffError || !staffData) {
+                    // 如果表裡找不到，強制登出並阻擋
+                    await _supabase.auth.signOut();
+                    throw new Error("授權失敗：您不在員工名單內");
                 }
-            } catch (err) {
-                msg.innerText = "系統連線錯誤，請檢查網路";
+
+                // 3. 驗證通過
+                localStorage.setItem('jinde_verified', 'true');
+                localStorage.setItem('user_name', staffData.name);
+                window.location.href = 'index.html';
+
+            } catch (error) {
+                msg.innerText = error.message;
                 btn.disabled = false;
-                btn.innerText = "進入系統";
             }
         }
     </script>
