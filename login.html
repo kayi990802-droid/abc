@@ -2,30 +2,46 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>登入 | JINDE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 | JINDE 錦德工程</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+    </style>
 </head>
 <body class="bg-slate-900 h-screen flex items-center justify-center p-6">
     <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl">
-        <h1 class="text-3xl font-black text-center mb-8 italic">JINDE<span class="text-teal-500">.</span></h1>
+        <h1 class="text-3xl font-black text-center mb-8 italic text-slate-900">JINDE<span class="text-teal-500">.</span></h1>
         
         <form onsubmit="handleLogin(event)" class="space-y-4">
-            <input type="email" id="u_email" placeholder="Email" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
-            <input type="password" id="u_pw" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
-            <button type="submit" id="btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition">進入系統</button>
-            <p id="msg" class="text-center text-[11px] font-bold mt-2 text-rose-500"></p>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">帳號 (Email)</label>
+                <input type="email" id="u_email" placeholder="yuz46501@gmail.com" 
+                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition" required>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">密碼 (Password)</label>
+                <input type="password" id="u_pw" placeholder="••••••••" 
+                    class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 transition" required>
+            </div>
+            
+            <button type="submit" id="btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg mt-4">
+                進入系統
+            </button>
+            
+            <p id="msg" class="text-center text-[11px] text-rose-500 font-bold mt-2 h-4"></p>
         </form>
     </div>
 
     <script>
-        // 【重要】請在此處貼上您的密鑰，並確保前後沒有空格
+        // --- 初始化正確的連線資訊 ---
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const S_KEY = '請替換成您的_ANON_KEY'; 
+        // 使用您剛才提供的正確 Legacy Anon Key
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
 
-        // 自動過濾非合法字元，防止 Headers 報錯
-        const cleanKey = S_KEY.replace(/[^\x00-\x7F]/g, "").trim();
-        const _supabase = supabase.createClient(S_URL, cleanKey);
+        const _supabase = supabase.createClient(S_URL, S_KEY);
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -34,10 +50,12 @@
             const msg = document.getElementById('msg');
             const btn = document.getElementById('btn');
 
-            msg.innerText = "驗證中...";
+            msg.innerText = "驗證授權中...";
+            msg.className = "text-center text-[11px] text-slate-400 font-bold mt-2 h-4";
             btn.disabled = true;
 
             try {
+                // 從 staff 表中比對資料 (對應您截圖中的數據)
                 const { data, error } = await _supabase
                     .from('staff')
                     .select('name')
@@ -48,18 +66,33 @@
                 if (error) throw error;
 
                 if (!data) {
+                    msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2 h-4";
                     msg.innerText = "帳號或密碼錯誤";
                     btn.disabled = false;
                 } else {
+                    // 驗證成功：存入 LocalStorage
                     localStorage.setItem('jinde_verified', 'true');
                     localStorage.setItem('user_name', data.name);
-                    window.location.href = 'index.html';
+                    
+                    msg.className = "text-center text-[11px] text-emerald-500 font-bold mt-2 h-4";
+                    msg.innerText = "登入成功，正在跳轉...";
+
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 600);
                 }
+
             } catch (err) {
-                console.error(err);
-                msg.innerText = "系統錯誤，請檢查 API Key 設定";
+                console.error("登入錯誤:", err);
+                msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2 h-4";
+                msg.innerText = "連線失敗，請檢查網路設定";
                 btn.disabled = false;
             }
+        }
+
+        // 預檢：若已登入則自動跳轉
+        if (localStorage.getItem('jinde_verified') === 'true') {
+            window.location.href = 'index.html';
         }
     </script>
 </body>
