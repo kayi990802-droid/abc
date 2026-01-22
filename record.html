@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保固紀錄查詢 | JINDE 錦德工程</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        
+        /* 響應式側邊欄：手機只留圖示 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @media (max-width: 768px) { 
+            .sidebar { width: 64px; } 
+            .sidebar span, .sidebar p, .sidebar h1 { display: none; }
+        }
+
+        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; }
+        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 20px md:padding: 0 40px; background: white; flex-shrink: 0; }
+        
+        /* 內容區捲動優化 */
+        .content-area { padding: 20px md:padding: 30px; overflow-y: auto; flex-grow: 1; }
+
+        /* 響應式表格：電腦顯示表格，手機轉卡片 */
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; border-radius: 8px; border: 1px solid #eef2f6; }
+        .data-table th { background: #f8fafc; padding: 16px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #eef2f6; text-align: left; }
+        .data-table td { padding: 16px; font-size: 14px; border-bottom: 1px solid #eef2f6; color: #1e293b; }
+        
+        @media (max-width: 640px) {
+            .data-table thead { display: none; }
+            .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+            .data-table tr { margin-bottom: 15px; border: 1px solid #eef2f6; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); background: white; }
+            .data-table td { text-align: right; padding: 12px 15px; border-bottom: 1px solid #f8fafc; position: relative; min-height: 40px; }
+            .data-table td::before { content: attr(data-label); position: absolute; left: 15px; font-weight: 700; font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+            .data-table td:last-child { border-bottom: none; }
+        }
+
+        .warranty-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0d9488; background: #f0fdfa; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+        .sync-badge { font-size: 9px; font-weight: 900; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
+            <p id="user-info" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
+        </div>
+        <nav class="flex-grow">
+            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></div>
+            <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i><span>客戶資料管理</span></div>
+            <div class="nav-link active"><i class="fas fa-clipboard-list mr-3 w-5"></i><span>保固紀錄查詢</span></div>
+            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5"></i><span>系統設定</span></div>
+        </nav>
+        <div class="p-8 border-t border-slate-800">
+            <div class="text-[9px] font-black text-emerald-500 flex items-center gap-2 uppercase sync-badge">
+                <span id="conn-dot" class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 
+                <span id="conn-text">Cloud Active</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-stage">
+        <header class="top-header">
+            <h2 class="font-black text-slate-800 tracking-tight">工程保固歸檔紀錄</h2>
+            <div class="flex gap-4">
+                <button onclick="fetchRecords()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-teal-600 transition">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="content-area">
+            <div class="mb-8 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800">歷史保固清單</h3>
+                    <p class="text-xs text-slate-400 mt-1">已成功歸檔至 ASUS 雲端伺服器之正式文件</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">總計歸檔</p>
+                    <p id="totalCount" class="text-3xl font-black text-slate-800">0</p>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>核發日期</th>
+                        <th>保固編號</th>
+                        <th>客戶名稱</th>
+                        <th>工程案場</th>
+                        <th>保固年限</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="recordList">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+
+        async function fetchRecords() {
+            try {
+                // 假設您的保固紀錄 Collection 名稱為 WarrantyRecords
+                const records = await pb.collection('WarrantyRecords').getFullList({
+                    sort: '-created',
+                });
+                renderTable(records);
+                updateStatus(true);
+            } catch (err) {
+                console.error("讀取失敗:", err);
+                updateStatus(false);
+            }
+        }
+
+        function renderTable(data) {
+            const list = document.getElementById('recordList');
+            document.getElementById('totalCount').innerText = data.length;
+
+            if (data.length === 0) {
+                list.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 font-bold">目前無任何保固紀錄</td></tr>`;
+                return;
+            }
+
+            list.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td data-label="核發日期" class="text-slate-400 text-xs">${new Date(item.created).toLocaleDateString()}</td>
+                    <td data-label="保固編號"><span class="warranty-id">${item.warranty_id}</span></td>
+                    <td data-label="客戶名稱" class="font-black text-slate-800">${item.client_name}</td>
+                    <td data-label="工程案場" class="text-sm text-slate-500">${item.project_name}</td>
+                    <td data-label="保固年限"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black">${item.years} 年</span></td>
+                    <td data-label="操作" class="text-center">
+                        <button class="text-teal-600 hover:text-teal-800 text-xs font-bold">查看 PDF</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStatus(online) {
+            const dot = document.getElementById('conn-dot');
+            const text = document.getElementById('conn-text');
+            if (online) {
+                dot.className = "w-2 h-2 bg-emerald-500 rounded-full animate-pulse";
+                text.innerText = "Cloud Active";
+                text.className = "text-[9px] font-black text-emerald-500 uppercase tracking-widest";
+            } else {
+                dot.className = "w-2 h-2 bg-rose-500 rounded-full";
+                text.innerText = "Offline";
+                text.className = "text-[9px] font-black text-rose-500 uppercase tracking-widest";
+            }
+        }
+
+        window.onload = function() {
+            const user = localStorage.getItem('jinde_user_name') || '管理員';
+            document.getElementById('user-info').innerText = "使用者：" + user;
+            fetchRecords();
+        };
+    </script>
+</body>
+</html>
