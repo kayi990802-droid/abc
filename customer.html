@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客戶管理 | JINDE 錦德工程</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        
+        /* 側邊欄風格統一 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; text-decoration: none; display: block; }
+        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
+        
+        .content-area { padding: 30px; overflow-y: auto; flex-grow: 1; }
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .data-table th { background: #f8fafc; padding: 12px 20px; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .data-table td { padding: 16px 20px; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 50; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
+            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">客戶管理系統</p>
+        </div>
+        <nav class="flex-grow">
+            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></div>
+            <div class="nav-link active" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i><span>客戶資料管理</span></div>
+            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5"></i><span>人員管理</span></div>
+        </nav>
+    </aside>
+
+    <main class="main-stage">
+        <header class="top-header">
+            <div class="flex items-center gap-4">
+                <input type="text" id="searchInput" oninput="loadCustomers()" placeholder="搜尋客戶姓名或電話..." class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-xs outline-none w-64 focus:border-teal-500 transition">
+            </div>
+            <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition">
+                <i class="fas fa-plus mr-2"></i> 新增客戶
+            </button>
+        </header>
+
+        <section class="content-area">
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>客戶姓名</th>
+                            <th>聯絡電話</th>
+                            <th>施工地址</th>
+                            <th>備註</th>
+                            <th class="text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-list"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="customerModal" class="modal">
+        <div class="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <h2 class="text-xl font-black mb-6">新增客戶資料</h2>
+            <form onsubmit="saveCustomer(event)" class="space-y-4">
+                <input type="text" id="c_name" placeholder="客戶姓名" class="w-full p-3 bg-slate-50 border rounded-xl outline-none" required>
+                <input type="text" id="c_phone" placeholder="電話" class="w-full p-3 bg-slate-50 border rounded-xl outline-none" required>
+                <input type="text" id="c_address" placeholder="施工地址" class="w-full p-3 bg-slate-50 border rounded-xl outline-none">
+                <textarea id="c_remark" placeholder="備註事項" class="w-full p-3 bg-slate-50 border rounded-xl outline-none h-24"></textarea>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold">取消</button>
+                    <button type="submit" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold">儲存客戶</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function loadCustomers() {
+            const search = document.getElementById('searchInput').value;
+            let query = _supabase.from('customers').select('*').order('created_at', { ascending: false });
+            
+            if (search) {
+                query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+            }
+
+            const { data, error } = await query;
+            if (error) return;
+
+            const list = document.getElementById('customer-list');
+            list.innerHTML = data.map(c => `
+                <tr>
+                    <td class="font-bold text-slate-900">${c.name}</td>
+                    <td class="font-mono text-teal-600">${c.phone}</td>
+                    <td class="text-slate-500">${c.address || '-'}</td>
+                    <td class="text-slate-400 italic text-[11px]">${c.remark || ''}</td>
+                    <td class="text-right">
+                        <button onclick="deleteCustomer('${c.id}')" class="text-slate-300 hover:text-rose-500 transition"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function saveCustomer(e) {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('c_name').value,
+                phone: document.getElementById('c_phone').value,
+                address: document.getElementById('c_address').value,
+                remark: document.getElementById('c_remark').value
+            };
+            const { error } = await _supabase.from('customers').insert([payload]);
+            if (!error) { closeModal(); loadCustomers(); e.target.reset(); }
+        }
+
+        async function deleteCustomer(id) {
+            if (confirm('確定要刪除此客戶資料嗎？')) {
+                await _supabase.from('customers').delete().eq('id', id);
+                loadCustomers();
+            }
+        }
+
+        function openModal() { document.getElementById('customerModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('customerModal').style.display = 'none'; }
+
+        window.onload = () => {
+            document.getElementById('user-info-side').innerText = "使用者：" + (localStorage.getItem('user_name') || '管理員');
+            loadCustomers();
+        };
+    </script>
+</body>
+</html>
