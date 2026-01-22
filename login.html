@@ -28,9 +28,17 @@
     </div>
 
     <script>
-        const SUPABASE_URL = '您的 URL'; 
-        const SUPABASE_KEY = '您的 ANON_KEY';
+        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
+        const SUPABASE_KEY = '您的_ANON_KEY';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 預檢：如果已經登入，直接去首頁
+        window.onload = async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session && localStorage.getItem('jinde_verified') === 'true') {
+                window.location.href = 'index.html';
+            }
+        };
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -59,11 +67,11 @@
                     .single();
 
                 if (staffError || !staffData) {
-                    await _supabase.auth.signOut(); // 沒權限就立刻登出
+                    await _supabase.auth.signOut();
                     throw new Error("授權失敗：此帳號不在員工名單內");
                 }
 
-                // 3. 通過驗證
+                // 3. 通過驗證，寫入標記
                 localStorage.setItem('jinde_verified', 'true');
                 localStorage.setItem('user_name', staffData.name);
                 window.location.href = 'index.html';
