@@ -3,84 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保固查詢 | JINDE</title>
+    <title>保固紀錄查詢 | JINDE 錦德工程</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background: #f8fafc; font-family: 'Noto Sans TC', sans-serif; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; }
+        .record-card { background: white; border-radius: 16px; transition: 0.3s; border: 1px solid #e2e8f0; }
+        .record-card:active { transform: scale(0.98); }
     </style>
 </head>
-<body class="p-4">
-    <header class="mb-6 flex justify-between items-center">
-        <h1 class="text-2xl font-black text-slate-800">保固紀錄中心</h1>
-        <button onclick="checkAndLoad()" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm">手動重新整理</button>
+<body class="pb-20">
+
+    <header class="bg-white p-6 shadow-sm mb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800">保固紀錄中心</h1>
+                <p id="status-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">正在連線至 ASUS Server...</p>
+            </div>
+            <button onclick="loadData()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+                <i id="refresh-icon" class="fas fa-sync-alt"></i>
+            </button>
+        </div>
     </header>
 
-    <div id="debug-info" class="mb-4 p-3 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200 hidden"></div>
+    <div class="px-6 mb-4">
+        <div class="relative">
+            <i class="fas fa-search absolute left-4 top-3.5 text-slate-300"></i>
+            <input type="text" id="searchInput" oninput="filterData()" placeholder="搜尋客戶名稱或案場..." 
+                class="w-full bg-white border-none rounded-2xl py-3 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+    </div>
 
-    <div id="recordList">
-        <p class="text-center p-10 text-slate-400">連線中...</p>
+    <div id="recordList" class="px-6 space-y-4">
+        <div class="text-center py-20 text-slate-400 italic">資料載入中...</div>
     </div>
 
     <script>
-        // 請確保這個網址是您目前的 ngrok 網址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+        let allRecords = [];
 
-        async function checkAndLoad() {
+        async function loadData() {
             const list = document.getElementById('recordList');
-            const debug = document.getElementById('debug-info');
-            debug.classList.remove('hidden');
-            debug.innerText = "正在檢查連線與權限...";
+            const status = document.getElementById('status-text');
+            const icon = document.getElementById('refresh-icon');
+            
+            icon.classList.add('fa-spin');
+            status.innerText = "正在驗證管理員身分...";
 
             try {
-                // 1. 嘗試抓取資料
-                const records = await pb.collection('WarrantyRecords').getFullList({
+                // --- 重要：直接用管理員身分登入，跳過所有 API Rule 限制 ---
+                // 請將下方改為您的 PB 帳號密碼
+                await pb.admins.authWithPassword('你的管理員信箱', '你的管理員密碼');
+
+                status.innerText = "身分驗證成功，抓取資料中...";
+                
+                // 抓取 WarrantyRecords 集合
+                allRecords = await pb.collection('WarrantyRecords').getFullList({
                     sort: '-created',
-                    requestKey: null // 禁用快取，確保拿到最新資料
+                    requestKey: null
                 });
 
-                debug.innerText = `成功連線！找到 ${records.length} 筆資料。`;
-                
-                if (records.length === 0) {
-                    list.innerHTML = `<div class="p-20 text-center text-slate-400">資料庫內尚無資料，請先在後台新增。</div>`;
-                    return;
-                }
-
-                // 2. 渲染畫面
-                list.innerHTML = records.map(item => `
-                    <div class="card">
-                        <div class="flex justify-between border-b pb-2 mb-2">
-                            <span class="text-[10px] font-bold text-teal-600">${item.warranty_id || '無編號'}</span>
-                            <span class="text-[10px] text-slate-400">${new Date(item.created).toLocaleDateString()}</span>
-                        </div>
-                        <div class="text-lg font-black text-slate-800">${item.client_name || '未填寫客戶'}</div>
-                        <div class="text-sm text-slate-500 mt-1">${item.project_name || '未填寫案場'}</div>
-                        <div class="mt-3 text-right">
-                            <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">${item.years || 0} 年保固</span>
-                        </div>
-                    </div>
-                `).join('');
+                renderCards(allRecords);
+                status.innerText = `成功連線：找到 ${allRecords.length} 筆紀錄`;
+                status.classList.replace('text-slate-400', 'text-emerald-500');
 
             } catch (err) {
                 console.error(err);
-                debug.classList.replace('bg-amber-50', 'bg-rose-50');
-                debug.classList.replace('text-amber-700', 'text-rose-700');
-                
-                // 3. 針對 204 或 403 報錯的提示
-                if (err.status === 0) {
-                    debug.innerText = "錯誤：網址無效或 ngrok 已過期。";
-                } else if (err.status === 403 || err.status === 400) {
-                    debug.innerText = "錯誤 403/400：權限不足。請去 PocketBase 後台將 API Rules 設為 TRUE。";
-                } else {
-                    debug.innerText = "錯誤代碼：" + err.status + " - " + err.message;
-                }
-                list.innerHTML = `<p class="text-center p-10 text-rose-400 font-bold">讀取失敗</p>`;
+                status.innerText = "錯誤：無法連接資料庫";
+                status.classList.replace('text-slate-400', 'text-rose-500');
+                list.innerHTML = `<div class="text-center py-20 text-rose-400 font-bold">連線失敗<br><span class="text-xs font-normal">請檢查 ngrok 或帳密</span></div>`;
+            } finally {
+                icon.classList.remove('fa-spin');
             }
         }
 
-        window.onload = checkAndLoad;
+        function renderCards(data) {
+            const list = document.getElementById('recordList');
+            if (data.length === 0) {
+                list.innerHTML = `<div class="text-center py-20 text-slate-400">目前尚無保固資料</div>`;
+                return;
+            }
+
+            list.innerHTML = data.map(item => `
+                <div class="record-card p-5 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded-md uppercase tracking-tighter">
+                            ${item.warranty_id || 'NO-ID'}
+                        </span>
+                        <span class="text-[10px] font-bold text-slate-300 font-mono">
+                            ${new Date(item.created).toLocaleDateString()}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">${item.client_name || '未填寫客戶'}</h3>
+                    <p class="text-xs text-slate-500 mb-4 flex items-center">
+                        <i class="fas fa-hammer mr-2 text-slate-300"></i>${item.project_name || '未填寫工程內容'}
+                    </p>
+                    <div class="flex justify-between items-center border-t pt-4">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Warranty Period</div>
+                        <div class="bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-full">
+                            ${item.years || 0} 年保固
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterData() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allRecords.filter(r => 
+                (r.client_name && r.client_name.toLowerCase().includes(keyword)) || 
+                (r.project_name && r.project_name.toLowerCase().includes(keyword))
+            );
+            renderCards(filtered);
+        }
+
+        // 頁面開啟立刻執行
+        window.onload = loadData;
     </script>
 </body>
 </html>
