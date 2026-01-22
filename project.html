@@ -78,54 +78,57 @@
                 </div>
             `).join('');
         }
+async function saveProject() {
+    const name = document.getElementById('p_name').value;
+    const fileInput = document.getElementById('p_file');
+    const saveBtn = document.getElementById('saveBtn');
 
-        async function saveProject() {
-            const name = document.getElementById('p_name').value;
-            const fileInput = document.getElementById('p_file');
-            const saveBtn = document.getElementById('saveBtn');
+    if (!name) return alert("請輸入案場名稱");
 
-            if (!name) return alert("請輸入案場名稱");
-            saveBtn.disabled = true;
-            saveBtn.innerText = "檔案上傳中...";
+    saveBtn.disabled = true;
+    saveBtn.innerText = "正在上傳 PDF...";
 
-            let fileUrl = null;
+    let fileUrl = null;
 
-            // 處理 PDF 上傳
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const fileName = `PDF_${Date.now()}_${file.name}`;
-                
-                const { data: upData, error: upErr } = await _supabase.storage
-                    .from('project-files')
-                    .upload(fileName, file);
+    // 1. 處理檔案上傳到 Storage
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileName = `PDF_${Date.now()}_${file.name}`; // 避免檔名重複
+        
+        const { data: upData, error: upErr } = await _supabase.storage
+            .from('project-files')
+            .upload(fileName, file);
 
-                if (upErr) {
-                    console.error("Storage Error:", upErr);
-                    alert("檔案上傳失敗，請確認 Storage Bucket 是否為 Public 且 Policies 已設定。");
-                } else {
-                    const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
-                    fileUrl = urlData.publicUrl;
-                }
-            }
-
-            saveBtn.innerText = "資料儲存中...";
-            const { error } = await _supabase.from('projects').insert([{
-                name: name,
-                project_no: "PJ-" + Math.floor(Math.random() * 900000 + 100000),
-                file_url: fileUrl // 請務必確認資料庫已有此欄位
-            }]);
-
-            if (error) {
-                alert("儲存失敗：\n" + error.message + "\n(提示：請確認 projects 資料表是否有 file_url 欄位)");
-            } else {
-                closeModal();
-                fetchProjects();
-                document.getElementById('p_name').value = '';
-                document.getElementById('p_file').value = '';
-            }
-            saveBtn.disabled = false;
-            saveBtn.innerText = "確認儲存";
+        if (upErr) {
+            console.error("Storage 上傳失敗:", upErr);
+        } else {
+            // 取得公開下載網址
+            const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
+            fileUrl = urlData.publicUrl;
         }
+    }
+
+    saveBtn.innerText = "正在儲存資料...";
+
+    // 2. 核心修正：只傳送資料庫截圖中現有的欄位
+    const { error } = await _supabase.from('projects').insert([{
+        name: name,
+        project_no: "PJ-" + Math.floor(Math.random() * 900000 + 100000), // 自動生成案號
+        file_url: fileUrl // 【重要】請先確認資料庫已新增此欄位
+    }]);
+
+    if (error) {
+        console.error("Supabase Error:", error);
+        alert(`儲存失敗：${error.message}\n請確認您是否已在資料表新增 'file_url' 欄位。`);
+    } else {
+        alert("案場與 PDF 已同步儲存成功！");
+        closeModal();
+        fetchProjects();
+    }
+    
+    saveBtn.disabled = false;
+    saveBtn.innerText = "確認儲存";
+}
 
         async function deleteProject(id) {
             if (!confirm("確定要刪除此案場嗎？")) return;
