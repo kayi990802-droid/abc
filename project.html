@@ -31,22 +31,28 @@
             </div>
         </div>
 
-        <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            </div>
-
+        <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
         <div id="loading" class="text-center py-20 text-slate-400 font-bold">載入案場資料中...</div>
     </div>
 
     <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm items-center justify-center z-50">
         <div class="bg-white p-8 rounded-xl w-full max-w-md shadow-2xl">
-            <h2 class="text-xl font-black mb-6">新增案場</h2>
+            <h2 class="text-xl font-black mb-6">新增案場與合約</h2>
             <div class="space-y-4">
                 <input type="text" id="p_name" placeholder="案場名稱 (如：西屯王宅)" class="w-full p-3 border rounded-lg outline-none focus:border-blue-500">
                 <input type="number" id="p_amount" placeholder="合約金額" class="w-full p-3 border rounded-lg outline-none">
                 <input type="date" id="p_date" class="w-full p-3 border rounded-lg outline-none">
+                
+                <div class="border-2 border-dashed border-slate-200 p-4 rounded-lg">
+                    <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">附件 (合約/圖面)</label>
+                    <input type="file" id="p_file" class="text-xs w-full">
+                </div>
+
                 <div class="flex gap-2 pt-4">
-                    <button onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-bold">取消</button>
-                    <button onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded-lg font-bold">確認建立</button>
+                    <button id="cancelBtn" onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-bold">取消</button>
+                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded-lg font-bold disabled:bg-slate-400">
+                        <span id="btnText">確認建立</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -60,8 +66,7 @@
         async function fetchProjects() {
             const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
             document.getElementById('loading').classList.add('hidden');
-            
-            if (error) { console.error(error); return; }
+            if (error) return console.error(error);
 
             const grid = document.getElementById('projectGrid');
             grid.innerHTML = data.map(p => `
@@ -73,32 +78,19 @@
                     </div>
                     <h3 class="text-xl font-black text-slate-900 mb-1">${p.name}</h3>
                     <p class="text-xs text-slate-400 mb-6 font-mono">${p.project_no}</p>
-                    
                     <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-xs font-bold mb-2">
-                                <span class="text-slate-500">進度</span>
-                                <span class="text-blue-600">${p.progress}%</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                <div class="progress-bar bg-blue-600 h-full" style="width: ${p.progress}%"></div>
-                            </div>
+                        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div class="progress-bar bg-blue-600 h-full" style="width: ${p.progress}%"></div>
                         </div>
-
-                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200">
-                            <div>
-                                <p class="text-[10px] text-slate-400 uppercase font-bold">合約總額</p>
-                                <p class="text-sm font-mono font-bold">$${Number(p.contract_amount || 0).toLocaleString()}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] text-slate-400 uppercase font-bold">預計完工</p>
-                                <p class="text-sm font-mono font-bold">${p.end_date || '未定'}</p>
-                            </div>
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 text-sm font-bold">
+                            <div>$${Number(p.contract_amount || 0).toLocaleString()}</div>
+                            <div class="text-right text-slate-400">${p.end_date || '未定'}</div>
                         </div>
                     </div>
                     <div class="mt-6 flex gap-3 no-print">
                         <button onclick="updateProgress('${p.id}', ${p.progress})" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white">更新進度</button>
-                        <a href="billing.html?ref=${p.project_no}" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-blue-600">建立請款</a>
+                        ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-emerald-600">查看文件</a>` : ''}
+                        <button onclick="deleteProject('${p.id}')" class="text-[10px] font-bold border px-3 py-1 rounded hover:bg-white text-red-600">刪除</button>
                     </div>
                 </div>
             `).join('');
@@ -108,30 +100,67 @@
             const name = document.getElementById('p_name').value;
             const amount = document.getElementById('p_amount').value;
             const date = document.getElementById('p_date').value;
-            if (!name) return alert("請輸入名稱");
+            const fileInput = document.getElementById('p_file');
+            const file = fileInput.files[0];
 
+            if (!name) return alert("請輸入案場名稱");
+
+            // 鎖定按鈕防止重複點擊
+            document.getElementById('saveBtn').disabled = true;
+            document.getElementById('btnText').innerText = "上傳中...";
+
+            let fileUrl = null;
+
+            // 1. 如果有選擇檔案，先上傳到 Supabase Storage
+            if (file) {
+                const fileName = `${Date.now()}_${file.name}`;
+                const { data: uploadData, error: uploadError } = await _supabase.storage
+                    .from('project-files') // 請確保 Supabase 有這個 Bucket
+                    .upload(fileName, file);
+
+                if (uploadError) {
+                    alert("檔案上傳失敗：" + uploadError.message);
+                    resetBtn();
+                    return;
+                }
+                
+                // 取得公開連結
+                const { data: publicUrlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
+                fileUrl = publicUrlData.publicUrl;
+            }
+
+            // 2. 存入資料庫
             const project_no = "PJ-" + Math.floor(Math.random() * 900000 + 100000);
-
             const { error } = await _supabase.from('projects').insert([{
-                name, project_no, contract_amount: amount, end_date: date, progress: 0, status: '進行中'
+                name, project_no, contract_amount: amount, end_date: date, 
+                progress: 0, status: '進行中', file_url: fileUrl
             }]);
 
-            if (!error) { 
-                closeModal(); 
-                fetchProjects(); 
-                // 清空
-                document.getElementById('p_name').value = '';
-                document.getElementById('p_amount').value = '';
+            if (error) {
+                alert("建立失敗：" + error.message);
+            } else {
+                closeModal();
+                fetchProjects();
             }
+            resetBtn();
+        }
+
+        async function deleteProject(id) {
+            if (!confirm("確定要刪除此案場嗎？")) return;
+            await _supabase.from('projects').delete().eq('id', id);
+            fetchProjects();
+        }
+
+        function resetBtn() {
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('btnText').innerText = "確認建立";
         }
 
         async function updateProgress(id, current) {
             const val = prompt("請輸入最新進度 (0-100):", current);
             if (val === null || val === "") return;
-            
             const pVal = parseInt(val);
             const status = pVal >= 100 ? '已完工' : '進行中';
-
             await _supabase.from('projects').update({ progress: pVal, status: status }).eq('id', id);
             fetchProjects();
         }
