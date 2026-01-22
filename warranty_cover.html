@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 保固書封面產生器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; }
+
+        /* A4 預覽區域 */
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 20px auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            padding: 20mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 列印時的設定 */
+        @media print {
+            body { background: white; margin: 0; }
+            .no-print { display: none !important; }
+            .a4-page { margin: 0; box-shadow: none; width: 100%; height: 100%; }
+        }
+
+        .jinde-logo { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-size: 80px; letter-spacing: -4px; color: #1e293b; }
+        .project-title { font-family: 'Noto Serif TC', serif; font-size: 56px; line-height: 1.2; font-weight: 900; }
+        
+        /* 裝飾線條 */
+        .border-line { border-bottom: 12px solid #1e293b; width: 100px; margin: 40px 0; }
+    </style>
+</head>
+<body class="p-0 md:p-10">
+
+    <div class="no-print max-w-[210mm] mx-auto bg-white p-6 rounded-2xl mb-8 shadow-sm border border-slate-200">
+        <div class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-grow">
+                <label class="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">請輸入工程案場名稱</label>
+                <input type="text" id="inputName" oninput="updateName()" placeholder="例如：西屯王宅新建工程" 
+                    class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-teal-500 text-xl font-bold transition-all">
+            </div>
+            <button onclick="window.print()" class="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-600 transition shadow-lg">
+                <i class="fas fa-print"></i> 直接列印封面
+            </button>
+            <button onclick="location.href='warranty.html'" class="bg-slate-100 text-slate-500 px-6 py-4 rounded-xl font-bold">
+                返回中控台
+            </button>
+        </div>
+    </div>
+
+    <div class="a4-page" id="printArea">
+        <div class="mt-10">
+            <div class="jinde-logo">JINDE<span class="text-teal-500">.</span></div>
+            <p class="text-2xl font-bold tracking-[12px] text-slate-400 mt-[-10px] ml-1 uppercase">Professional Engineering</p>
+        </div>
+
+        <div class="mb-20">
+            <div class="border-line"></div>
+            <p class="text-xl font-bold text-slate-400 mb-4 tracking-widest uppercase">Warranty Certificate Of Construction</p>
+            <h2 id="displayName" class="project-title text-slate-800">請輸入案場名稱</h2>
+            <h3 class="text-3xl font-bold text-slate-700 mt-4 tracking-tight">工程保固證明書</h3>
+        </div>
+
+        <div class="border-t-2 border-slate-100 pt-10 flex justify-between items-end">
+            <div class="space-y-2">
+                <p class="text-lg font-black text-slate-800">錦德防水工程有限公司</p>
+                <p class="text-sm text-slate-500 font-medium">地址：台中市某某區某某路 123 號</p>
+                <p class="text-sm text-slate-500 font-medium">電話：(04) 1234-5678</p>
+                <p class="text-sm text-slate-500 font-medium">網址：www.jinde-eng.com.tw</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-bold text-slate-300 uppercase tracking-widest mb-1">Issue Date</p>
+                <p id="displayDate" class="text-lg font-black text-slate-800 font-mono">2024 / 01 / 22</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateName() {
+            const val = document.getElementById('inputName').value;
+            document.getElementById('displayName').innerText = val || "請輸入案場名稱";
+        }
+
+        // 自動設定今天日期
+        const today = new Date();
+        const dateStr = today.getFullYear() + ' / ' + 
+                        String(today.getMonth() + 1).padStart(2, '0') + ' / ' + 
+                        String(today.getDate()).padStart(2, '0');
+        document.getElementById('displayDate').innerText = dateStr;
+    </script>
+</body>
+</html>
