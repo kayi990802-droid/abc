@@ -3,115 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保固紀錄中心 | JINDE</title>
+    <title>保固查詢 | JINDE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; }
-        @media (max-width: 768px) { .sidebar { width: 68px; } .sidebar span, .sidebar p, .sidebar h1 { display: none; } }
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        @media (max-width: 640px) {
-            .data-table thead { display: none; }
-            .data-table tr { display: block; margin-bottom: 1rem; border: 1px solid #eef2f6; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-            .data-table td { display: flex; justify-content: space-between; padding: 10px 15px; border: none !important; font-size: 13px; }
-            .data-table td::before { content: attr(data-label); font-weight: 900; color: #94a3b8; font-size: 10px; text-transform: uppercase; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background: #f8fafc; font-family: 'Noto Sans TC', sans-serif; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
     </style>
 </head>
-<body>
-    <aside class="sidebar">
-        <div class="p-8">
-            <h1 class="text-2xl font-black text-white">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[9px] font-bold text-slate-500 uppercase mt-1">工程管理系統</p>
-        </div>
-        <nav class="flex-grow">
-            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>總覽</span></div>
-            <div class="nav-link active"><i class="fas fa-history mr-3 w-5"></i><span>保固紀錄</span></div>
-        </nav>
-        <div class="p-6 border-t border-slate-800 text-[10px] text-slate-500 font-bold uppercase">
-            <span id="conn-status"><i class="fas fa-circle text-emerald-500 mr-2"></i>ASUS Server Online</span>
-        </div>
-    </aside>
+<body class="p-4">
+    <header class="mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-black text-slate-800">保固紀錄中心</h1>
+        <button onclick="checkAndLoad()" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm">手動重新整理</button>
+    </header>
 
-    <main class="main-stage">
-        <header class="h-[70px] bg-white border-b border-slate-100 flex items-center justify-between px-6 md:px-10">
-            <h2 class="font-black text-slate-800 text-lg tracking-tight">Warranty Records</h2>
-            <button onclick="loadData()" class="bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-teal-600 p-2 rounded-full transition">
-                <i class="fas fa-sync-alt" id="refresh-icon"></i>
-            </button>
-        </header>
+    <div id="debug-info" class="mb-4 p-3 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200 hidden"></div>
 
-        <section class="p-4 md:p-10 overflow-y-auto">
-            <div class="mb-6">
-                <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest">Database</p>
-                <h3 class="text-2xl font-black text-slate-800">保固核發總覽</h3>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <table class="w-full data-table">
-                    <thead class="bg-slate-50 text-slate-400 text-[11px] font-black uppercase">
-                        <tr>
-                            <th class="px-6 py-4 text-left">核發日期</th>
-                            <th class="px-6 py-4 text-left">編號</th>
-                            <th class="px-6 py-4 text-left">客戶名稱</th>
-                            <th class="px-6 py-4 text-left">工程案場</th>
-                            <th class="px-6 py-4 text-left">年限</th>
-                            <th class="px-6 py-4 text-center">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recordList" class="text-slate-600">
-                        <tr><td colspan="6" class="p-10 text-center">資料讀取中...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+    <div id="recordList">
+        <p class="text-center p-10 text-slate-400">連線中...</p>
+    </div>
 
     <script>
+        // 請確保這個網址是您目前的 ngrok 網址
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
 
-        async function loadData() {
+        async function checkAndLoad() {
             const list = document.getElementById('recordList');
-            const icon = document.getElementById('refresh-icon');
-            icon.classList.add('fa-spin'); // 轉動圖示
-            
+            const debug = document.getElementById('debug-info');
+            debug.classList.remove('hidden');
+            debug.innerText = "正在檢查連線與權限...";
+
             try {
-                const records = await pb.collection('WarrantyRecords').getFullList({ 
+                // 1. 嘗試抓取資料
+                const records = await pb.collection('WarrantyRecords').getFullList({
                     sort: '-created',
-                    requestKey: null 
+                    requestKey: null // 禁用快取，確保拿到最新資料
                 });
+
+                debug.innerText = `成功連線！找到 ${records.length} 筆資料。`;
                 
                 if (records.length === 0) {
-                    list.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">目前沒有相關紀錄</td></tr>`;
-                } else {
-                    list.innerHTML = records.map(reg => `
-                        <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
-                            <td data-label="日期" class="px-6 py-4 text-xs font-mono text-slate-400">${new Date(reg.created).toLocaleDateString()}</td>
-                            <td data-label="編號" class="px-6 py-4 font-bold text-teal-600 font-mono">${reg.warranty_id || '-'}</td>
-                            <td data-label="客戶" class="px-6 py-4 font-black text-slate-800">${reg.client_name || '-'}</td>
-                            <td data-label="案場" class="px-6 py-4 text-sm">${reg.project_name || '-'}</td>
-                            <td data-label="年限" class="px-6 py-4"><span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-black">${reg.years || 0} 年</span></td>
-                            <td data-label="管理" class="px-6 py-4 text-center">
-                                <button class="text-slate-300 hover:text-blue-600"><i class="fas fa-external-link-alt"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
+                    list.innerHTML = `<div class="p-20 text-center text-slate-400">資料庫內尚無資料，請先在後台新增。</div>`;
+                    return;
                 }
-                document.getElementById('conn-status').innerHTML = '<i class="fas fa-circle text-emerald-500 mr-2"></i>ASUS Server Online';
+
+                // 2. 渲染畫面
+                list.innerHTML = records.map(item => `
+                    <div class="card">
+                        <div class="flex justify-between border-b pb-2 mb-2">
+                            <span class="text-[10px] font-bold text-teal-600">${item.warranty_id || '無編號'}</span>
+                            <span class="text-[10px] text-slate-400">${new Date(item.created).toLocaleDateString()}</span>
+                        </div>
+                        <div class="text-lg font-black text-slate-800">${item.client_name || '未填寫客戶'}</div>
+                        <div class="text-sm text-slate-500 mt-1">${item.project_name || '未填寫案場'}</div>
+                        <div class="mt-3 text-right">
+                            <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">${item.years || 0} 年保固</span>
+                        </div>
+                    </div>
+                `).join('');
+
             } catch (err) {
-                list.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-rose-500 font-bold">伺服器連線失敗，請檢查 ngrok</td></tr>`;
-                document.getElementById('conn-status').innerHTML = '<i class="fas fa-circle text-rose-500 mr-2"></i>Server Offline';
-            } finally {
-                setTimeout(() => icon.classList.remove('fa-spin'), 500);
+                console.error(err);
+                debug.classList.replace('bg-amber-50', 'bg-rose-50');
+                debug.classList.replace('text-amber-700', 'text-rose-700');
+                
+                // 3. 針對 204 或 403 報錯的提示
+                if (err.status === 0) {
+                    debug.innerText = "錯誤：網址無效或 ngrok 已過期。";
+                } else if (err.status === 403 || err.status === 400) {
+                    debug.innerText = "錯誤 403/400：權限不足。請去 PocketBase 後台將 API Rules 設為 TRUE。";
+                } else {
+                    debug.innerText = "錯誤代碼：" + err.status + " - " + err.message;
+                }
+                list.innerHTML = `<p class="text-center p-10 text-rose-400 font-bold">讀取失敗</p>`;
             }
         }
 
-        window.onload = loadData;
+        window.onload = checkAndLoad;
     </script>
 </body>
 </html>
