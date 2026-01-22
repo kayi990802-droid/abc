@@ -10,26 +10,17 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        
-        /* 側邊欄響應式 */
         .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; }
         @media (max-width: 768px) { .sidebar { width: 68px; } .sidebar span, .sidebar p, .sidebar h1 { display: none; } }
-
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; }
+        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* 表格轉卡片 (手機端) */
         @media (max-width: 640px) {
             .data-table thead { display: none; }
-            .data-table tr { display: block; margin-bottom: 1rem; border: 1px solid #eef2f6; border-radius: 10px; background: white; padding: 10px; }
-            .data-table td { display: flex; justify-content: space-between; padding: 8px 12px; border: none !important; font-size: 13px; }
-            .data-table td::before { content: attr(data-label); font-weight: 900; color: #94a3b8; font-size: 11px; }
+            .data-table tr { display: block; margin-bottom: 1rem; border: 1px solid #eef2f6; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+            .data-table td { display: flex; justify-content: space-between; padding: 10px 15px; border: none !important; font-size: 13px; }
+            .data-table td::before { content: attr(data-label); font-weight: 900; color: #94a3b8; font-size: 10px; text-transform: uppercase; }
         }
-        
-        .search-input { border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 99px; font-size: 13px; width: 100%; max-width: 300px; outline: none; transition: 0.3s; }
-        .search-input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
     </style>
 </head>
 <body>
@@ -43,31 +34,30 @@
             <div class="nav-link active"><i class="fas fa-history mr-3 w-5"></i><span>保固紀錄</span></div>
         </nav>
         <div class="p-6 border-t border-slate-800 text-[10px] text-slate-500 font-bold uppercase">
-            <i class="fas fa-circle text-emerald-500 mr-2 animate-pulse"></i>ASUS Server Online
+            <span id="conn-status"><i class="fas fa-circle text-emerald-500 mr-2"></i>ASUS Server Online</span>
         </div>
     </aside>
 
     <main class="main-stage">
         <header class="h-[70px] bg-white border-b border-slate-100 flex items-center justify-between px-6 md:px-10">
-            <h2 class="font-black text-slate-800 text-lg">Warranty Records</h2>
-            <div class="flex items-center gap-4">
-                <input type="text" id="searchInput" class="search-input hidden md:block" placeholder="搜尋客戶或案場..." oninput="filterData()">
-                <button onclick="loadData()" class="text-slate-400 hover:text-teal-600 transition"><i class="fas fa-sync-alt"></i></button>
-            </div>
+            <h2 class="font-black text-slate-800 text-lg tracking-tight">Warranty Records</h2>
+            <button onclick="loadData()" class="bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-teal-600 p-2 rounded-full transition">
+                <i class="fas fa-sync-alt" id="refresh-icon"></i>
+            </button>
         </header>
 
         <section class="p-4 md:p-10 overflow-y-auto">
             <div class="mb-6">
-                <p class="text-xs font-black text-teal-600 uppercase tracking-widest">Database</p>
+                <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest">Database</p>
                 <h3 class="text-2xl font-black text-slate-800">保固核發總覽</h3>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                 <table class="w-full data-table">
-                    <thead class="bg-slate-50 text-slate-400 text-[11px] font-black uppercase tracking-tighter">
+                    <thead class="bg-slate-50 text-slate-400 text-[11px] font-black uppercase">
                         <tr>
                             <th class="px-6 py-4 text-left">核發日期</th>
-                            <th class="px-6 py-4 text-left">保固編號</th>
+                            <th class="px-6 py-4 text-left">編號</th>
                             <th class="px-6 py-4 text-left">客戶名稱</th>
                             <th class="px-6 py-4 text-left">工程案場</th>
                             <th class="px-6 py-4 text-left">年限</th>
@@ -75,7 +65,8 @@
                         </tr>
                     </thead>
                     <tbody id="recordList" class="text-slate-600">
-                        </tbody>
+                        <tr><td colspan="6" class="p-10 text-center">資料讀取中...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </section>
@@ -83,55 +74,44 @@
 
     <script>
         const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
-        let allRecords = [];
 
         async function loadData() {
-            try {
-                // 確保集合名稱為 'WarrantyRecords'
-                allRecords = await pb.collection('WarrantyRecords').getFullList({ sort: '-created' });
-                renderTable(allRecords);
-            } catch (err) {
-                console.error("無法連線至 Pb:", err);
-                document.getElementById('recordList').innerHTML = `<tr><td colspan="6" class="p-10 text-center text-rose-500 font-bold">連線失敗，請檢查伺服器狀態</td></tr>`;
-            }
-        }
-
-        function renderTable(data) {
             const list = document.getElementById('recordList');
-            if (data.length === 0) {
-                list.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400">目前沒有相關紀錄</td></tr>`;
-                return;
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin'); // 轉動圖示
+            
+            try {
+                const records = await pb.collection('WarrantyRecords').getFullList({ 
+                    sort: '-created',
+                    requestKey: null 
+                });
+                
+                if (records.length === 0) {
+                    list.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">目前沒有相關紀錄</td></tr>`;
+                } else {
+                    list.innerHTML = records.map(reg => `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                            <td data-label="日期" class="px-6 py-4 text-xs font-mono text-slate-400">${new Date(reg.created).toLocaleDateString()}</td>
+                            <td data-label="編號" class="px-6 py-4 font-bold text-teal-600 font-mono">${reg.warranty_id || '-'}</td>
+                            <td data-label="客戶" class="px-6 py-4 font-black text-slate-800">${reg.client_name || '-'}</td>
+                            <td data-label="案場" class="px-6 py-4 text-sm">${reg.project_name || '-'}</td>
+                            <td data-label="年限" class="px-6 py-4"><span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-black">${reg.years || 0} 年</span></td>
+                            <td data-label="管理" class="px-6 py-4 text-center">
+                                <button class="text-slate-300 hover:text-blue-600"><i class="fas fa-external-link-alt"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                document.getElementById('conn-status').innerHTML = '<i class="fas fa-circle text-emerald-500 mr-2"></i>ASUS Server Online';
+            } catch (err) {
+                list.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-rose-500 font-bold">伺服器連線失敗，請檢查 ngrok</td></tr>`;
+                document.getElementById('conn-status').innerHTML = '<i class="fas fa-circle text-rose-500 mr-2"></i>Server Offline';
+            } finally {
+                setTimeout(() => icon.classList.remove('fa-spin'), 500);
             }
-
-            list.innerHTML = data.map(reg => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
-                    <td data-label="日期" class="px-6 py-4 text-xs font-mono text-slate-400">${new Date(reg.created).toLocaleDateString()}</td>
-                    <td data-label="編號" class="px-6 py-4 font-bold text-teal-600 font-mono">${reg.warranty_id}</td>
-                    <td data-label="客戶" class="px-6 py-4 font-black text-slate-800">${reg.client_name}</td>
-                    <td data-label="案場" class="px-6 py-4 text-sm">${reg.project_name}</td>
-                    <td data-label="年限" class="px-6 py-4"><span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[10px] font-black">${reg.years} 年</span></td>
-                    <td data-label="管理" class="px-6 py-4 text-center">
-                        <button class="text-slate-400 hover:text-blue-600 transition"><i class="fas fa-external-link-alt"></i></button>
-                    </td>
-                </tr>
-            `).join('');
         }
 
-        function filterData() {
-            const keyword = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allRecords.filter(r => 
-                r.client_name.toLowerCase().includes(keyword) || 
-                r.project_name.toLowerCase().includes(keyword) ||
-                r.warranty_id.toLowerCase().includes(keyword)
-            );
-            renderTable(filtered);
-        }
-
-        window.onload = () => {
-            loadData();
-            // 監聽雲端即時更新
-            pb.collection('WarrantyRecords').subscribe('*', (e) => loadData());
-        };
+        window.onload = loadData;
     </script>
 </body>
 </html>
