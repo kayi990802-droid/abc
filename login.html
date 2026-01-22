@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理系統登入 | JINDE 錦德工程</title>
+    <title>登入 | JINDE 錦德工程</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -13,19 +13,19 @@
         
         <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2">管理員信箱</label>
-                <input type="email" id="emailInput" placeholder="example@gmail.com" 
+                <label class="text-[10px] font-bold text-slate-400 ml-2">帳號 (Email)</label>
+                <input type="email" id="email" placeholder="yuz46501@gmail.com" 
                     class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
             </div>
             <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2">密碼</label>
-                <input type="password" id="passInput" placeholder="••••••••" 
+                <label class="text-[10px] font-bold text-slate-400 ml-2">密碼 (Password)</label>
+                <input type="password" id="password" placeholder="••••••••" 
                     class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
             </div>
             
-            <button type="submit" id="submitBtn" 
+            <button type="submit" id="btn" 
                 class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg">
-                進入系統
+                確認登入
             </button>
             
             <p id="msg" class="text-center text-[11px] text-rose-500 font-bold mt-2 h-4"></p>
@@ -33,23 +33,23 @@
     </div>
 
     <script>
-        // 初始化 Supabase
-        const SUPABASE_URL = '您的URL'; 
+        // 1. 初始化 (請填入您在截圖中專案的網址與 Key)
+        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
         const SUPABASE_KEY = '您的ANON_KEY';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
-            const password = document.getElementById('passInput').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
             const msg = document.getElementById('msg');
-            const btn = document.getElementById('submitBtn');
+            const btn = document.getElementById('btn');
 
             msg.innerText = "驗證授權中...";
             btn.disabled = true;
 
             try {
-                // 1. 驗證身份 (Authentication)
+                // 第一步：驗證帳密 (Authentication)
                 const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -57,8 +57,7 @@
 
                 if (authError) throw new Error("帳號或密碼錯誤");
 
-                // 2. 檢查資料表授權 (Table Check)
-                // 只有 email 存在於 staff 表中才允許進入
+                // 第二步：檢查 staff 表格內是否有此 Email
                 const { data: staffData, error: staffError } = await _supabase
                     .from('staff')
                     .select('name, email')
@@ -66,12 +65,12 @@
                     .single();
 
                 if (staffError || !staffData) {
-                    // 如果表裡找不到，強制登出並阻擋
+                    // 如果表裡沒有，強制登出並阻擋進入
                     await _supabase.auth.signOut();
-                    throw new Error("授權失敗：您不在員工名單內");
+                    throw new Error("授權失敗：此帳號不在員工名單內");
                 }
 
-                // 3. 驗證通過
+                // 第三步：驗證通過，儲存狀態並跳轉
                 localStorage.setItem('jinde_verified', 'true');
                 localStorage.setItem('user_name', staffData.name);
                 window.location.href = 'index.html';
