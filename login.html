@@ -28,11 +28,15 @@
     </div>
 
     <script>
+        // --- 1. 配置區域 (請根據您的截圖填入) ---
         const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
-        const SUPABASE_KEY = '您的_ANON_KEY';
+        const SUPABASE_KEY = '這裡貼上您的 ANON_KEY'; // 從 Project Settings > API 複製 anon public key
+
+        // --- 2. 初始化區域 (解決 Cannot access '_supabase' before initialization 的關鍵) ---
+        // 必須放在 handleLogin 函數外面，且在腳本最上方初始化
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 預檢：如果已經登入，直接去首頁
+        // 預檢：如果已經登入，直接導向首頁
         window.onload = async () => {
             const { data: { session } } = await _supabase.auth.getSession();
             if (session && localStorage.getItem('jinde_verified') === 'true') {
@@ -40,6 +44,7 @@
             }
         };
 
+        // --- 3. 登入邏輯區域 ---
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
@@ -51,7 +56,7 @@
             btn.disabled = true;
 
             try {
-                // 1. 驗證帳號密碼 (Authentication)
+                // 第一關：Supabase 身分驗證
                 const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -59,7 +64,7 @@
 
                 if (authError) throw new Error("帳號或密碼錯誤");
 
-                // 2. 檢查 staff 資料表是否有權限 (授權檢查)
+                // 第二關：檢查 staff 資料表是否有對應的員工資料
                 const { data: staffData, error: staffError } = await _supabase
                     .from('staff')
                     .select('name')
@@ -67,14 +72,21 @@
                     .single();
 
                 if (staffError || !staffData) {
+                    // 如果帳密對但不在員工名單，強制登出並阻斷
                     await _supabase.auth.signOut();
-                    throw new Error("授權失敗：此帳號不在員工名單內");
+                    throw new Error("授權失敗：此 Email 未登記在員工名單內");
                 }
 
-                // 3. 通過驗證，寫入標記
+                // 驗證成功：存入 LocalStorage 並跳轉
                 localStorage.setItem('jinde_verified', 'true');
                 localStorage.setItem('user_name', staffData.name);
-                window.location.href = 'index.html';
+                
+                msg.className = "text-center text-[11px] text-emerald-500 font-bold mt-2 h-4";
+                msg.innerText = "登入成功，正在跳轉...";
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 800);
 
             } catch (error) {
                 msg.innerText = error.message;
