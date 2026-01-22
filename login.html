@@ -7,35 +7,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 h-screen flex items-center justify-center p-6 text-slate-800">
+<body class="bg-slate-900 h-screen flex items-center justify-center p-6">
     <div class="bg-white p-10 rounded-3xl w-full max-w-sm shadow-2xl">
         <h1 class="text-3xl font-black text-center mb-8 italic">JINDE<span class="text-teal-500">.</span></h1>
         
         <form onsubmit="handleLogin(event)" class="space-y-4">
             <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2">帳號 (Email)</label>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">帳號 (Email)</label>
                 <input type="email" id="email" placeholder="yuz46501@gmail.com" 
                     class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
             </div>
             <div>
-                <label class="text-[10px] font-bold text-slate-400 ml-2">密碼 (Password)</label>
+                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">密碼 (Password)</label>
                 <input type="password" id="password" placeholder="••••••••" 
                     class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-teal-500 transition" required>
             </div>
-            
-            <button type="submit" id="btn" 
-                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg">
-                確認登入
-            </button>
-            
+            <button type="submit" id="btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition shadow-lg">進入系統</button>
             <p id="msg" class="text-center text-[11px] text-rose-500 font-bold mt-2 h-4"></p>
         </form>
     </div>
 
     <script>
-        // 1. 初始化 (請填入您在截圖中專案的網址與 Key)
-        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
-        const SUPABASE_KEY = '您的ANON_KEY';
+        const SUPABASE_URL = '您的 URL'; 
+        const SUPABASE_KEY = '您的 ANON_KEY';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function handleLogin(e) {
@@ -49,7 +43,7 @@
             btn.disabled = true;
 
             try {
-                // 第一步：驗證帳密 (Authentication)
+                // 1. 驗證帳號密碼 (Authentication)
                 const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -57,20 +51,19 @@
 
                 if (authError) throw new Error("帳號或密碼錯誤");
 
-                // 第二步：檢查 staff 表格內是否有此 Email
+                // 2. 檢查 staff 資料表是否有權限 (授權檢查)
                 const { data: staffData, error: staffError } = await _supabase
                     .from('staff')
-                    .select('name, email')
+                    .select('name')
                     .eq('email', email)
                     .single();
 
                 if (staffError || !staffData) {
-                    // 如果表裡沒有，強制登出並阻擋進入
-                    await _supabase.auth.signOut();
+                    await _supabase.auth.signOut(); // 沒權限就立刻登出
                     throw new Error("授權失敗：此帳號不在員工名單內");
                 }
 
-                // 第三步：驗證通過，儲存狀態並跳轉
+                // 3. 通過驗證
                 localStorage.setItem('jinde_verified', 'true');
                 localStorage.setItem('user_name', staffData.name);
                 window.location.href = 'index.html';
