@@ -11,58 +11,49 @@
         <h1 class="text-3xl font-black text-center mb-8 italic">JINDE<span class="text-teal-500">.</span></h1>
         
         <form onsubmit="handleLogin(event)" class="space-y-4">
-            <input type="email" id="email_input" placeholder="Email" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
-            <input type="password" id="password_input" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
-            <button type="submit" id="login_btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition">進入系統</button>
+            <input type="email" id="u_email" placeholder="Email" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
+            <input type="password" id="u_pw" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" required>
+            <button type="submit" id="btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-teal-600 transition">進入系統</button>
             <p id="msg" class="text-center text-[11px] font-bold mt-2 text-rose-500"></p>
         </form>
     </div>
 
     <script>
-        // 1. 初始化 (請務必檢查這兩項)
-        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const SUPABASE_KEY = '這裡貼上您的_ANON_KEY'; 
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 1. 初始化 (請換成您自己的 Key)
+        const _supabase = supabase.createClient('https://wdpxgichzvfebhlukbrl.supabase.co', '您的_ANON_KEY');
 
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('email_input').value.trim();
-            const password = document.getElementById('password_input').value;
+            const email = document.getElementById('u_email').value.trim();
+            const password = document.getElementById('u_pw').value;
             const msg = document.getElementById('msg');
-            const btn = document.getElementById('login_btn');
+            const btn = document.getElementById('btn');
 
             msg.innerText = "驗證中...";
             btn.disabled = true;
 
-            console.log("正在嘗試登入:", email);
-
             try {
-                // 2. 直接查詢資料表
+                // 2. 依照截圖欄位名稱直接查詢
                 const { data, error } = await _supabase
                     .from('staff')
-                    .select('name, email, password')
-                    .eq('email', email)
-                    .eq('password', password)
-                    .maybeSingle(); // 找不到也不會噴 Error
+                    .select('name')
+                    .eq('email', email)     // 對應截圖中的 email 欄位
+                    .eq('password', password) // 對應截圖中的 password 欄位
+                    .maybeSingle();
 
-                if (error) {
-                    console.error("資料庫查詢失敗:", error);
-                    throw new Error("伺服器連線失敗");
-                }
+                if (error) throw error;
 
                 if (!data) {
-                    throw new Error("帳號或密碼不正確");
+                    msg.innerText = "帳號或密碼不正確";
+                    btn.disabled = false;
+                } else {
+                    // 3. 成功
+                    localStorage.setItem('jinde_verified', 'true');
+                    localStorage.setItem('user_name', data.name);
+                    window.location.href = 'index.html';
                 }
-
-                // 3. 登入成功
-                console.log("登入成功，使用者:", data.name);
-                localStorage.setItem('jinde_verified', 'true');
-                localStorage.setItem('user_name', data.name);
-                window.location.href = 'index.html';
-
             } catch (err) {
-                console.error("登入邏輯錯誤:", err.message);
-                msg.innerText = err.message;
+                msg.innerText = "連線失敗：" + err.message;
                 btn.disabled = false;
             }
         }
