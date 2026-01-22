@@ -36,14 +36,12 @@
     </div>
 
     <script>
-        // --- 1. 配置區域 ---
-        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co'; 
-        const SUPABASE_KEY = '這裡貼上您的_ANON_KEY'; // 請務必貼上您的 anon public key
-
-        // --- 2. 初始化 Supabase (修正初始化報錯的關鍵) ---
+        // --- 1. 初始化 (必須在函式外) ---
+        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const SUPABASE_KEY = '這裡貼上您的_ANON_KEY'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- 3. 登入邏輯 (採用 SQL 直接比對模式) ---
+        // --- 2. 登入處理 ---
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
@@ -52,11 +50,10 @@
             const btn = document.getElementById('btn');
 
             msg.innerText = "驗證授權中...";
-            msg.className = "text-center text-[11px] text-slate-400 font-bold mt-2 h-4";
             btn.disabled = true;
 
             try {
-                // 直接去 staff 資料表比對 Email 和 Password
+                // 直接比對 staff 資料表
                 const { data: user, error } = await _supabase
                     .from('staff')
                     .select('name')
@@ -64,34 +61,27 @@
                     .eq('password', password)
                     .single();
 
-                if (error || !user) {
-                    throw new Error("帳號或密碼錯誤");
-                }
+                if (error || !user) throw new Error("帳號或密碼錯誤");
 
-                // 驗證成功：存入 LocalStorage
+                // 儲存狀態
                 localStorage.setItem('jinde_verified', 'true');
                 localStorage.setItem('user_name', user.name);
                 
-                msg.className = "text-center text-[11px] text-emerald-500 font-bold mt-2 h-4";
+                msg.classList.replace('text-rose-500', 'text-emerald-500');
                 msg.innerText = "登入成功，正在跳轉...";
 
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 800);
+                setTimeout(() => { window.location.href = 'index.html'; }, 800);
 
-            } catch (error) {
-                msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2 h-4";
-                msg.innerText = error.message;
+            } catch (err) {
+                msg.innerText = err.message;
                 btn.disabled = false;
             }
         }
 
-        // 預檢：如果已經登入，直接導向首頁
-        window.onload = () => {
-            if (localStorage.getItem('jinde_verified') === 'true') {
-                window.location.href = 'index.html';
-            }
-        };
+        // 檢查是否已登入
+        if (localStorage.getItem('jinde_verified') === 'true') {
+            window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
