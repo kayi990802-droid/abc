@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JINDE | 錦德工程雲端管理中台</title>
-    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        if (localStorage.getItem('jinde_auth_status') !== 'verified') {
+        // 保持您的驗證檢查邏輯，標記名稱改為與 login.html 一致
+        if (localStorage.getItem('jinde_verified') !== 'true') {
             window.location.href = 'login.html';
         }
     </script>
@@ -143,7 +144,7 @@
             <div class="pro-card" onclick="location.href='settings.html'">
                 <i class="fas fa-cogs text-slate-400"></i>
                 <h3>系統參數設定</h3>
-                <p>調整公司資訊與 ngrok 後端網址</p>
+                <p>調整公司資訊與 API 後端網址</p>
             </div>
         </section>
 
@@ -154,13 +155,21 @@
     </main>
 
     <script>
-        // 初始化 PocketBase
-        const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+        // 修正：初始化 Supabase (確保變數名稱與呼叫一致)
+        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const SUPABASE_KEY = '您的_ANON_KEY'; 
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function checkStatus() {
             try {
-                const records = await pb.collection('WarrantyRecords').getList(1, 1);
-                document.getElementById('warranty-info').innerText = `雲端已有 ${records.totalItems} 份核發紀錄`;
+                // 測試連線：改為檢查 staff 表格
+                const { count, error } = await _supabase
+                    .from('staff')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) throw error;
+
+                document.getElementById('warranty-info').innerText = `雲端已有 ${count || 0} 位人員資料`;
                 document.getElementById('status-dot').className = "w-2 h-2 bg-emerald-500 rounded-full";
                 document.getElementById('status-text').innerText = "雲端連線正常";
             } catch (err) {
@@ -175,10 +184,14 @@
             document.getElementById('live-time').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
         
-        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+        async function logout() { 
+            await _supabase.auth.signOut();
+            localStorage.clear(); 
+            window.location.href = 'login.html'; 
+        }
 
         window.onload = function() {
-            const user = localStorage.getItem('jinde_user_name') || '管理員';
+            const user = localStorage.getItem('user_name') || '管理員';
             document.getElementById('user-info-side').innerText = "使用者：" + user;
             updateClock();
             setInterval(updateClock, 1000);
