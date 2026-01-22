@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>錦德工程 - 請款單系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; }
@@ -86,8 +86,8 @@
                     <p class="text-4xl font-black font-mono tracking-tighter">NT$ <span id="billFinal">0</span></p>
                     <p class="text-[10px] font-bold text-slate-500 mt-2 italic">大寫：<span id="chineseAmount" class="text-white ml-1">零元整</span></p>
                 </div>
-                <button onclick="saveToPocketBase()" class="no-print w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded mt-4 transition flex items-center justify-center gap-2">
-                    <span>☁️</span> 同步至家裡筆電
+                <button onclick="saveToSupabase()" class="no-print w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded mt-4 transition flex items-center justify-center gap-2">
+                    <span>☁️</span> 同步至雲端系統
                 </button>
             </div>
         </div>
@@ -110,9 +110,10 @@
     </div>
 
     <script>
-        // --- 請更換成你截圖中的最新 ngrok 網址 ---
-        const POCKETBASE_URL = 'https://unoppressed-nonanimate-albertina.ngrok-free.dev';
-        const pb = new PocketBase(POCKETBASE_URL);
+        // --- 初始化 Supabase (使用您提供的正確 Key) ---
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
 
         window.onload = () => {
             const now = new Date();
@@ -148,11 +149,11 @@
             document.getElementById('chineseAmount').innerText = numberToChinese(subtotal);
         }
 
-        async function saveToPocketBase() {
+        async function saveToSupabase() {
             const finalAmount = parseFloat(document.getElementById('billFinal').innerText.replace(/,/g, ''));
             if(finalAmount <= 0) return alert("請輸入金額");
 
-            const data = {
+            const payload = {
                 "bill_id": document.getElementById('billId').innerText,
                 "customer_name": document.getElementById('custName').value,
                 "project_name": document.getElementById('projName').value,
@@ -161,11 +162,12 @@
             };
 
             try {
-                await pb.collection('billings').create(data);
-                alert('✅ 同步成功！家裡筆電已存檔。');
+                const { error } = await _supabase.from('billings').insert([payload]);
+                if (error) throw error;
+                alert('✅ 同步成功！雲端資料庫已存檔。');
             } catch (e) {
                 console.error(e);
-                alert('❌ 同步失敗！請檢查筆電 ngrok 是否維持 Online。');
+                alert('❌ 同步失敗：' + e.message);
             }
         }
 
