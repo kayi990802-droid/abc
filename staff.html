@@ -3,183 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 人員點工管理 v2.0</title>
+    <title>JINDE | 錦德管理系統總覽</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; }
         .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; }
-        .staff-card { background: white; border: 1px solid #eef2f6; border-radius: 12px; transition: 0.3s; position: relative; }
-        .staff-card:hover { transform: translateY(-3px); border-color: #0d9488; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; }
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 40px; }
+        .stat-card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
         <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">人員管理中心</p>
+            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">系統總覽首頁</p>
         </div>
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link">總覽面板</a>
-            <a href="staff.html" class="nav-link active">人員與點工資訊</a>
+            <a href="index.html" class="nav-link active">總覽面板</a>
+            <a href="staff.html" class="nav-link">人員與點工資訊</a>
             <a href="projects.html" class="nav-link">案場進度</a>
             <a href="billing.html" class="nav-link">請款單系統</a>
+            <a href="finance.html" class="nav-link">財務收支</a>
         </nav>
     </aside>
 
-    <main class="main-stage">
-        <header class="h-[70px] border-b border-gray-100 flex items-center justify-between px-10 shrink-0 bg-white">
-            <h2 class="text-lg font-black text-slate-800">人力資源調度</h2>
-            <button onclick="openAddModal()" class="bg-slate-900 text-white px-6 py-2 rounded-full text-xs font-bold hover:bg-teal-600 transition">+ 新增人員</button>
+    <main class="main-content">
+        <header class="mb-10 flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-black text-slate-800">工程營運總覽</h2>
+                <p class="text-slate-500 text-sm mt-1">歡迎回來，這是您今日的營運數據摘要。</p>
+            </div>
+            <div id="current-date" class="text-right text-sm font-bold text-slate-400 font-mono">2024-XX-XX</div>
         </header>
 
-        <div class="content-scroll">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div class="bg-slate-900 p-6 rounded-xl text-white shadow-lg">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">本月累計工數</p>
-                    <p id="total-hours" class="text-3xl font-black font-mono">0.0</p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="stat-card">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">本月預計薪資支出</p>
+                <p id="dash-wages" class="text-2xl font-black text-rose-600 font-mono">$0</p>
+            </div>
+            <div class="stat-card border-l-4 border-blue-500">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">進行中案場</p>
+                <p id="dash-projects" class="text-2xl font-black text-slate-800 font-mono">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">今日出工人數</p>
+                <p id="dash-today-staff" class="text-2xl font-black text-teal-600 font-mono">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">本月待收款項</p>
+                <p id="dash-pending" class="text-2xl font-black text-orange-500 font-mono">$0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-slate-800 tracking-tight">案場即時進度</h3>
+                    <a href="projects.html" class="text-xs text-blue-500 font-bold hover:underline">查看全部</a>
                 </div>
-                <div class="bg-white p-6 border rounded-xl">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">預計應付工資</p>
-                    <p id="total-wages" class="text-3xl font-black text-rose-600 font-mono">$0</p>
-                </div>
-                <div class="bg-white p-6 border rounded-xl border-l-4 border-teal-500">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">在職人數</p>
-                    <p id="staff-count" class="text-3xl font-black text-slate-800 font-mono">0</p>
-                </div>
+                <div id="project-list" class="space-y-6">
+                    </div>
             </div>
 
-            <div id="staffGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"></div>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-slate-800 tracking-tight">最近出勤動態</h3>
+                    <a href="staff.html" class="text-xs text-teal-500 font-bold hover:underline">點工管理</a>
+                </div>
+                <div id="recent-attendance" class="space-y-4">
+                    </div>
+            </div>
         </div>
     </main>
-
-    <div id="historyModal" class="modal">
-        <div class="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col">
-            <h3 id="historyTitle" class="text-xl font-black mb-4">出勤歷史</h3>
-            <div id="historyList" class="overflow-y-auto flex-grow space-y-2 pr-2">
-                </div>
-            <button onclick="closeModal('historyModal')" class="mt-6 w-full py-3 bg-gray-100 font-bold rounded-xl text-gray-500">關閉</button>
-        </div>
-    </div>
-
-    <div id="addModal" class="modal">
-        <form onsubmit="handleStaffSubmit(event)" class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
-            <h3 class="text-xl font-black mb-6">建立員工檔案</h3>
-            <div class="space-y-4">
-                <input type="text" id="s_name" placeholder="姓名" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" required>
-                <input type="text" id="s_pos" placeholder="職稱" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-                <input type="number" id="s_wage" placeholder="日薪" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" required>
-                <input type="text" id="s_phone" placeholder="電話" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-            </div>
-            <div class="flex gap-4 mt-8">
-                <button type="button" onclick="closeModal('addModal')" class="flex-1 py-3 font-bold text-gray-400">取消</button>
-                <button type="submit" class="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold">確認新增</button>
-            </div>
-        </form>
-    </div>
 
     <script>
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        async function init() {
-            const { data: staff } = await _supabase.from('staff_profiles').select('*').eq('is_active', true).order('name');
-            const { data: attendance } = await _supabase.from('staff_attendance').select('*').order('work_date', { ascending: false });
+        async function loadDashboard() {
+            document.getElementById('current-date').innerText = new Date().toISOString().split('T')[0];
 
-            let totalH = 0; let totalW = 0;
-            const grid = document.getElementById('staffGrid');
-            
-            grid.innerHTML = staff.map(s => {
-                const logs = attendance.filter(a => a.staff_id === s.id);
-                const hours = logs.length;
-                const earn = hours * Number(s.daily_wage);
-                totalH += hours; totalW += earn;
+            // 1. 抓取點工數據計算薪資 (包含員工日薪)
+            const { data: atten } = await _supabase.from('staff_attendance').select('*, staff_profiles(daily_wage, name)');
+            const totalWages = atten.reduce((sum, r) => sum + (r.staff_profiles?.daily_wage || 0), 0);
+            document.getElementById('dash-wages').innerText = `$${totalWages.toLocaleString()}`;
 
-                return `
-                <div class="staff-card p-8">
-                    <button onclick="deleteStaff('${s.id}', '${s.name}')" class="absolute top-4 right-4 text-gray-300 hover:text-rose-500 transition">
-                        <i class="fas fa-times-circle"></i>
-                    </button>
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-12 h-12 bg-teal-600 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
-                        <div>
-                            <h4 class="font-black text-slate-800">${s.name}</h4>
-                            <p class="text-[10px] text-teal-600 font-bold uppercase">${s.position}</p>
-                        </div>
+            // 2. 抓取案場進度
+            const { data: projs } = await _supabase.from('projects').select('*').order('progress', { ascending: false });
+            document.getElementById('dash-projects').innerText = projs.filter(p => p.progress < 100).length;
+
+            const projList = document.getElementById('project-list');
+            projList.innerHTML = projs.slice(0, 4).map(p => `
+                <div>
+                    <div class="flex justify-between text-xs font-bold mb-2">
+                        <span class="text-slate-700">${p.name}</span>
+                        <span class="text-blue-600">${p.progress}%</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-50 p-3 rounded-lg text-center cursor-pointer hover:bg-teal-50" onclick="viewHistory('${s.id}', '${s.name}')">
-                            <p class="text-[9px] text-gray-400 font-bold">本月工數 <i class="fas fa-search ml-1"></i></p>
-                            <p class="text-lg font-black">${hours}</p>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded-lg text-center">
-                            <p class="text-[9px] text-gray-400 font-bold">預估薪資</p>
-                            <p class="text-lg font-black text-rose-600">$${earn.toLocaleString()}</p>
-                        </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-blue-500 h-full transition-all duration-1000" style="width: ${p.progress}%"></div>
                     </div>
-                    <button onclick="checkIn('${s.id}', '${s.name}')" class="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-teal-600 transition shadow-md">
-                        登記今日出勤
-                    </button>
-                </div>`;
-            }).join('');
-
-            document.getElementById('total-hours').innerText = totalH.toFixed(1);
-            document.getElementById('total-wages').innerText = `$${totalW.toLocaleString()}`;
-            document.getElementById('staff-count').innerText = staff.length;
-        }
-
-        async function viewHistory(id, name) {
-            const { data } = await _supabase.from('staff_attendance').select('*').eq('staff_id', id).order('work_date', { ascending: false });
-            document.getElementById('historyTitle').innerText = `${name} 的出勤清單`;
-            const list = document.getElementById('historyList');
-            list.innerHTML = data.length ? data.map(h => `
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                    <div>
-                        <p class="text-xs font-bold text-slate-700">${h.work_date}</p>
-                        <p class="text-[10px] text-slate-400">${h.project_name || '未記錄案場'}</p>
-                    </div>
-                    <span class="text-[10px] bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-bold">全工</span>
                 </div>
-            `).join('') : '<p class="text-center text-gray-400 py-10">尚無紀錄</p>';
-            document.getElementById('historyModal').style.display = 'flex';
+            `).join('');
+
+            // 3. 今日出工人數 (簡單過濾今日日期)
+            const today = new Date().toISOString().split('T')[0];
+            const todayStaff = atten.filter(a => a.work_date === today).length;
+            document.getElementById('dash-today-staff').innerText = todayStaff;
+
+            // 4. 最近 5 筆動態
+            const recentList = document.getElementById('recent-attendance');
+            recentList.innerHTML = atten.slice(0, 5).map(a => `
+                <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div class="w-10 h-10 bg-white border rounded-full flex items-center justify-center font-bold text-teal-600 text-sm shadow-sm">
+                        ${a.staff_profiles?.name[0] || '?'}
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-xs font-black text-slate-800">${a.staff_profiles?.name || '未知'}</p>
+                        <p class="text-[10px] text-slate-400">${a.project_name} · ${a.work_date}</p>
+                    </div>
+                    <span class="text-[9px] font-bold text-slate-400 font-mono">${a.work_date === today ? 'TODAY' : ''}</span>
+                </div>
+            `).join('');
         }
 
-        async function deleteStaff(id, name) {
-            if(!confirm(`確定要將 ${name} 移出在職名單嗎？(過往出勤紀錄仍會保留)`)) return;
-            await _supabase.from('staff_profiles').update({ is_active: false }).eq('id', id);
-            init();
-        }
-
-        async function checkIn(id, name) {
-            const proj = prompt(`請輸入 ${name} 今日施工案場：`, "西屯王宅");
-            if(!proj) return;
-            await _supabase.from('staff_attendance').insert([{ staff_id: id, project_name: proj }]);
-            init();
-        }
-
-        async function handleStaffSubmit(e) {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById('s_name').value,
-                position: document.getElementById('s_pos').value,
-                daily_wage: Number(document.getElementById('s_wage').value),
-                phone: document.getElementById('s_phone').value
-            };
-            await _supabase.from('staff_profiles').insert([payload]);
-            closeModal('addModal'); init();
-        }
-
-        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        window.onload = init;
+        window.onload = loadDashboard;
     </script>
 </body>
 </html>
