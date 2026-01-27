@@ -3,136 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JINDE | 現場行程</title>
+    <title>JINDE | 現場行程月曆</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
-        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* 左側功能欄 - 手機適配為窄條 */
-        .side-rail { 
-            width: 70px; background: #1e293b; display: flex; flex-direction: column; 
-            align-items: center; padding-top: 30px; flex-shrink: 0; 
+        :root { --primary-teal: #0d9488; --sidebar-bg: #1a222d; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
+
+        /* 左側導航 - 統一風格 */
+        .sidebar {
+            width: 260px; background: var(--sidebar-bg); color: white;
+            display: flex; flex-direction: column; flex-shrink: 0; z-index: 50;
+            transition: width 0.3s ease;
         }
-        .rail-item { 
-            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
-            color: #64748b; margin-bottom: 24px; border-radius: 14px; transition: 0.3s; 
+        .nav-link {
+            padding: 14px 24px; font-size: 14px; color: #94a3b8;
+            transition: 0.2s; border-left: 4px solid transparent;
+            display: flex; align-items: center; cursor: pointer; text-decoration: none;
         }
-        .rail-item.active { background: #0d9488; color: white; box-shadow: 0 4px 12px rgba(13,148,136,0.4); }
+        .nav-link i { margin-right: 12px; width: 20px; text-align: center; }
+        .nav-link:hover, .nav-link.active {
+            background: #242e3d; color: white; border-left-color: var(--primary-teal);
+        }
 
         /* 主舞台區 */
-        .main-stage { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: #f8fafc; }
+        .content-scroll { padding: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
 
         /* 日曆格精細化 */
         .calendar-cell { 
-            height: 65px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;
+            aspect-ratio: 1 / 1; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 14px; position: relative; transition: all 0.2s; background: white;
+            font-size: 14px; position: relative; transition: all 0.2s; background: white; cursor: pointer;
         }
         .calendar-cell.active { 
-            background: #0d9488 !important; color: white !important; font-weight: 900;
+            background: var(--primary-teal) !important; color: white !important; font-weight: 900;
             z-index: 10; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
-        .calendar-cell:active { transform: scale(0.95); background: #f8fafc; }
+        .calendar-cell:active { transform: scale(0.9); background: #f1f5f9; }
 
         /* 行程指示點 */
         .dot { width: 5px; height: 5px; border-radius: 50%; margin: 1px; }
         .dot-work { background: #0ea5e9; }
         .dot-other { background: #94a3b8; }
 
-        /* 懸浮按鈕加強版 */
+        /* 懸浮按鈕 */
         .fab { 
             position: fixed; bottom: 30px; right: 30px; width: 64px; height: 64px; 
             background: linear-gradient(135deg, #0d9488, #0f766e); color: white; 
-            border-radius: 20px; display: flex; items-center; justify-content: center; 
+            border-radius: 20px; display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.5); z-index: 100;
-            transition: 0.3s;
         }
-        .fab:active { transform: scale(0.85) rotate(90deg); }
 
-        /* 新增行程彈窗動效 */
-        #addModal { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .modal-show { transform: translateY(0); }
-        .modal-hide { transform: translateY(100%); }
+        /* 手機適配 */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text { display: none; }
+            .sidebar .p-8 { padding: 1.5rem 0.5rem; text-align: center; }
+            .nav-link { justify-content: center; padding: 22px 0; border-left-width: 3px; }
+            .nav-link i { margin: 0; }
+        }
+
+        /* 彈窗背景 */
+        .modal-overlay { 
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(4px); z-index: 200; align-items: flex-end; 
+        }
+        .modal-content { 
+            background: white; width: 100%; border-radius: 40px 40px 0 0; 
+            padding: 32px; transform: translateY(100%); transition: transform 0.3s ease;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <aside class="side-rail shadow-xl">
-        <div class="mb-10 text-teal-500 font-black text-2xl tracking-tighter">J.</div>
-        <div class="rail-item" onclick="location.href='index.html'"><i class="fas fa-th-large text-lg"></i></div>
-        <div class="rail-item active"><i class="fas fa-calendar-alt text-lg"></i></div>
-        <div class="rail-item" onclick="location.href='project.html'"><i class="fas fa-hammer text-lg"></i></div>
-        <div class="rail-item mt-auto mb-8" onclick="location.href='settings.html'"><i class="fas fa-cog text-lg"></i></div>
+    <aside class="sidebar shadow-2xl">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter text-white" onclick="location.href='index.html'">J<span class="logo-text">INDE.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">工程現場管理</p>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">中控總覽</span></a>
+            <a href="calendar.html" class="nav-link active"><i class="fas fa-calendar-alt"></i> <span class="nav-text">行程月曆</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer"></i> <span class="nav-text">案場進度</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">人員點工</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line"></i> <span class="nav-text">財務中心</span></a>
+        </nav>
     </aside>
 
     <main class="main-stage">
-        <header class="bg-white/80 backdrop-blur-md px-6 py-5 sticky top-0 z-40 flex justify-between items-center border-b border-slate-100">
+        <header class="bg-white px-6 py-5 flex justify-between items-center border-b border-slate-200">
             <h1 class="text-xl font-black text-slate-800" id="monthDisplay">載入中...</h1>
-            <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
-                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center text-slate-500 active:bg-white active:rounded-lg"><i class="fas fa-chevron-left text-sm"></i></button>
-                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center text-slate-500 active:bg-white active:rounded-lg"><i class="fas fa-chevron-right text-sm"></i></button>
+            <div class="flex gap-2">
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl text-slate-600 active:scale-90 transition"><i class="fas fa-chevron-left text-sm"></i></button>
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl text-slate-600 active:scale-90 transition"><i class="fas fa-chevron-right text-sm"></i></button>
             </div>
         </header>
 
-        <div class="bg-white shadow-sm">
-            <div class="grid grid-cols-7 text-center py-3 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b">
-                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
-            </div>
-            <div id="calendarBody" class="grid grid-cols-7">
+        <div class="content-scroll">
+            <div class="bg-white border-b border-slate-100">
+                <div class="grid grid-cols-7 text-center py-3 text-[10px] font-black text-slate-400 border-b border-slate-50 bg-slate-50/50">
+                    <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
                 </div>
-        </div>
+                <div id="calendarBody" class="grid grid-cols-7">
+                    </div>
+            </div>
 
-        <div class="p-6">
-            <div class="flex justify-between items-end mb-6">
-                <div>
-                    <h2 id="selectedDateLabel" class="text-2xl font-black text-slate-800">今日行程</h2>
+            <div class="p-6">
+                <div class="mb-6">
+                    <h2 id="selectedDateLabel" class="text-2xl font-black text-slate-800">今日安排</h2>
                     <p class="text-xs font-bold text-teal-600 mt-1" id="fullDateLabel">----/--/--</p>
                 </div>
+                
+                <div id="dayDetailList" class="space-y-4 pb-24">
+                    </div>
             </div>
-            
-            <div id="dayDetailList" class="space-y-4 pb-20">
-                </div>
         </div>
     </main>
 
-    <button onclick="openAddModal()" class="fab">
+    <button onclick="openAddModal()" class="fab active:scale-90 transition shadow-teal-500/20">
         <i class="fas fa-plus text-2xl"></i>
     </button>
 
-    <div id="addModal" class="fixed inset-0 bg-slate-900/60 z-[200] hidden backdrop-blur-sm flex-col justify-end">
-        <div class="bg-white rounded-t-[40px] p-8 space-y-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-xl font-black text-slate-800">安排新行程</h3>
-                <button onclick="closeAddModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fas fa-times text-sm"></i></button>
+    <div id="addModal" class="modal-overlay" onclick="if(event.target == this) closeAddModal()">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-black text-slate-800">安排新行程</h3>
+                <button onclick="closeAddModal()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-400"><i class="fas fa-times"></i></button>
             </div>
             
-            <form id="eventForm" onsubmit="saveEvent(event)" class="space-y-5">
+            <form id="eventForm" onsubmit="saveEvent(event)" class="space-y-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2">日期</label>
-                        <input type="date" id="form_date" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 transition" required>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2">派工日期</label>
+                        <input type="date" id="form_date" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 mt-1" required>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2">分類</label>
-                        <select id="form_type" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 transition appearance-none">
-                            <option value="work">🏗️ 工程案場</option>
-                            <option value="other">📝 備註事項</option>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2">任務類型</label>
+                        <select id="form_type" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 mt-1 appearance-none">
+                            <option value="work">🏗️ 工程施工</option>
+                            <option value="other">📝 現場勘查/備註</option>
                         </select>
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2">案場名稱 / 內容</label>
-                    <input type="text" id="form_title" placeholder="輸入行程標題" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 transition" required>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2">行程名稱 / 內容</label>
+                    <input type="text" id="form_title" placeholder="如：XX社區頂樓防水施工" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 mt-1" required>
                 </div>
-                <div class="space-y-2">
+                <div>
                     <label class="text-[10px] font-black text-slate-400 uppercase ml-2">指派人員</label>
-                    <input type="text" id="form_staff" placeholder="輸入負責人" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 transition">
+                    <input type="text" id="form_staff" placeholder="如：阿明、小李" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 mt-1">
                 </div>
-                <button type="submit" class="w-full bg-teal-600 py-5 rounded-2xl text-white font-black text-lg shadow-lg shadow-teal-200 active:scale-95 transition">確認儲存行程</button>
+                <button type="submit" class="w-full bg-slate-900 py-5 rounded-2xl text-white font-black text-lg shadow-xl active:scale-95 transition">儲存行程排班</button>
             </form>
         </div>
     </div>
@@ -157,12 +184,15 @@
             const year = viewDate.getFullYear();
             const month = viewDate.getMonth();
             document.getElementById('monthDisplay').innerText = `${year}年 ${month + 1}月`;
+            
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const body = document.getElementById('calendarBody');
             body.innerHTML = '';
 
-            for (let i = 0; i < firstDay; i++) body.innerHTML += '<div class="calendar-cell bg-slate-50/50"></div>';
+            for (let i = 0; i < firstDay; i++) {
+                body.innerHTML += '<div class="calendar-cell bg-slate-50/30"></div>';
+            }
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -172,7 +202,7 @@
 
                 body.innerHTML += `
                     <div class="calendar-cell ${isSelected ? 'active' : ''}" onclick="selectDate('${dateStr}')">
-                        <span class="z-10">${d}</span>
+                        <span class="relative z-10">${d}</span>
                         <div class="flex mt-1 h-1">${dots}</div>
                     </div>
                 `;
@@ -191,22 +221,22 @@
             const list = document.getElementById('dayDetailList');
             
             if(dayEvents.length === 0) {
-                list.innerHTML = `<div class="bg-white p-12 rounded-[32px] text-center text-slate-300 border-2 border-dashed border-slate-100 font-bold">本日暫無排程</div>`;
+                list.innerHTML = `<div class="bg-white p-12 rounded-[32px] text-center text-slate-300 font-bold border border-slate-100">本日暫無排程任務</div>`;
                 return;
             }
 
             list.innerHTML = dayEvents.map(e => `
-                <div class="bg-white p-6 rounded-[28px] shadow-sm border border-slate-50 flex flex-col gap-3 relative overflow-hidden group">
+                <div class="bg-white p-6 rounded-[28px] shadow-sm border border-slate-50 flex flex-col gap-2 relative overflow-hidden group active:scale-[0.98] transition">
                     <div class="flex justify-between items-start">
-                        <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-tighter ${e.type === 'work' ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-500'}">
-                            ${e.type === 'work' ? '工程案場' : '備註事項'}
+                        <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase ${e.type === 'work' ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-500'}">
+                            ${e.type === 'work' ? '工程案場' : '現場備註'}
                         </span>
                         <button onclick="deleteEvent('${e.id}')" class="text-slate-200 hover:text-rose-500 transition"><i class="fas fa-trash-alt text-sm"></i></button>
                     </div>
-                    <h4 class="text-lg font-black text-slate-800 leading-tight">${e.title}</h4>
-                    <div class="flex items-center gap-2 text-slate-400 text-sm font-bold">
-                        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px]"><i class="fas fa-user"></i></div>
-                        <span>${e.staff_names || '未指定負責人'}</span>
+                    <h4 class="text-lg font-black text-slate-800 leading-tight mt-1">${e.title}</h4>
+                    <div class="flex items-center gap-2 text-slate-400 text-[11px] font-bold mt-2">
+                        <i class="fas fa-user-circle"></i>
+                        <span>負責人員：${e.staff_names || '未指派'}</span>
                     </div>
                     <div class="absolute left-0 top-0 bottom-0 w-1.5 ${e.type === 'work' ? 'bg-sky-500' : 'bg-slate-300'}"></div>
                 </div>
@@ -221,9 +251,8 @@
                 type: document.getElementById('form_type').value,
                 staff_names: document.getElementById('form_staff').value
             };
-            await _supabase.from('staff_schedules').insert([payload]);
-            closeAddModal();
-            init();
+            const { error } = await _supabase.from('staff_schedules').insert([payload]);
+            if(!error) { closeAddModal(); init(); }
         }
 
         async function deleteEvent(id) {
@@ -233,11 +262,17 @@
         }
 
         function changeMonth(offset) { viewDate.setMonth(viewDate.getMonth() + offset); renderCalendar(); }
+        
         function openAddModal() { 
             document.getElementById('form_date').value = selectedDateStr;
-            document.getElementById('addModal').style.display = 'flex'; 
+            const modal = document.getElementById('addModal');
+            modal.classList.add('open');
         }
-        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+        
+        function closeAddModal() { 
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('open');
+        }
 
         window.onload = init;
     </script>
