@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 雲端行程管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; }
+        .calendar-container { flex-grow: 1; display: flex; flex-direction: column; background: white; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex-grow: 1; }
+        .calendar-cell { border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; padding: 8px; min-height: 100px; cursor: pointer; transition: 0.2s; }
+        .calendar-cell:hover { background: #f8fafc; }
+        .calendar-cell.today { background: #f0fdfa; }
+        .calendar-cell.active { background: #f1f5f9; box-shadow: inset 0 0 0 2px #0d9488; }
+        .task-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-top: 2px; font-weight: bold; white-space: nowrap; overflow: hidden; }
+        .tag-work { background: #e0f2fe; color: #0369a1; border-left: 3px solid #0ea5e9; }
+        .tag-other { background: #f1f5f9; color: #475569; border-left: 3px solid #94a3b8; }
+        .detail-panel { width: 350px; border-left: 1px solid #e2e8f0; background: white; overflow-y: auto; }
+        .nav-link { padding: 14px 24px; color: #94a3b8; display: flex; align-items: center; text-decoration: none; }
+        .nav-link.active { background: #242e3d; color: white; border-left: 4px solid #0d9488; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar hidden lg:flex flex-col">
+        <div class="p-8"><h1 class="text-2xl font-black">JINDE<span class="text-teal-500">.</span></h1></div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3"></i> 總覽面板</a>
+            <a href="calendar.html" class="nav-link active"><i class="fas fa-calendar-alt mr-3"></i> 行程月曆</a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users mr-3"></i> 人員管理</a>
+        </nav>
+    </aside>
+
+    <main class="calendar-container">
+        <header class="h-[70px] px-6 border-b flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="changeMonth(-1)"><i class="fas fa-chevron-left text-slate-400"></i></button>
+                <h2 id="monthDisplay" class="text-xl font-black text-slate-800">2026年 1月</h2>
+                <button onclick="changeMonth(1)"><i class="fas fa-chevron-right text-slate-400"></i></button>
+            </div>
+            <button onclick="openAddModal()" class="bg-teal-600 text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg">新增行程</button>
+        </header>
+
+        <div class="grid grid-cols-7 bg-slate-50 text-[11px] font-bold text-slate-400 py-2 border-b">
+            <div class="text-center uppercase">Sun</div><div class="text-center uppercase">Mon</div>
+            <div class="text-center uppercase">Tue</div><div class="text-center uppercase">Wed</div>
+            <div class="text-center uppercase">Thu</div><div class="text-center uppercase">Fri</div>
+            <div class="text-center uppercase">Sat</div>
+        </div>
+        <div id="calendarBody" class="calendar-grid"></div>
+    </main>
+
+    <aside class="detail-panel p-6">
+        <h3 id="detailDate" class="text-xl font-black text-slate-800 mb-6">點選日期查看</h3>
+        <div id="detailContent" class="space-y-4">
+            <p class="text-slate-400 text-sm">請選擇日曆上的日期來查看詳細的工作分配。</p>
+        </div>
+    </aside>
+
+    <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <form onsubmit="saveEvent(event)" class="bg-white p-8 rounded-3xl w-full max-w-md">
+            <h3 class="text-xl font-black mb-6">安排新工作</h3>
+            <div class="space-y-4">
+                <input type="date" id="form_date" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold" required>
+                <input type="text" id="form_title" placeholder="案場名稱 (例如: 台中港風機)" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold" required>
+                <select id="form_type" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold">
+                    <option value="work">工程案場</option>
+                    <option value="other">其他備註</option>
+                </select>
+                <input type="text" id="form_staff" placeholder="指派人員 (林先生, 王小姐...)" class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold">
+                <textarea id="form_notes" placeholder="注意事項..." class="w-full p-3 bg-slate-50 rounded-xl outline-none font-bold h-24"></textarea>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button type="button" onclick="closeAddModal()" class="flex-1 font-bold text-slate-400">取消</button>
+                <button type="submit" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg">儲存行程</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        let viewDate = new Date();
+        let allEvents = [];
+
+        async function fetchEvents() {
+            const { data } = await _supabase.from('staff_schedules').select('*');
+            allEvents = data || [];
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            document.getElementById('monthDisplay').innerText = `${year}年 ${month + 1}月`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const body = document.getElementById('calendarBody');
+            body.innerHTML = '';
+
+            for (let i = 0; i < firstDay; i++) body.innerHTML += '<div class="calendar-cell bg-slate-50/30"></div>';
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dayEvents = allEvents.filter(e => e.work_date === dateStr);
+                const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
+                let eventHtml = dayEvents.map(e => `<div class="task-tag ${e.type === 'work' ? 'tag-work' : 'tag-other'}">${e.title}</div>`).join('');
+                
+                body.innerHTML += `
+                    <div class="calendar-cell ${isToday ? 'today' : ''}" onclick="selectDate('${dateStr}', this)">
+                        <span class="text-xs font-black ${isToday ? 'text-teal-600' : 'text-slate-400'}">${d}</span>
+                        ${eventHtml}
+                    </div>
+                `;
+            }
+        }
+
+        function selectDate(dateStr, el) {
+            document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            
+            const dayEvents = allEvents.filter(e => e.work_date === dateStr);
+            document.getElementById('detailDate').innerText = dateStr;
+            const content = document.getElementById('detailContent');
+            
+            if (dayEvents.length === 0) {
+                content.innerHTML = '<p class="text-slate-400 text-sm">本日尚無行程安排。</p>';
+                return;
+            }
+
+            content.innerHTML = dayEvents.map(e => `
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] ${e.type === 'work' ? 'text-sky-600' : 'text-slate-500'} font-black uppercase mb-1">${e.type === 'work' ? '工程' : '備註'}</p>
+                    <h4 class="font-black text-slate-800">${e.title}</h4>
+                    ${e.staff_names ? `<p class="text-[11px] text-slate-500 mt-2"><i class="fas fa-users mr-1"></i> ${e.staff_names}</p>` : ''}
+                    ${e.notes ? `<p class="text-[11px] text-slate-400 mt-1"><i class="fas fa-info-circle mr-1"></i> ${e.notes}</p>` : ''}
+                    <button onclick="deleteEvent('${e.id}')" class="mt-3 text-[10px] text-rose-400 hover:text-rose-600 font-bold">刪除此項</button>
+                </div>
+            `).join('');
+        }
+
+        async function saveEvent(e) {
+            e.preventDefault();
+            const payload = {
+                work_date: document.getElementById('form_date').value,
+                title: document.getElementById('form_title').value,
+                type: document.getElementById('form_type').value,
+                staff_names: document.getElementById('form_staff').value,
+                notes: document.getElementById('form_notes').value
+            };
+            await _supabase.from('staff_schedules').insert([payload]);
+            closeAddModal();
+            fetchEvents();
+        }
+
+        async function deleteEvent(id) {
+            if (confirm('確定刪除此行程？')) {
+                await _supabase.from('staff_schedules').delete().eq('id', id);
+                fetchEvents();
+                document.getElementById('detailContent').innerHTML = '<p class="text-slate-400 text-sm">已刪除。</p>';
+            }
+        }
+
+        function changeMonth(offset) { viewDate.setMonth(viewDate.getMonth() + offset); renderCalendar(); }
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        window.onload = fetchEvents;
+    </script>
+</body>
+</html>
