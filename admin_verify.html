@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員審核中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-md mx-auto">
+        <h2 class="text-2xl font-black mb-6">待審核成員名單</h2>
+        <div id="list" class="space-y-4">
+            <p class="text-slate-400">載入中...</p>
+        </div>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function loadPending() {
+            const { data, error } = await _supabase.from('staff').select('*').eq('status', 'pending');
+            const listDiv = document.getElementById('list');
+            listDiv.innerHTML = '';
+
+            if (data.length === 0) {
+                listDiv.innerHTML = '<p class="text-slate-400">目前沒有待審核的申請。</p>';
+                return;
+            }
+
+            data.forEach(user => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center";
+                card.innerHTML = `
+                    <div>
+                        <p class="font-bold text-slate-800">${user.name}</p>
+                        <p class="text-xs text-slate-400">${user.email}</p>
+                    </div>
+                    <button onclick="approve('${user.id}')" class="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold">核准</button>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        async function approve(id) {
+            const { error } = await _supabase.from('staff').update({ status: 'active' }).eq('id', id);
+            if (!error) {
+                alert('已成功核准該成員！');
+                loadPending();
+            }
+        }
+
+        window.onload = loadPending;
+    </script>
+</body>
+</html>
