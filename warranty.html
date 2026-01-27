@@ -2,80 +2,176 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>保固明細生產</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 保固書生產中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* 模擬 A4 預覽縮放，手機上不跑版 */
-        @media (max-width: 768px) {
-            .preview-container {
-                transform: scale(0.45);
-                transform-origin: top center;
-                height: 520px; /* 縮放後的容器高度 */
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body { background-color: #f1f5f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
+        
+        /* 側邊欄 - 電腦版 */
+        .sidebar { 
+            width: 260px; 
+            background: #1a222d; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            z-index: 50;
+            transition: width 0.3s ease;
         }
-        @media print {
-            .no-print { display: none !important; }
-            body { padding: 0; background: white; }
-            .print-area { border: none !important; margin: 0 !important; width: 210mm; height: 297mm; }
+        
+        .nav-link { 
+            padding: 14px 24px; 
+            font-size: 14px; 
+            color: #94a3b8; 
+            transition: 0.2s; 
+            border-left: 4px solid transparent; 
+            display: flex; 
+            align-items: center; 
+            white-space: nowrap; 
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .nav-link i { margin-right: 12px; width: 20px; text-align: center; font-size: 16px; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        .nav-link:hover { background: #1e293b; color: white; }
+
+        /* 主內容區 */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+
+        /* 📱 響應式優化：手機版導覽 */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; } /* 手機版寬度縮窄 */
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .security-text { display: none; }
+            .sidebar .p-8 { padding: 1.5rem 0.5rem; text-align: center; }
+            .nav-link { justify-content: center; padding: 25px 0; border-left-width: 3px; }
+            .content-scroll { padding: 20px 15px; }
+            .main-title { font-size: 1.875rem !important; }
+        }
+
+        /* 功能卡片優化 */
+        .function-card { 
+            background: white; border-radius: 20px; padding: 30px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            transition: all 0.3s ease; 
+            border: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .function-card:active { transform: scale(0.97); background: #f8fafc; }
+        
+        @media (min-width: 1024px) {
+            .function-card:hover { transform: translateY(-8px); border-color: #0d9488; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        }
+
+        .icon-circle {
+            width: 70px; height: 70px; border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px; transition: 0.3s;
         }
     </style>
 </head>
-<body class="bg-slate-50">
-    <div class="no-print bg-white p-4 flex justify-between items-center border-b sticky top-0 z-50">
-        <button onclick="history.back()" class="text-slate-600"><i class="fas fa-chevron-left"></i> 返回</button>
-        <button onclick="window.print()" class="bg-teal-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">列印 PDF</button>
-    </div>
+<body>
 
-    <div class="max-w-md mx-auto p-4 no-print">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border mb-6">
-            <h3 class="font-black text-lg mb-4 text-slate-800">輸入工程資料</h3>
-            <div class="space-y-4">
-                <input type="text" id="in_client" oninput="sync()" placeholder="客戶姓名" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500">
-                <input type="text" id="in_addr" oninput="sync()" placeholder="工程地址" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500">
-                <input type="number" id="in_year" oninput="sync()" placeholder="保固年限 (年)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-teal-500">
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer logo-text" onclick="location.href='index.html'">JD<span class="text-teal-500">.</span></h1>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">錦德防水工程</p>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">人員與點工</span></a>
+            <a href="projects.html" class="nav-link"><i class="fas fa-hammer"></i> <span class="nav-text">案場進度</span></a>
+            <a href="warranty.html" class="nav-link active"><i class="fas fa-file-contract"></i> <span class="nav-text">保固書生產</span></a>
+            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">請款系統</span></a>
+        </nav>
+        <div class="p-6 border-t border-slate-700 bg-[#151b23] text-center lg:text-left">
+            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2 security-text">Security</p>
+            <div class="flex items-center justify-center lg:justify-start gap-2 text-rose-500 font-mono text-xs">
+                <i class="fas fa-user-shield"></i>
+                <span id="logout-timer">30:00</span>
             </div>
         </div>
-        <p class="text-center text-slate-400 text-xs mb-2">▼ 下方為即時預覽</p>
-    </div>
+    </aside>
 
-    <div class="flex justify-center bg-slate-200 py-4 lg:bg-transparent overflow-hidden">
-        <div class="preview-container">
-            <div class="print-area bg-white p-[20mm] shadow-2xl min-h-[297mm] w-[210mm] text-slate-800 relative">
-                <div class="absolute top-10 right-10 text-[10px] font-mono text-slate-300" id="serial-num">ID: JD-882910</div>
-                <h2 class="text-3xl font-black border-b-4 border-slate-800 pb-4 mb-10">防水工程保固合約書</h2>
-                <div class="grid grid-cols-4 gap-y-6 text-lg mb-12">
-                    <div class="font-bold text-slate-400">業主名稱</div>
-                    <div class="col-span-3 border-b border-slate-200 font-black" id="out_client">--</div>
-                    <div class="font-bold text-slate-400">施工地址</div>
-                    <div class="col-span-3 border-b border-slate-200 font-black" id="out_addr">--</div>
-                    <div class="font-bold text-slate-400">保固期限</div>
-                    <div class="col-span-3 border-b border-slate-200 font-black">共 <span id="out_year">--</span> 年整。</div>
+    <main class="main-stage">
+        <header class="p-8 lg:p-10 pb-0">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="main-title text-4xl font-black text-slate-800 tracking-tight">保固書簽發中控</h2>
+                    <p class="text-slate-500 mt-2 text-sm lg:text-base">手機點選下方卡片即可開始製作。</p>
                 </div>
-                <div class="text-sm leading-relaxed space-y-4">
-                    <p>1. 本工程於保固期間內，若因施工品質不良導致漏水，本公司負責無償修復。</p>
-                    <p>2. 如遇天災、地震導致建築結構龜裂，不在保固範圍內。</p>
+                <div class="hidden lg:block">
+                    <span class="bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-xs font-bold border border-teal-100">
+                        系統狀態：正常運行
+                    </span>
                 </div>
-                <div class="mt-20 flex justify-between items-end">
-                    <div class="space-y-2">
-                        <p class="font-bold">承攬單位：錦德工程行</p>
-                        <p class="text-xs">地址：台中市西屯區...</p>
+            </div>
+        </header>
+
+        <div class="content-scroll">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
+                
+                <a href="warranty_cover.html" class="function-card group">
+                    <div class="icon-circle bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white">
+                        <i class="fas fa-image text-2xl lg:text-3xl"></i>
                     </div>
-                    <div class="w-24 h-24 border-2 border-rose-100 rounded-full flex items-center justify-center text-rose-200 text-xs border-dashed">用印處</div>
-                </div>
+                    <h3 class="text-xl lg:text-2xl font-black text-slate-800 mb-3">第一頁：保固書封面</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">包含公司形象標誌、工程名稱及底部通訊資訊。</p>
+                    <span class="inline-flex items-center text-blue-600 font-bold text-sm">
+                        進入生產器 <i class="fas fa-arrow-right ml-2"></i>
+                    </span>
+                </a>
+
+                <a href="warranty_content.html" class="function-card group">
+                    <div class="icon-circle bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white">
+                        <i class="fas fa-file-signature text-2xl lg:text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl lg:text-2xl font-black text-slate-800 mb-3">第二頁：詳細內容頁</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">填寫客戶、地址、年限、合約條款及用印區。</p>
+                    <span class="inline-flex items-center text-teal-600 font-bold text-sm">
+                        進入生產器 <i class="fas fa-arrow-right ml-2"></i>
+                    </span>
+                </a>
+
+            </div>
+            
+            <div class="mt-8 text-center lg:hidden">
+                <p class="text-xs text-slate-400 font-bold italic"><i class="fas fa-info-circle mr-1"></i> 建議在環境穩定的地方使用「橫屏」預覽 PDF</p>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        function sync() {
-            document.getElementById('out_client').innerText = document.getElementById('in_client').value || '--';
-            document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || '--';
-            document.getElementById('out_year').innerText = document.getElementById('in_year').value || '--';
+        // --- 自動登出計時邏輯 (維持 30 分鐘) ---
+        let timeLeft = 30 * 60;
+        const timerElement = document.getElementById('logout-timer');
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                alert('為了您的帳戶安全，系統已自動登出。');
+                window.location.href = 'login.html'; 
+            }
+            timeLeft--;
         }
-        window.onload = () => {
-            document.getElementById('serial-num').innerText = 'JD-ID: ' + Math.random().toString(36).substr(2, 7).toUpperCase();
-        }
+
+        function resetTimer() { timeLeft = 30 * 60; }
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('touchstart', resetTimer);
+
+        setInterval(updateTimer, 1000);
     </script>
 </body>
 </html>
