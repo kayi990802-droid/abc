@@ -3,53 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 工地管理系統 (含附件)</title>
+    <title>JINDE | 工地管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; }
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; }
-        .pro-card { background: white; border: 1px solid #eef2f6; padding: 20px; border-radius: 8px; transition: 0.3s; }
-        .pro-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .sidebar { width: 280px; background: #0f172a; color: white; flex-shrink: 0; display: flex; flex-direction: column; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .project-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.3s ease; }
+        .project-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #14b8a6; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; transition: 0.2s; color: #94a3b8; font-weight: 600; }
+        .nav-link:hover { background: #1e293b; color: white; }
+        .nav-link.active { background: #14b8a6; color: white; }
     </style>
 </head>
 <body>
-    <aside class="sidebar p-8">
-        <h1 class="text-2xl font-black text-white">JINDE<span class="text-teal-500">.</span></h1>
-        <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">工程管理系統</p>
+
+    <aside class="sidebar p-6">
+        <div class="mb-10 px-2">
+            <h1 class="text-3xl font-black tracking-tighter">JINDE<span class="text-teal-400">.</span></h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">工程管理系統</p>
+        </div>
+        
+        <nav class="space-y-2 flex-grow">
+            <a href="index.html" class="nav-link">
+                <i class="fas fa-home w-5"></i> 系統回首頁
+            </a>
+            
+            <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-500 uppercase">工程管理</div>
+            
+            <a href="project_manage.html" class="nav-link active">
+                <i class="fas fa-tasks w-5"></i> 案場清單
+            </a>
+            
+            <a href="record.html" class="nav-link">
+                <i class="fas fa-history w-5"></i> 保固紀錄查詢
+            </a>
+
+            <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-500 uppercase">文件核發</div>
+
+            <a href="warranty_content.html" class="nav-link">
+                <i class="fas fa-file-signature w-5"></i> 核發保固書
+            </a>
+        </nav>
+
+        <div id="db-status" class="bg-slate-900 p-4 rounded-xl text-[10px] font-mono">
+            <span class="text-slate-500 italic">系統連線檢查中...</span>
+        </div>
     </aside>
 
-    <main class="main-stage">
-        <header class="h-[70px] border-b border-slate-100 flex items-center justify-between px-10 bg-white">
-            <span class="text-xs font-bold text-slate-400 uppercase">Project / Document Management</span>
-            <button onclick="openModal()" class="bg-slate-900 text-white px-6 py-2 rounded text-xs font-bold hover:bg-teal-600 transition">建立新案場</button>
+    <main class="main-content">
+        <header class="bg-white border-b border-slate-200 px-10 py-5 flex justify-between items-center shadow-sm">
+            <div>
+                <nav class="flex text-slate-400 text-[10px] font-bold uppercase mb-1">
+                    <a href="index.html" class="hover:text-teal-500">HOME</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-slate-800">PROJECTS</span>
+                </nav>
+                <h2 class="font-black text-slate-800 text-xl">案場管理總覽</h2>
+            </div>
+            
+            <button onclick="openModal()" class="bg-slate-900 hover:bg-teal-600 text-white px-6 py-3 rounded-xl font-bold text-xs transition shadow-lg active:scale-95">
+                <i class="fas fa-plus mr-2"></i> 建立新案場
+            </button>
         </header>
 
         <div class="p-10 overflow-y-auto">
-            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            <div id="loading" class="text-center py-10 text-slate-400 text-xs font-bold">載入中...</div>
+            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                </div>
+            <div id="empty-state" class="hidden text-center py-20 text-slate-300">
+                <i class="fas fa-folder-open text-5xl mb-4"></i>
+                <p>目前尚無案場資料</p>
+            </div>
         </div>
     </main>
 
-    <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-lg w-full max-w-md shadow-2xl">
-            <h2 class="text-xl font-black mb-6 text-slate-800">建立案場與附件</h2>
-            <div class="space-y-4">
+    <div id="projectModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div class="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-slate-800">新增案場</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="space-y-5">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">案場名稱</label>
-                    <input type="text" id="p_name" class="w-full p-3 bg-slate-50 border-b-2 border-slate-200 outline-none focus:border-teal-500 font-bold">
+                    <label class="text-xs font-bold text-slate-400 block mb-2 uppercase">案場名稱</label>
+                    <input type="text" id="p_name" placeholder="例如：復興路王先生家止漏" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-4 outline-none focus:border-teal-500 transition font-bold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">合約附件 (PDF)</label>
-                    <input type="file" id="p_file" accept=".pdf" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                    <label class="text-xs font-bold text-slate-400 block mb-2 uppercase">合約 PDF 附件</label>
+                    <input type="file" id="p_file" accept=".pdf" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
                 </div>
-                <div class="flex gap-4 pt-6">
-                    <button onclick="closeModal()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">取消</button>
-                    <button id="saveBtn" onclick="saveProject()" class="flex-1 py-3 bg-slate-900 text-white rounded font-bold text-xs uppercase hover:bg-teal-600 transition">確認儲存</button>
-                </div>
+                <button id="saveBtn" onclick="saveProject()" class="w-full bg-teal-600 py-4 text-white rounded-2xl font-black shadow-xl shadow-teal-500/20 hover:bg-teal-500 transition mt-4">確認存檔並上傳</button>
             </div>
         </div>
     </div>
@@ -61,77 +108,82 @@
 
         async function fetchProjects() {
             const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
-            document.getElementById('loading').style.display = 'none';
-            if (error) return;
-
             const grid = document.getElementById('projectGrid');
+            const empty = document.getElementById('empty-state');
+            
+            if (error || !data || data.length === 0) {
+                grid.innerHTML = "";
+                empty.classList.remove('hidden');
+                document.getElementById('db-status').innerHTML = `<span class="text-rose-400">● 查無資料</span>`;
+                return;
+            }
+
+            empty.classList.add('hidden');
+            document.getElementById('db-status').innerHTML = `<span class="text-emerald-400">● 連線正常</span> (${data.length} 筆案場)`;
+
             grid.innerHTML = data.map(p => `
-                <div class="pro-card">
-                    <div class="flex justify-between items-start mb-4">
-                        <h3 class="text-lg font-black text-slate-800">${p.name || '未命名'}</h3>
-                        ${p.file_url ? `<a href="${p.file_url}" target="_blank" class="w-8 h-8 rounded bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white transition flex items-center justify-center"><i class="fas fa-file-pdf"></i></a>` : '<span class="text-[9px] text-slate-300 italic">無附件</span>'}
+                <div class="project-card p-6">
+                    <div class="flex justify-between items-start mb-10">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg">${p.name}</h3>
+                            <p class="text-[10px] font-mono text-slate-400 uppercase mt-1 tracking-widest">${p.project_no || 'PJ-TEMP'}</p>
+                        </div>
+                        ${p.file_url ? `
+                            <a href="${p.file_url}" target="_blank" class="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-teal-500 shadow-md transition">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        ` : `<div class="w-10 h-10 bg-slate-50 text-slate-200 rounded-xl flex items-center justify-center italic text-[9px]">無附件</div>`}
                     </div>
-                    <div class="border-t border-slate-50 pt-4 flex justify-between items-center">
-                        <span class="text-[10px] font-mono text-slate-400">${p.project_no}</span>
-                        <button onclick="deleteProject('${p.id}')" class="text-slate-300 hover:text-rose-500 transition"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                    <div class="flex justify-end pt-4 border-t border-slate-50">
+                        <button onclick="deleteProject('${p.id}')" class="text-slate-300 hover:text-rose-500 transition">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
                     </div>
                 </div>
             `).join('');
         }
-async function saveProject() {
-    const name = document.getElementById('p_name').value;
-    const fileInput = document.getElementById('p_file');
-    const saveBtn = document.getElementById('saveBtn');
 
-    if (!name) return alert("請輸入案場名稱");
+        async function saveProject() {
+            const name = document.getElementById('p_name').value;
+            const fileInput = document.getElementById('p_file');
+            const saveBtn = document.getElementById('saveBtn');
 
-    saveBtn.disabled = true;
-    saveBtn.innerText = "正在上傳 PDF...";
+            if (!name) return alert("請輸入案場名稱");
 
-    let fileUrl = null;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在存檔...';
 
-    // 1. 處理檔案上傳到 Storage
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const fileName = `PDF_${Date.now()}_${file.name}`; // 避免檔名重複
-        
-        const { data: upData, error: upErr } = await _supabase.storage
-            .from('project-files')
-            .upload(fileName, file);
+            let fileUrl = null;
 
-        if (upErr) {
-            console.error("Storage 上傳失敗:", upErr);
-        } else {
-            // 取得公開下載網址
-            const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
-            fileUrl = urlData.publicUrl;
+            try {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const fileName = `PDF_${Date.now()}`;
+                    const { data: upData, error: upErr } = await _supabase.storage.from('project-files').upload(fileName, file);
+                    if (upErr) throw upErr;
+                    const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(fileName);
+                    fileUrl = urlData.publicUrl;
+                }
+
+                const { error: insErr } = await _supabase.from('projects').insert([{
+                    name: name,
+                    project_no: "PJ-" + Date.now().toString().slice(-6),
+                    file_url: fileUrl
+                }]);
+
+                if (insErr) throw insErr;
+                closeModal();
+                fetchProjects();
+            } catch (err) {
+                alert("錯誤：" + err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = "確認存檔並上傳";
+            }
         }
-    }
-
-    saveBtn.innerText = "正在儲存資料...";
-
-    // 2. 核心修正：只傳送資料庫截圖中現有的欄位
-    const { error } = await _supabase.from('projects').insert([{
-        name: name,
-        project_no: "PJ-" + Math.floor(Math.random() * 900000 + 100000), // 自動生成案號
-        file_url: fileUrl // 【重要】請先確認資料庫已新增此欄位
-    }]);
-
-    if (error) {
-        console.error("Supabase Error:", error);
-        alert(`儲存失敗：${error.message}\n請確認您是否已在資料表新增 'file_url' 欄位。`);
-    } else {
-        alert("案場與 PDF 已同步儲存成功！");
-        closeModal();
-        fetchProjects();
-    }
-    
-    saveBtn.disabled = false;
-    saveBtn.innerText = "確認儲存";
-}
 
         async function deleteProject(id) {
-            if (!confirm("確定要刪除此案場嗎？")) return;
+            if (!confirm("確定刪除？")) return;
             await _supabase.from('projects').delete().eq('id', id);
             fetchProjects();
         }
