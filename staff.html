@@ -28,7 +28,7 @@
             .sidebar {
                 position: fixed;
                 height: 100vh;
-                transform: translateX(-100%); /* 手機預設隱藏 */
+                transform: translateX(-100%);
             }
             .sidebar.active {
                 transform: translateX(0);
@@ -47,42 +47,37 @@
         }
         .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
 
-        /* --- 主內容區 --- */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
         .content-scroll { padding: 20px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
 
-        /* --- 卡片優化 --- */
         .staff-card { background: white; border-radius: 20px; border: 1px solid #eef2f6; transition: 0.3s; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .staff-card:active { transform: scale(0.98); }
+        .staff-card:hover { border-color: #0d9488; }
 
-        /* --- 彈窗優化 --- */
+        /* 審核卡片特殊樣式 */
+        .pending-card { border: 2px dashed #f59e0b; background: #fffbeb; }
+
         .modal { 
             display: none; 
             position: fixed; 
             inset: 0; 
             background: rgba(0,0,0,0.5); 
             backdrop-filter: blur(4px); 
-            align-items: flex-end; /* 手機版從底部彈出感 */
+            align-items: flex-end; 
             justify-content: center; 
             z-index: 1000; 
         }
-        @media (min-width: 768px) {
-            .modal { align-items: center; }
-        }
+        @media (min-width: 768px) { .modal { align-items: center; } }
         .modal-content {
             background: white;
             padding: 24px;
             width: 100%;
             max-width: 450px;
-            border-radius: 24px 24px 0 0; /* 手機圓角 */
+            border-radius: 24px 24px 0 0;
             max-height: 90vh;
             overflow-y: auto;
         }
-        @media (min-width: 768px) {
-            .modal-content { border-radius: 24px; }
-        }
+        @media (min-width: 768px) { .modal-content { border-radius: 24px; } }
 
-        /* 遮罩 */
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; }
         .overlay.active { display: block; }
     </style>
@@ -118,6 +113,16 @@
         </header>
 
         <div class="content-scroll">
+            <div id="pendingSection" class="hidden mb-10">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="flex h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+                    <h3 class="text-amber-800 font-black text-sm uppercase tracking-wider">待審核成員申請</h3>
+                </div>
+                <div id="pendingGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    </div>
+                <hr class="mt-8 border-slate-200">
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div class="bg-slate-900 p-6 rounded-3xl text-white shadow-xl">
                     <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">本月出勤工數</p>
@@ -132,6 +137,7 @@
                 </div>
             </div>
 
+            <h3 class="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-4">正式成員名單</h3>
             <div id="staffGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-20">
                 </div>
         </div>
@@ -139,7 +145,17 @@
 
     <div id="historyModal" class="modal">
         <div class="modal-content">
-            <h3 id="historyTitle" class="text-xl font-black mb-4">出勤明細</h3>
+            <h3 id="historyTitle" class="text-xl font-black mb-2">出勤明細</h3>
+            <div id="personalStats" class="mb-6 p-4 bg-teal-50 rounded-2xl flex justify-between items-center">
+                <div>
+                    <p class="text-[9px] text-teal-600 font-bold uppercase">本月累計</p>
+                    <p id="p-earn" class="text-lg font-black text-teal-800">$0</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[9px] text-teal-600 font-bold uppercase">總工數</p>
+                    <p id="p-days" class="text-lg font-black text-teal-800">0 天</p>
+                </div>
+            </div>
             <div id="historyList" class="space-y-3"></div>
             <button onclick="closeModal('historyModal')" class="mt-6 w-full py-4 bg-slate-100 font-bold rounded-2xl text-slate-500">關閉視窗</button>
         </div>
@@ -180,68 +196,110 @@
         }
 
         async function init() {
-            const { data: staff } = await _supabase.from('staff_profiles').select('*').eq('is_active', true).order('name');
+            // 同時讀取所有員工與出勤紀錄
+            const { data: allStaff } = await _supabase.from('staff_profiles').select('*').order('name');
             const { data: attendance } = await _supabase.from('staff_attendance').select('*').order('work_date', { ascending: false });
 
-            let totalH = 0; let totalW = 0;
-            const grid = document.getElementById('staffGrid');
+            const pendingGrid = document.getElementById('pendingGrid');
+            const staffGrid = document.getElementById('staffGrid');
+            const pendingSection = document.getElementById('pendingSection');
             
-            grid.innerHTML = staff.map(s => {
+            pendingGrid.innerHTML = '';
+            staffGrid.innerHTML = '';
+            
+            let totalH = 0; let totalW = 0;
+            let hasPending = false;
+
+            allStaff.forEach(s => {
                 const logs = attendance.filter(a => a.staff_id === s.id);
                 const hours = logs.length;
                 const earn = hours * Number(s.daily_wage);
-                totalH += hours; totalW += earn;
 
-                return `
-                <div class="staff-card p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-slate-800 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
-                            <div>
-                                <h4 class="font-black text-slate-800">${s.name}</h4>
-                                <p class="text-[10px] text-teal-600 font-bold uppercase">${s.position || '技工'}</p>
+                if (!s.is_active) {
+                    // 待審核清單
+                    hasPending = true;
+                    pendingGrid.innerHTML += `
+                        <div class="staff-card pending-card p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
+                                    <div>
+                                        <h4 class="font-black text-slate-800">${s.name}</h4>
+                                        <p class="text-[10px] text-amber-600 font-bold uppercase">${s.position || '申請中'}</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <button onclick="deleteStaff('${s.id}', '${s.name}')" class="text-slate-300 hover:text-rose-500 p-2"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <div onclick="viewHistory('${s.id}', '${s.name}')" class="bg-slate-50 p-3 rounded-2xl text-center">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">出勤</p>
-                            <p class="text-lg font-black">${hours} 天</p>
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-2xl text-center">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">薪資</p>
-                            <p class="text-lg font-black text-rose-600">$${earn.toLocaleString()}</p>
-                        </div>
-                    </div>
+                            <div class="flex gap-2">
+                                <button onclick="approveStaff('${s.id}')" class="flex-1 py-3 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md">核准</button>
+                                <button onclick="rejectStaff('${s.id}')" class="flex-1 py-3 bg-slate-200 text-slate-500 rounded-xl text-xs font-bold">拒絕</button>
+                            </div>
+                        </div>`;
+                } else {
+                    // 正式員工清單
+                    totalH += hours; totalW += earn;
+                    staffGrid.innerHTML += `
+                        <div class="staff-card p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-slate-800 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
+                                    <div>
+                                        <h4 class="font-black text-slate-800">${s.name}</h4>
+                                        <p class="text-[10px] text-teal-600 font-bold uppercase">${s.position || '技工'}</p>
+                                    </div>
+                                </div>
+                                <button onclick="deleteStaff('${s.id}', '${s.name}')" class="text-slate-300 hover:text-rose-500 p-2"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <div onclick="viewHistory('${s.id}', '${s.name}', ${s.daily_wage})" class="bg-slate-50 p-3 rounded-2xl text-center cursor-pointer hover:bg-teal-50 transition">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">出勤</p>
+                                    <p class="text-lg font-black">${hours} 天</p>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-2xl text-center">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">薪資</p>
+                                    <p class="text-lg font-black text-rose-600">$${earn.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <button onclick="checkIn('${s.id}', '${s.name}')" class="w-full py-4 bg-teal-50 text-teal-700 rounded-2xl text-sm font-bold active:bg-teal-600 active:text-white transition">
+                                登記今日出勤
+                            </button>
+                        </div>`;
+                }
+            });
 
-                    <button onclick="checkIn('${s.id}', '${s.name}')" class="w-full py-4 bg-teal-50 text-teal-700 rounded-2xl text-sm font-bold active:bg-teal-600 active:text-white transition">
-                        登記今日出勤
-                    </button>
-                </div>`;
-            }).join('');
-
+            pendingSection.style.display = hasPending ? 'block' : 'none';
             document.getElementById('total-hours').innerText = totalH.toFixed(1);
             document.getElementById('total-wages').innerText = `$${totalW.toLocaleString()}`;
+        }
+
+        async function approveStaff(id) {
+            await _supabase.from('staff_profiles').update({ is_active: true }).eq('id', id);
+            init();
+        }
+
+        async function rejectStaff(id) {
+            if(confirm("確定刪除此申請？")) {
+                await _supabase.from('staff_profiles').delete().eq('id', id);
+                init();
+            }
         }
 
         async function checkIn(id, name) {
             const today = new Date().toISOString().split('T')[0];
             const proj = prompt(`[${today}] 登記 ${name} 案場：`, "一般案場");
             if(!proj) return;
-            
-            await _supabase.from('staff_attendance').insert([{ 
-                staff_id: id, 
-                project_name: proj,
-                work_date: today
-            }]);
+            await _supabase.from('staff_attendance').insert([{ staff_id: id, project_name: proj, work_date: today }]);
             init();
         }
 
-        async function viewHistory(id, name) {
+        async function viewHistory(id, name, wage) {
             const { data } = await _supabase.from('staff_attendance').select('*').eq('staff_id', id).order('work_date', { ascending: false });
+            
+            // 更新統計
+            const days = data.length;
             document.getElementById('historyTitle').innerText = `${name} 明細`;
+            document.getElementById('p-days').innerText = `${days} 天`;
+            document.getElementById('p-earn').innerText = `$${(days * wage).toLocaleString()}`;
+
             const list = document.getElementById('historyList');
             list.innerHTML = data.map(h => `
                 <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
@@ -264,7 +322,8 @@
             const payload = {
                 name: document.getElementById('s_name').value,
                 position: document.getElementById('s_pos').value,
-                daily_wage: Number(document.getElementById('s_wage').value)
+                daily_wage: Number(document.getElementById('s_wage').value),
+                is_active: true // 管理員手動新增預設為正式
             };
             await _supabase.from('staff_profiles').insert([payload]);
             closeModal('addModal'); 
