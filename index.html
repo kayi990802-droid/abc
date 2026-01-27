@@ -6,7 +6,7 @@
     <title>JINDE | 錦德工程管理中台</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 【權限與自動登入逾時檢查】
+        // 【安全檢查】
         const MAX_IDLE_TIME = 30 * 60 * 1000; 
         const lastActive = localStorage.getItem('jinde_last_active');
         const now = Date.now();
@@ -23,42 +23,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        
         .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; z-index: 50; }
         .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
         .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
-        
-        /* 公告滑動區樣式 */
-        .notice-swipe { display: flex; overflow-x: auto; gap: 16px; padding: 0 30px 20px; scroll-snap-type: x mandatory; flex-shrink: 0; }
-        .notice-swipe::-webkit-scrollbar { display: none; }
+        .notice-swipe { display: flex; overflow-x: auto; gap: 16px; padding: 0 30px 20px; scroll-snap-type: x mandatory; flex-shrink: 0; scrollbar-width: none; }
         .notice-card { min-width: 280px; background: #1e293b; color: white; padding: 20px; border-radius: 16px; scroll-snap-align: start; border: 1px solid #334155; }
-
-        /* 11 張卡片容器 */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 10px 30px 30px; overflow-y: auto; flex-grow: 1; }
         .pro-card { background: white; border: 1px solid #eef2f6; padding: 24px; transition: 0.3s; cursor: pointer; border-radius: 12px; position: relative; }
         .pro-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); border-color: #0d9488; }
-        .pro-card i { font-size: 22px; color: #1a222d; margin-bottom: 16px; }
-        .pro-card h3 { font-size: 16px; font-weight: 700; color: #1a222d; margin-bottom: 6px; }
-        .pro-card p { font-size: 11px; color: #64748b; line-height: 1.5; }
-        
         .tag { position: absolute; top: 12px; right: 12px; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
         .tag-teal { color: #0d9488; background: #f0fdfa; }
-
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
             .sidebar span, .sidebar p, .sidebar h1 { display: none; }
-            .nav-link { text-align: center; padding: 15px 0; }
-            .nav-link i { margin: 0 !important; font-size: 18px; }
-            .top-header { padding: 0 20px; }
             .grid-container { grid-template-columns: repeat(2, 1fr) !important; padding: 15px !important; gap: 12px !important; }
-            .notice-card { min-width: 240px; padding: 16px; }
-            .pro-card { padding: 16px !important; }
-            .pro-card i { font-size: 18px; margin-bottom: 10px; }
-            .pro-card h3 { font-size: 13px !important; }
-            .pro-card p { display: none; } 
+            .pro-card p { display: none; }
         }
     </style>
 </head>
@@ -70,23 +51,11 @@
         </div>
         <nav class="flex-grow overflow-y-auto">
             <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5 text-center"></i><span> 主頁</span></div>
+            <div class="nav-link" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt mr-3 w-5 text-center text-teal-500"></i><span>行程月曆</span></div>
             <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5 text-center"></i><span>客戶資料管理</span></div>
             <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5 text-center"></i><span>工地管理</span></div>
-            <div class="nav-link" onclick="location.href='docs.html'"><i class="far fa-copy mr-3 w-5 text-center"></i><span>公司合約文件</span></div>
-            <div class="nav-link" onclick="location.href='quote.html'"><i class="fas fa-file-invoice mr-3 w-5 text-center"></i><span>報價系統</span></div>
-            <div class="nav-link" onclick="location.href='quote_query.html'"><i class="fas fa-search-dollar mr-3 w-5 text-center"></i><span>報價紀錄查詢</span></div>
-            <div class="nav-link" onclick="location.href='warranty.html'"><i class="fas fa-certificate mr-3 w-5 text-center"></i><span>保固書管理</span></div>
-            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5 text-center"></i><span>請款管理</span></div>
-            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-chart-pie mr-3 w-5 text-center"></i><span>財務收支</span></div>
             <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5 text-center"></i><span>人員管理</span></div>
-            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5 text-center"></i><span>系統設定</span></div>
         </nav>
-        <div class="p-8 border-t border-slate-800">
-            <div class="text-[9px] font-black text-slate-500 flex items-center gap-2 uppercase tracking-tighter">
-                <span id="status-dot" class="w-2 h-2 bg-slate-500 rounded-full"></span> 
-                <span id="status-text">連線偵測中</span>
-            </div>
-        </div>
     </aside>
 
     <main class="main-stage">
@@ -116,6 +85,12 @@
         </div>
 
         <section class="grid-container">
+            <div class="pro-card border-teal-200" onclick="location.href='calendar.html'">
+                <span class="tag tag-teal">行程</span>
+                <i class="fas fa-calendar-alt text-teal-600"></i>
+                <h3>工程行程月曆</h3>
+                <p>每日派工進度、工地排程與人員調度視覺化</p>
+            </div>
             <div class="pro-card" onclick="location.href='customer.html'">
                 <i class="far fa-address-book text-slate-700"></i>
                 <h3>客戶資料管理</h3>
@@ -157,7 +132,7 @@
             <div class="pro-card" onclick="location.href='finance.html'">
                 <i class="fas fa-chart-line text-blue-600"></i>
                 <h3>財務損益中心</h3>
-                <p>公司利養結算與月度損益</p>
+                <p>公司利潤結算與月度損益</p>
             </div>
             <div class="pro-card" onclick="location.href='staff.html'">
                 <i class="fas fa-users-cog text-slate-700"></i>
@@ -172,7 +147,7 @@
             <div class="pro-card" onclick="location.href='settings.html'">
                 <i class="fas fa-cogs text-slate-400"></i>
                 <h3>系統參數設定</h3>
-                <p>調整公司資訊與 API 後端網址</p>
+                <p>調整公司資訊與權限設定</p>
             </div>
         </section>
 
@@ -187,11 +162,6 @@
                 </div>
             </div>
         </div>
-
-        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
-            <span>JINDE Engineering Hub</span>
-            <span class="hidden sm:inline">V4.2.0 - SQL MODE</span>
-        </footer>
     </main>
 
     <script>
@@ -200,38 +170,42 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const userName = localStorage.getItem('user_name') || '管理員';
 
-        // --- 核心初始化 ---
+        // --- 修復公告載入邏輯 ---
         async function initDashboard() {
-            // 1. 審核提醒 (僅林忠錦)
-            const { data: pending } = await _supabase.from('staff').select('id').eq('status', 'pending');
-            if (pending && pending.length > 0 && userName === '林忠錦') {
-                document.getElementById('admin-alert').classList.remove('hidden');
-            }
+            try {
+                // 1. 審核提醒
+                const { data: pending } = await _supabase.from('staff').select('id').eq('status', 'pending');
+                if (pending?.length > 0 && userName === '林忠錦') {
+                    document.getElementById('admin-alert').classList.remove('hidden');
+                }
 
-            // 2. 顯示公告
-            const { data: notices } = await _supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5);
-            const swipe = document.getElementById('notice-swipe');
-            swipe.innerHTML = '';
-            if (notices && notices.length > 0) {
-                notices.forEach(n => {
-                    swipe.innerHTML += `
-                        <div class="notice-card">
-                            <span class="text-[9px] font-black text-teal-400 uppercase tracking-widest">${new Date(n.created_at).toLocaleDateString()}</span>
-                            <h4 class="font-bold text-sm mt-1 mb-1 truncate">${n.title}</h4>
-                            <p class="text-[10px] text-slate-400 line-clamp-2">${n.content}</p>
-                        </div>`;
-                });
-            } else {
-                swipe.innerHTML = '<p class="text-slate-300 text-[10px] italic">目前尚無公司公告</p>';
-            }
+                // 2. 顯示公告 (增加錯誤處理避免中斷)
+                const { data: notices, error } = await _supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5);
+                const swipe = document.getElementById('notice-swipe');
+                
+                if (error) throw error;
 
-            // 3. 管理員功能顯示
-            if (userName === '林忠錦') {
-                document.getElementById('add-notice-btn').classList.remove('hidden');
+                swipe.innerHTML = '';
+                if (notices && notices.length > 0) {
+                    notices.forEach(n => {
+                        swipe.innerHTML += `
+                            <div class="notice-card">
+                                <span class="text-[9px] font-black text-teal-400 uppercase tracking-widest">${new Date(n.created_at).toLocaleDateString()}</span>
+                                <h4 class="font-bold text-sm mt-1 mb-1 truncate">${n.title}</h4>
+                                <p class="text-[10px] text-slate-400 line-clamp-2">${n.content}</p>
+                            </div>`;
+                    });
+                } else {
+                    swipe.innerHTML = '<p class="text-slate-300 text-[10px] italic">目前尚無公司公告</p>';
+                }
+
+                if (userName === '林忠錦') document.getElementById('add-notice-btn').classList.remove('hidden');
+            } catch (err) {
+                console.error("Dashboard Init Error:", err);
+                document.getElementById('notice-swipe').innerHTML = '<p class="text-rose-400 text-[10px]">公告載入失敗，請檢查網路</p>';
             }
         }
 
-        // --- 公告發布邏輯 ---
         function openNoticeModal() { document.getElementById('notice-modal').classList.replace('hidden', 'flex'); }
         function closeNoticeModal() { document.getElementById('notice-modal').classList.replace('flex', 'hidden'); }
         async function submitNotice() {
@@ -242,7 +216,6 @@
             if (!error) { closeNoticeModal(); initDashboard(); }
         }
 
-        // --- 基礎函數 ---
         function updateClock() {
             const now = new Date();
             document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW');
@@ -250,18 +223,10 @@
         }
         function logout() { localStorage.clear(); window.location.href = 'login.html'; }
         
-        async function checkStatus() {
-            try {
-                const { error } = await _supabase.from('staff').select('*', { count: 'exact', head: true }).limit(1);
-                document.getElementById('status-dot').className = error ? "w-2 h-2 bg-rose-500 rounded-full" : "w-2 h-2 bg-emerald-500 rounded-full";
-                document.getElementById('status-text').innerText = error ? "連線中斷" : "雲端連線正常";
-            } catch { }
-        }
-
         window.onload = function() {
             document.getElementById('user-info-side').innerText = "使用者：" + userName;
             updateClock(); setInterval(updateClock, 1000);
-            checkStatus(); initDashboard();
+            initDashboard();
         }
     </script>
 </body>
