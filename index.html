@@ -2,42 +2,46 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 錦德工程雲端管理中台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 錦德工程管理中台</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 【權限檢查】若未通過驗證標記，直接踢回登入頁
+        // 【權限與自動登入逾時檢查】
+        const MAX_IDLE_TIME = 30 * 60 * 1000; // 30 分鐘
+        const lastActive = localStorage.getItem('jinde_last_active');
+        const now = Date.now();
+
         if (localStorage.getItem('jinde_verified') !== 'true') {
             window.location.href = 'login.html';
+        } else if (lastActive && (now - lastActive > MAX_IDLE_TIME)) {
+            localStorage.clear();
+            window.location.href = 'login.html';
         }
+        localStorage.setItem('jinde_last_active', now);
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
         body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
         
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; }
+        /* 側邊欄：手機版收縮 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; z-index: 50; }
         .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
         
-        @media (max-width: 768px) {
-            .sidebar { width: 70px; }
-            .sidebar span, .sidebar p, .sidebar h1 { display: none; }
-            .nav-link { text-align: center; padding: 15px 0; }
-            .nav-link i { margin: 0 !important; font-size: 18px; }
-        }
-
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
         .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
         
+        /* 卡片容器：11張卡片排列 */
         .grid-container { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
             gap: 20px; 
             padding: 30px; 
             overflow-y: auto; 
-            flex-grow: 1;
+            flex-grow: 1; 
         }
 
         .pro-card { background: white; border: 1px solid #eef2f6; padding: 24px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 8px; position: relative; }
@@ -46,8 +50,32 @@
         .pro-card h3 { font-size: 16px; font-weight: 700; color: #1a222d; margin-bottom: 6px; }
         .pro-card p { font-size: 11px; color: #64748b; line-height: 1.5; }
         
-        .tag { position: absolute; top: 15px; right: 15px; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+        .tag { position: absolute; top: 12px; right: 12px; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
         .tag-teal { color: #0d9488; background: #f0fdfa; }
+
+        /* 手機版專屬響應式優化 */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar span, .sidebar p, .sidebar h1 { display: none; }
+            .nav-link { text-align: center; padding: 15px 0; }
+            .nav-link i { margin: 0 !important; font-size: 18px; }
+            .top-header { padding: 0 20px; }
+            
+            /* 手機版強制 2 欄顯示，解決 11 張卡片擠壓問題 */
+            .grid-container { 
+                grid-template-columns: repeat(2, 1fr) !important; 
+                padding: 15px !important; 
+                gap: 12px !important; 
+            }
+            .pro-card { padding: 16px !important; }
+            .pro-card i { font-size: 18px; margin-bottom: 10px; }
+            .pro-card h3 { font-size: 13px !important; }
+            .pro-card p { display: none; } /* 手機隱藏文字描述 */
+        }
+
+        @media (max-width: 480px) {
+            .grid-container { grid-template-columns: 1fr !important; } /* 極小螢幕單欄 */
+        }
     </style>
 </head>
 <body>
@@ -57,16 +85,17 @@
             <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
         </div>
         <nav class="flex-grow overflow-y-auto">
-            <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></div>
-            <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i><span>客戶資料管理</span></div>
-            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5"></i><span>工地管理</span></div>
-            <div class="nav-link" onclick="location.href='docs.html'"><i class="far fa-copy mr-3 w-5"></i><span>公司合約文件</span></div>
-            <div class="nav-link" onclick="location.href='quote.html'"><i class="fas fa-file-invoice mr-3 w-5"></i><span>報價系統</span></div>
-            <div class="nav-link" onclick="location.href='warranty.html'"><i class="fas fa-certificate mr-3 w-5"></i><span>保固書管理</span></div>
-            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5"></i><span>請款管理</span></div>
-            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-chart-pie mr-3 w-5"></i><span>財務收支</span></div>
-            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5"></i><span>人員管理</span></div>
-            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5"></i><span>系統設定</span></div>
+            <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5 text-center"></i><span>中台總覽</span></div>
+            <div class="nav-link" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5 text-center"></i><span>客戶資料管理</span></div>
+            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5 text-center"></i><span>工地管理</span></div>
+            <div class="nav-link" onclick="location.href='docs.html'"><i class="far fa-copy mr-3 w-5 text-center"></i><span>公司合約文件</span></div>
+            <div class="nav-link" onclick="location.href='quote.html'"><i class="fas fa-file-invoice mr-3 w-5 text-center"></i><span>報價系統</span></div>
+            <div class="nav-link" onclick="location.href='quote_query.html'"><i class="fas fa-search-dollar mr-3 w-5 text-center"></i><span>報價紀錄查詢</span></div>
+            <div class="nav-link" onclick="location.href='warranty.html'"><i class="fas fa-certificate mr-3 w-5 text-center"></i><span>保固書管理</span></div>
+            <div class="nav-link" onclick="location.href='billing.html'"><i class="fas fa-money-check-alt mr-3 w-5 text-center"></i><span>請款管理</span></div>
+            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-chart-pie mr-3 w-5 text-center"></i><span>財務收支</span></div>
+            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5 text-center"></i><span>人員管理</span></div>
+            <div class="nav-link" onclick="location.href='settings.html'"><i class="fas fa-cog mr-3 w-5 text-center"></i><span>系統設定</span></div>
         </nav>
         <div class="p-8 border-t border-slate-800">
             <div class="text-[9px] font-black text-slate-500 flex items-center gap-2 uppercase tracking-tighter">
@@ -81,7 +110,7 @@
             <div class="flex items-center gap-3">
                 <span class="text-[10px] bg-slate-100 px-3 py-1 rounded font-mono text-slate-500 uppercase">JINDE Hub</span>
             </div>
-            <div class="flex items-center gap-4 md:gap-8">
+            <div class="flex items-center gap-4">
                 <div class="text-right hidden sm:block">
                     <p id="live-date" class="text-[10px] font-bold text-slate-400"></p>
                     <p id="live-time" class="text-sm font-black text-slate-800"></p>
@@ -94,7 +123,7 @@
 
         <section class="grid-container">
             <div class="pro-card" onclick="location.href='customer.html'">
-                <i class="far fa-address-book"></i>
+                <i class="far fa-address-book text-slate-700"></i>
                 <h3>客戶資料管理</h3>
                 <p>歷史客戶聯絡資訊與案場維護紀錄</p>
             </div>
@@ -110,9 +139,15 @@
                 <p>雲端合約儲存、勞務保險與內部表單歸檔</p>
             </div>
             <div class="pro-card" onclick="location.href='quote.html'">
-                <i class="far fa-file-alt text-blue-600"></i>
+                <i class="far fa-file-invoice text-blue-600"></i>
                 <h3>正式報價系統</h3>
                 <p>標準報價單生成，支援 5% 稅率計算</p>
+            </div>
+            <div class="pro-card" onclick="location.href='quote_query.html'">
+                <span class="tag tag-teal">查詢</span>
+                <i class="fas fa-search-dollar text-amber-500"></i>
+                <h3>報價紀錄查詢</h3>
+                <p>檢索歷史報價單、統計分析與狀態追蹤</p>
             </div>
             <div class="pro-card" onclick="location.href='warranty.html'">
                 <span class="tag tag-teal">證書</span>
@@ -131,13 +166,13 @@
                 <p>公司利潤結算與月度損益</p>
             </div>
             <div class="pro-card" onclick="location.href='staff.html'">
-                <i class="fas fa-users-cog"></i>
+                <i class="fas fa-users-cog text-slate-700"></i>
                 <h3>人員與點工</h3>
                 <p>派工紀錄與工資計算中心</p>
             </div>
             <div class="pro-card" onclick="location.href='record.html'">
                 <i class="fas fa-clipboard-list text-slate-500"></i>
-                <h3>保固書紀錄查詢</h3>
+                <h3>保固紀錄查詢</h3>
                 <p>瀏覽歷史核發清單與雲端備份狀態</p>
             </div>
             <div class="pro-card" onclick="location.href='settings.html'">
@@ -154,27 +189,29 @@
     </main>
 
     <script>
-        // --- 初始化 (使用正確的 Legacy Anon Key) ---
         const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- 自動登出計時器 ---
+        let idleTimer;
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            localStorage.setItem('jinde_last_active', Date.now());
+            idleTimer = setTimeout(logout, 30 * 60 * 1000); // 30分鐘
+        }
+        window.onmousemove = resetIdleTimer;
+        window.onkeypress = resetIdleTimer;
+
         async function checkStatus() {
             try {
-                // 測試連線並取得人員總數
-                const { count, error } = await _supabase
-                    .from('staff')
-                    .select('*', { count: 'exact', head: true });
-                
+                const { count, error } = await _supabase.from('staff').select('*', { count: 'exact', head: true });
                 if (error) throw error;
-
-                document.getElementById('warranty-info').innerText = `雲端系統運作中 (${count || 0} 位人員)`;
                 document.getElementById('status-dot').className = "w-2 h-2 bg-emerald-500 rounded-full";
                 document.getElementById('status-text').innerText = "雲端連線正常";
             } catch (err) {
-                console.error("連線偵測失敗:", err);
                 document.getElementById('status-dot').className = "w-2 h-2 bg-rose-500 rounded-full";
-                document.getElementById('status-text').innerText = "伺服器連線中斷";
+                document.getElementById('status-text').innerText = "連線中斷";
             }
         }
 
@@ -195,6 +232,7 @@
             updateClock();
             setInterval(updateClock, 1000);
             checkStatus();
+            resetIdleTimer();
         }
     </script>
 </body>
