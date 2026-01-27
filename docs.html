@@ -133,7 +133,6 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        // 初始化與讀取
         async function fetchDocs() {
             document.getElementById('loader').classList.remove('hidden');
             const { data, error } = await _supabase.from('documents').select('*').order('created_at', { ascending: false });
@@ -141,7 +140,6 @@
 
             if (error) return console.error(error);
 
-            // 更新統計數值
             document.getElementById('stat_contract').innerHTML = `${data.filter(d => d.category === '工程合約').length} <span class="text-xs font-normal">份</span>`;
             document.getElementById('stat_insurance').innerHTML = `${data.filter(d => d.category === '勞務保險').length} <span class="text-xs font-normal">份</span>`;
             document.getElementById('stat_internal').innerHTML = `${data.filter(d => d.category === '內部表單').length} <span class="text-xs font-normal">份</span>`;
@@ -158,7 +156,7 @@
                         ${getIcon(doc.file_type)}
                         <div>
                             <h4 class="text-sm font-bold text-slate-800">${doc.file_name}</h4>
-                            <p class="text-[10px] text-slate-400">上傳日期：${new Date(doc.created_at).toLocaleDateString()} · 大小：${doc.file_size || '--'}</p>
+                            <p class="text-[10px] text-slate-400">日期：${new Date(doc.created_at).toLocaleDateString()} · 大小：${doc.file_size || '--'}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-6">
@@ -174,40 +172,36 @@
             `).join('');
         }
 
-        // 上傳彈窗控制
-        function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
-        function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); }
-
-        // 執行檔案上傳
         async function uploadFile() {
             const fileInput = document.getElementById('f_file');
-            const fileName = document.getElementById('f_name').value;
+            const displayName = document.getElementById('f_name').value;
             const category = document.getElementById('f_category').value;
             const btn = document.getElementById('uploadBtn');
 
-            if (!fileInput.files[0] || !fileName) return alert('請填寫文件名稱並選擇檔案');
-
+            if (!fileInput.files[0] || !displayName) return alert('請填寫文件名稱並選擇檔案');
+            
             btn.disabled = true;
-            btn.innerText = "上傳中...";
+            btn.innerText = "正在加密上傳...";
 
             const file = fileInput.files[0];
             const fileExt = file.name.split('.').pop();
-            const filePath = `docs/${Date.now()}_${file.name}`; // 使用時間戳防止重複
+            // 關鍵：使用純數字作為 Key，避免中文或特殊符號
+            const storageKey = `${Date.now()}.${fileExt}`;
 
             try {
                 // 1. 上傳至 Storage
                 const { data: upData, error: upError } = await _supabase.storage
                     .from('project-files')
-                    .upload(filePath, file);
+                    .upload(storageKey, file);
 
                 if (upError) throw upError;
 
                 // 2. 獲取連結
-                const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(filePath);
+                const { data: urlData } = _supabase.storage.from('project-files').getPublicUrl(storageKey);
 
                 // 3. 寫入資料庫
                 const { error: dbError } = await _supabase.from('documents').insert([{
-                    file_name: fileName,
+                    file_name: displayName,
                     category: category,
                     file_type: fileExt.toLowerCase(),
                     file_url: urlData.publicUrl,
@@ -244,6 +238,9 @@
             if (error) alert('刪除失敗');
             fetchDocs();
         }
+
+        function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
+        function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); }
 
         window.onload = fetchDocs;
     </script>
