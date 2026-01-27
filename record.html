@@ -2,35 +2,42 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>保固紀錄查詢 | JINDE 錦德工程</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; }
-        .record-card { background: white; border-radius: 20px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        .record-card { background: white; border-radius: 20px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; position: relative; overflow: hidden; }
+        .record-card:active { transform: scale(0.98); }
         .record-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border-color: #0d9488; }
+        
+        /* 載入骨架屏 */
         .shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
         @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        /* 隱藏捲動條但保留功能 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
-<body class="pb-20">
-    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-10 p-6 border-b border-slate-100">
+<body class="pb-24">
+    <header class="bg-white/90 backdrop-blur-xl sticky top-0 z-50 p-6 border-b border-slate-100 shadow-sm">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-black text-slate-800 tracking-tight">保固紀錄中心</h1>
-                <p id="status-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                    <span id="status-dot" class="inline-block w-2 h-2 bg-slate-300 rounded-full mr-1"></span>
+                <p id="status-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center">
+                    <span id="status-dot" class="inline-block w-2 h-2 bg-slate-300 rounded-full mr-2 animate-pulse"></span>
                     系統連線中...
                 </p>
             </div>
-            <div class="flex gap-2">
-                <button onclick="location.href='index.html'" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
+            <div class="flex gap-3">
+                <button onclick="location.href='index.html'" class="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-teal-600 transition border border-slate-100">
                     <i class="fas fa-home"></i>
                 </button>
-                <button onclick="loadData()" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white hover:bg-teal-600 transition shadow-lg">
+                <button onclick="loadData()" class="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white hover:bg-teal-600 transition shadow-lg">
                     <i id="refresh-icon" class="fas fa-sync-alt text-xs"></i>
                 </button>
             </div>
@@ -38,20 +45,37 @@
     </header>
 
     <div class="max-w-4xl mx-auto px-6 mt-6">
-        <div class="relative mb-8">
-            <i class="fas fa-search absolute left-5 top-4 text-slate-300"></i>
-            <input type="text" id="searchInput" oninput="filterData()" placeholder="搜尋案場名稱、客戶或工法 (如：高壓灌注)..." 
+        <div class="relative mb-8 group">
+            <i class="fas fa-search absolute left-5 top-4 text-slate-300 group-focus-within:text-teal-500 transition-colors"></i>
+            <input type="text" id="searchInput" oninput="filterData()" placeholder="搜尋案場、客戶、單號..." 
                 class="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-4 shadow-sm focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm transition-all">
         </div>
 
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="text-[9px] font-bold text-slate-400 uppercase">總核發數</p>
+                <p id="stat-total" class="text-xl font-black text-slate-800">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="text-[9px] font-bold text-slate-400 uppercase">保固中</p>
+                <p id="stat-active" class="text-xl font-black text-teal-600">0</p>
+            </div>
+        </div>
+
         <div id="recordList" class="space-y-4">
-            <div class="record-card p-6 shimmer h-32"></div>
-            <div class="record-card p-6 shimmer h-32"></div>
+            <div class="record-card p-6 shimmer h-36"></div>
+            <div class="record-card p-6 shimmer h-36"></div>
         </div>
     </div>
 
+    <nav class="fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-lg rounded-3xl p-4 flex justify-around items-center shadow-2xl z-50 md:hidden no-print">
+        <button onclick="location.href='index.html'" class="text-slate-400 hover:text-white transition"><i class="fas fa-th-large text-lg"></i></button>
+        <button onclick="location.href='quote.html'" class="text-slate-400 hover:text-white transition"><i class="fas fa-file-invoice-dollar text-lg"></i></button>
+        <button class="text-teal-400"><i class="fas fa-shield-alt text-lg"></i></button>
+        <button onclick="loadData()" class="text-slate-400"><i class="fas fa-sync text-lg"></i></button>
+    </nav>
+
     <script>
-        // Supabase 設定
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
@@ -60,31 +84,21 @@
 
         async function loadData() {
             const list = document.getElementById('recordList');
-            const statusText = document.getElementById('status-text');
-            const statusDot = document.getElementById('status-dot');
             const icon = document.getElementById('refresh-icon');
-            
             icon.classList.add('fa-spin');
             
             try {
-                // 從 warranties 資料表抓取 (請確保 SQL 已建立此表)
-                const { data, error } = await _supabase
-                    .from('warranties') 
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
+                const { data, error } = await _supabase.from('warranties').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
 
                 allRecords = data;
                 renderCards(allRecords);
+                updateStats(data);
                 
-                statusText.innerText = `連線正常：已載入 ${data.length} 筆紀錄`;
-                statusDot.className = "inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1";
+                document.getElementById('status-text').innerHTML = `<span class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2"></span> 資料庫已連線 (${data.length})`;
             } catch (err) {
-                console.error(err);
-                statusText.innerText = "連線失敗，請檢查資料庫設定";
-                statusDot.className = "inline-block w-2 h-2 bg-rose-500 rounded-full mr-1";
-                list.innerHTML = `<div class="text-center py-20 text-rose-400 font-bold">讀取失敗<br><span class="text-[10px] text-slate-400 font-normal uppercase mt-2 block">Database connection error</span></div>`;
+                document.getElementById('status-text').innerHTML = `<span class="inline-block w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 連線錯誤`;
+                list.innerHTML = `<div class="text-center py-20 text-slate-400">無法載入資料，請確認資料庫。</div>`;
             } finally {
                 icon.classList.remove('fa-spin');
             }
@@ -93,23 +107,24 @@
         function renderCards(data) {
             const list = document.getElementById('recordList');
             if (data.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 text-slate-400 italic">目前尚無保固核發紀錄</div>`;
+                list.innerHTML = `<div class="text-center py-20 text-slate-400 italic">找不到符合條件的紀錄</div>`;
                 return;
             }
 
-            list.innerHTML = data.map(item => `
+            list.innerHTML = data.map(item => {
+                const isExpired = checkExpired(item.created_at, item.warranty_years);
+                return `
                 <div class="record-card p-6">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex gap-2">
-                            <span class="text-[9px] font-black bg-slate-900 text-white px-2 py-1 rounded uppercase tracking-tighter">
-                                ${item.warranty_no || 'W-PENDING'}
+                            <span class="text-[9px] font-black ${isExpired ? 'bg-slate-400' : 'bg-teal-600'} text-white px-2 py-1 rounded uppercase">
+                                ${item.warranty_no || 'W-NO'}
                             </span>
-                            ${item.work_type === '高壓灌注' ? 
-                                `<span class="text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-1 rounded uppercase"><i class="fas fa-syringe mr-1"></i>高壓灌注</span>` : ''}
+                            <span class="text-[9px] font-black bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase">
+                                ${item.work_type || '標準工程'}
+                            </span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-300 font-mono">
-                            ${new Date(item.created_at).toLocaleDateString()}
-                        </span>
+                        <span class="text-[10px] font-bold text-slate-300 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
                     </div>
                     <h3 class="text-lg font-black text-slate-800 mb-1">${item.client_name}</h3>
                     <p class="text-xs text-slate-500 mb-4 flex items-center">
@@ -118,30 +133,50 @@
                     <div class="flex justify-between items-center border-t border-slate-50 pt-4">
                         <div class="flex gap-4">
                             <div>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">保固期限</p>
-                                <p class="text-xs font-black text-teal-600">${item.warranty_years} 年保固</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">狀態</p>
+                                <p class="text-xs font-black ${isExpired ? 'text-rose-400' : 'text-emerald-500'}">
+                                    ${isExpired ? '已過保固' : '保固效期內'}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">完工金額</p>
-                                <p class="text-xs font-black text-slate-700">NT$ ${item.amount?.toLocaleString() || '--'}</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">保固期限</p>
+                                <p class="text-xs font-black text-slate-700">${item.warranty_years} 年</p>
                             </div>
                         </div>
-                        <button onclick="alert('準備生成 PDF...')" class="text-slate-400 hover:text-teal-600 transition text-sm">
+                        <button onclick="viewPDF('${item.id}')" class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition flex items-center justify-center">
                             <i class="fas fa-file-pdf"></i>
                         </button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
+        }
+
+        function checkExpired(startDate, years) {
+            const start = new Date(startDate);
+            const now = new Date();
+            const expiry = new Date(start.setFullYear(start.getFullYear() + parseInt(years)));
+            return now > expiry;
+        }
+
+        function updateStats(data) {
+            document.getElementById('stat-total').innerText = data.length;
+            const active = data.filter(i => !checkExpired(i.created_at, i.warranty_years)).length;
+            document.getElementById('stat-active').innerText = active;
         }
 
         function filterData() {
             const keyword = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allRecords.filter(r => 
-                (r.client_name && r.client_name.toLowerCase().includes(keyword)) || 
-                (r.project_name && r.project_name.toLowerCase().includes(keyword)) ||
-                (r.work_type && r.work_type.toLowerCase().includes(keyword))
+                (r.client_name?.toLowerCase().includes(keyword)) || 
+                (r.project_name?.toLowerCase().includes(keyword)) ||
+                (r.warranty_no?.toLowerCase().includes(keyword))
             );
             renderCards(filtered);
+        }
+
+        function viewPDF(id) {
+            // 實際應用中可跳轉至 warranty_view.html?id=xxx
+            alert('正在調取案場 ID: ' + id + ' 的數位保固書...');
         }
 
         window.onload = loadData;
