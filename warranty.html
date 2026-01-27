@@ -11,7 +11,7 @@
         
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
         
-        /* 側邊欄核心：固定寬度 260px，不縮放 */
+        /* 側邊欄核心 */
         .sidebar { 
             width: 260px; 
             background: #1a222d; 
@@ -20,6 +20,7 @@
             flex-direction: column; 
             flex-shrink: 0; 
             z-index: 50;
+            transition: all 0.3s ease;
         }
         
         .nav-link { 
@@ -42,10 +43,14 @@
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background-color: #f1f5f9; }
         .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; }
 
-        /* 手機版適配 */
-        @media (max-width: 1024px) {
-            .sidebar { display: none; } 
-            .main-stage { width: 100%; }
+        /* 響應式：手機版改為窄版圖示導航 */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text { display: none; }
+            .sidebar .p-8 { padding: 1.5rem 1rem; text-align: center; }
+            .nav-link { justify-content: center; padding: 20px 0; border-left: none; border-bottom: 4px solid transparent; }
+            .nav-link.active { border-bottom-color: #0d9488; }
+            .nav-link i { margin: 0; }
             .content-scroll { padding: 20px; }
         }
 
@@ -75,25 +80,38 @@
 
     <aside class="sidebar">
         <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理</p>
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer logo-text" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">錦德工程管理</p>
         </div>
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> 總覽面板</a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> 人員與點工</a>
-            <a href="projects.html" class="nav-link"><i class="fas fa-hammer"></i> 案場進度</a>
-            <a href="warranty.html" class="nav-link active"><i class="fas fa-file-contract"></i> 保固書生產</a>
-            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> 請款系統</a>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">人員與點工</span></a>
+            <a href="projects.html" class="nav-link"><i class="fas fa-hammer"></i> <span class="nav-text">案場進度</span></a>
+            <a href="warranty.html" class="nav-link active"><i class="fas fa-file-contract"></i> <span class="nav-text">保固書生產</span></a>
+            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">請款系統</span></a>
         </nav>
-        <div class="p-8 border-t border-slate-700">
-            <p class="text-[9px] text-slate-500 tracking-widest uppercase">V4.0.2 Stable Build</p>
+        <div class="p-6 border-t border-slate-700 bg-[#151b23]">
+            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2">Security Status</p>
+            <div class="flex items-center gap-2 text-rose-500 font-mono text-xs">
+                <i class="fas fa-user-shield"></i>
+                <span id="logout-timer">30:00</span>
+            </div>
         </div>
     </aside>
 
     <main class="main-stage">
         <header class="content-scroll pb-0">
-            <h2 class="text-4xl font-black text-slate-800 tracking-tight">保固書簽發中控</h2>
-            <p class="text-slate-500 mt-2 text-lg">請選擇要產生的文件部分，建議先完成封面再印製內容頁。</p>
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-4xl font-black text-slate-800 tracking-tight">保固書簽發中控</h2>
+                    <p class="text-slate-500 mt-2 text-lg">請選擇要產生的文件部分，建議先完成封面再印製內容頁。</p>
+                </div>
+                <div class="no-print pb-2">
+                    <span class="bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-xs font-bold border border-teal-100">
+                        系統狀態：運行中
+                    </span>
+                </div>
+            </div>
         </header>
 
         <div class="content-scroll">
@@ -125,5 +143,44 @@
         </div>
     </main>
 
+    <script>
+        // --- 自動登出計時邏輯 ---
+        let timeLeft = 30 * 60; // 30 分鐘
+        const timerElement = document.getElementById('logout-timer');
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                alert('為了您的帳戶安全，系統已自動登出。');
+                window.location.href = 'login.html'; 
+            }
+            timeLeft--;
+        }
+
+        // 監聽使用者動作以重置時間
+        function resetTimer() {
+            timeLeft = 30 * 60;
+        }
+
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('touchstart', resetTimer);
+
+        setInterval(updateTimer, 1000);
+
+        // --- PDF 命名預置 (供子頁面讀取) ---
+        // 這裡可以預留一個函數，讓使用者點擊卡片時，將相關資訊存在 SessionStorage
+        function prepareMetadata() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('client')) {
+                sessionStorage.setItem('pending_client_name', urlParams.get('client'));
+            }
+        }
+
+        window.onload = prepareMetadata;
+    </script>
 </body>
 </html>
