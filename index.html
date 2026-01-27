@@ -2,156 +2,168 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>JINDE | 錦德管理中台</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        :root { --primary-teal: #0d9488; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
 
-        /* 左側導航欄 (電腦常駐，手機收縮) */
+        /* 左側導航 */
         .sidebar {
             width: 260px; background: #1e293b; color: white;
-            display: flex; flex-direction: column; transition: all 0.3s;
+            display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0; z-index: 50;
         }
 
         .nav-item {
-            padding: 14px 24px; display: flex; align-items: center;
+            padding: 16px 24px; display: flex; align-items: center; gap: 12px;
             color: #94a3b8; font-size: 14px; transition: 0.2s;
             border-left: 4px solid transparent; cursor: pointer;
         }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(255,255,255,0.05); color: white; border-left-color: #0d9488;
+        .nav-item:active, .nav-item.active {
+            background: rgba(255,255,255,0.08); color: white; border-left-color: var(--primary-teal);
         }
 
         /* 右側主區域 */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
 
-        /* 功能卡片設計 */
+        /* 卡片設計系統 */
         .card-grid {
             display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 12px; padding: 16px;
+            gap: 16px; padding: 20px;
         }
+        
         .action-card {
-            background: white; border-radius: 24px; padding: 16px;
-            aspect-ratio: 1/1; display: flex; flex-direction: column;
-            justify-content: space-between; border: 1px solid #f1f5f9;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.2s;
+            background: white; border-radius: 28px; padding: 20px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05); transition: 0.2s all;
         }
-        .action-card:active { transform: scale(0.95); background: #f8fafc; }
+        
+        /* 讓第一張卡片變寬，達成 1+10=11 的完美佈局 */
+        .featured-card { grid-column: span 2; aspect-ratio: auto; height: 100px; flex-direction: row; align-items: center; }
+
+        .action-card:active { transform: scale(0.96); filter: brightness(0.95); }
 
         .icon-circle {
-            width: 40px; height: 40px; border-radius: 12px;
-            display: flex; items-center; justify-content: center; font-size: 1.1rem;
+            width: 44px; height: 44px; border-radius: 14px;
+            display: flex; items-center; justify-content: center; font-size: 1.2rem;
         }
 
-        /* 手機端適配 */
+        /* 手機端寬度優化 */
         @media (max-width: 768px) {
-            .sidebar { width: 60px; }
+            .sidebar { width: 68px; }
             .sidebar span, .sidebar .logo-text { display: none; }
-            .sidebar .p-8 { padding: 20px 0; display: flex; justify-content: center; }
-            .nav-item { justify-content: center; padding: 18px 0; border-left: none; border-bottom: 2px solid transparent; }
-            .nav-item.active { border-bottom-color: #0d9488; background: none; }
-            .card-grid { grid-template-columns: repeat(2, 1fr); }
+            .sidebar .p-8 { padding: 24px 0; text-align: center; }
+            .nav-item { justify-content: center; padding: 20px 0; border-left-width: 0; border-right: 3px solid transparent; }
+            .nav-item.active { border-right-color: var(--primary-teal); background: none; color: var(--primary-teal); }
+            .card-grid { gap: 12px; padding: 16px; }
         }
     </style>
 </head>
 <body>
 
     <aside class="sidebar shadow-2xl">
-        <div class="p-8">
+        <div class="p-8 flex justify-center">
             <h1 class="text-2xl font-black text-white">J<span class="logo-text">INDE.</span></h1>
         </div>
         <nav class="flex-grow">
-            <div class="nav-item active" onclick="location.href='index.html'"><i class="fas fa-th-large w-6"></i><span>中控台</span></div>
-            <div class="nav-item" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt w-6"></i><span>行程月曆</span></div>
-            <div class="nav-item" onclick="location.href='customer.html'"><i class="fas fa-user-friends w-6"></i><span>客戶資料</span></div>
-            <div class="nav-item" onclick="location.href='project.html'"><i class="fas fa-hammer w-6"></i><span>工地管理</span></div>
-            <div class="nav-item" onclick="location.href='quote.html'"><i class="fas fa-file-invoice-dollar w-6"></i><span>正式報價</span></div>
-            <div class="nav-item" onclick="location.href='staff.html'"><i class="fas fa-users-cog w-6"></i><span>人員點工</span></div>
+            <div class="nav-item active" onclick="location.href='index.html'"><i class="fas fa-th-large"></i><span>中控台</span></div>
+            <div class="nav-item" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt"></i><span>行程月曆</span></div>
+            <div class="nav-item" onclick="location.href='project.html'"><i class="fas fa-hammer"></i><span>工地管理</span></div>
+            <div class="nav-item" onclick="location.href='staff.html'"><i class="fas fa-user-clock"></i><span>人員點工</span></div>
+            <div class="nav-item" onclick="location.href='quote.html'"><i class="fas fa-file-invoice-dollar"></i><span>正式報價</span></div>
         </nav>
-        <div class="p-4 border-t border-slate-700">
-            <div class="nav-item" onclick="logout()"><i class="fas fa-power-off w-6"></i><span>登出</span></div>
+        <div class="p-6 border-t border-slate-700/50">
+            <div class="nav-item opacity-60" onclick="logout()"><i class="fas fa-power-off"></i><span>登出系統</span></div>
         </div>
     </aside>
 
     <main class="main-content">
-        <header class="bg-white/80 backdrop-blur px-6 py-4 sticky top-0 z-10 flex justify-between items-center border-b">
-            <h2 class="font-bold text-slate-800">歡迎，<span id="user-name-display">管理員</span></h2>
-            <div id="admin-alert" class="hidden h-2 w-2 bg-rose-500 rounded-full animate-ping"></div>
+        <header class="bg-white/70 backdrop-blur-lg px-6 py-5 sticky top-0 z-10 flex justify-between items-center border-b border-slate-200/60">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Dashboard</p>
+                <h2 class="font-black text-slate-800">您好，<span id="user-name-display">管理員</span></h2>
+            </div>
+            <div class="relative">
+                <i class="far fa-bell text-slate-400 text-lg"></i>
+                <div id="admin-alert" class="hidden absolute -top-1 -right-1 h-2 w-2 bg-rose-500 rounded-full border-2 border-white"></div>
+            </div>
         </header>
 
         <div class="card-grid">
-            
-            <div class="action-card" onclick="location.href='calendar.html'">
-                <div class="icon-circle bg-teal-50 text-teal-600"><i class="fas fa-calendar-check"></i></div>
-                <h3 class="font-bold text-sm">行程月曆</h3>
+            <div class="action-card featured-card border-teal-100 bg-teal-50/30" onclick="location.href='calendar.html'">
+                <div class="flex items-center gap-4">
+                    <div class="icon-circle bg-teal-600 text-white shadow-lg shadow-teal-200">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-800">行程月曆</h3>
+                        <p class="text-[10px] text-teal-600 font-bold">查看今日派工進度</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-slate-300 ml-auto"></i>
             </div>
 
             <div class="action-card" onclick="location.href='customer.html'">
                 <div class="icon-circle bg-blue-50 text-blue-600"><i class="fas fa-address-book"></i></div>
-                <h3 class="font-bold text-sm">客戶管理</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">客戶資料<br>管理</h3>
             </div>
 
             <div class="action-card" onclick="location.href='project.html'">
                 <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
-                <h3 class="font-bold text-sm">工地管理</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程案場<br>管理</h3>
             </div>
 
             <div class="action-card" onclick="location.href='staff.html'">
                 <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
-                <h3 class="font-bold text-sm">人員點工</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">人員點工<br>核算</h3>
             </div>
 
             <div class="action-card" onclick="location.href='quote.html'">
                 <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice"></i></div>
-                <h3 class="font-bold text-sm">正式報價</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">正式報價<br>系統</h3>
             </div>
 
             <div class="action-card" onclick="location.href='quote_query.html'">
-                <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search"></i></div>
-                <h3 class="font-bold text-sm">報價查詢</h3>
+                <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search-dollar"></i></div>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">歷史報價<br>查詢</h3>
             </div>
 
             <div class="action-card" onclick="location.href='warranty.html'">
                 <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-award"></i></div>
-                <h3 class="font-bold text-sm">保固產生</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程保固<br>產生器</h3>
             </div>
 
             <div class="action-card" onclick="location.href='billing.html'">
                 <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
-                <h3 class="font-bold text-sm">工程請款</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程請款<br>核銷</h3>
             </div>
 
-            <div class="action-card" onclick="location.href='finance.html'">
-                <div class="icon-circle bg-slate-900 text-white"><i class="fas fa-chart-bar"></i></div>
-                <h3 class="font-bold text-sm">財務損益</h3>
+            <div class="action-card bg-slate-800" onclick="location.href='finance.html'">
+                <div class="icon-circle bg-white/10 text-white"><i class="fas fa-chart-line"></i></div>
+                <h3 class="font-bold text-sm text-white leading-tight">財務損益<br>中心</h3>
             </div>
 
             <div class="action-card" onclick="location.href='docs.html'">
                 <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="fas fa-folder-open"></i></div>
-                <h3 class="font-bold text-sm">合約文件</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">雲端合約<br>文件</h3>
             </div>
 
             <div class="action-card" onclick="location.href='settings.html'">
                 <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
-                <h3 class="font-bold text-sm">系統設定</h3>
+                <h3 class="font-bold text-sm text-slate-700 leading-tight">系統參數<br>設定</h3>
             </div>
-
         </div>
     </main>
 
     <script>
-        const userName = localStorage.getItem('user_name') || '管理員';
-        document.getElementById('user-name-display').innerText = userName;
-
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        }
+        document.getElementById('user-name-display').innerText = localStorage.getItem('user_name') || '管理員';
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
         
         // 禁止手機端雙擊縮放
         document.addEventListener('touchstart', (e) => {
