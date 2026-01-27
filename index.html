@@ -3,210 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德工程管理中台</title>
+    <title>JINDE | 錦德管理中台</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; color: #1e293b; }
-        
-        /* 側邊欄優化 */
-        .sidebar { width: 260px; background: #0f172a; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s; z-index: 50; }
-        .nav-link { margin: 4px 16px; padding: 12px 16px; font-size: 14px; color: #94a3b8; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; }
-        .nav-link:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-link.active { background: #0d9488; color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        /* 公告區塊輕量化 */
-        .notice-container { display: flex; gap: 16px; padding: 20px 40px; overflow-x: auto; scrollbar-width: none; }
-        .notice-card { min-width: 300px; background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative; overflow: hidden; }
-        .notice-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #0d9488; }
+        /* 左側導航欄 (電腦常駐，手機收縮) */
+        .sidebar {
+            width: 260px; background: #1e293b; color: white;
+            display: flex; flex-direction: column; transition: all 0.3s;
+            flex-shrink: 0; z-index: 50;
+        }
 
-        /* 功能卡片優化 */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 0 40px 40px; }
-        .pro-card { background: white; border-radius: 20px; padding: 24px; border: 1px solid #f1f5f9; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
-        .pro-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02); border-color: #0d9488; }
-        .icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 20px; }
-        
-        /* 標籤設計 */
-        .section-title { padding: 30px 40px 15px; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 10px; }
-        .section-title::after { content: ''; flex-grow: 1; height: 1px; background: #e2e8f0; }
+        .nav-item {
+            padding: 14px 24px; display: flex; align-items: center;
+            color: #94a3b8; font-size: 14px; transition: 0.2s;
+            border-left: 4px solid transparent; cursor: pointer;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.05); color: white; border-left-color: #0d9488;
+        }
 
+        /* 右側主區域 */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+        /* 功能卡片設計 */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 12px; padding: 16px;
+        }
+        .action-card {
+            background: white; border-radius: 24px; padding: 16px;
+            aspect-ratio: 1/1; display: flex; flex-direction: column;
+            justify-content: space-between; border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.2s;
+        }
+        .action-card:active { transform: scale(0.95); background: #f8fafc; }
+
+        .icon-circle {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; items-center; justify-content: center; font-size: 1.1rem;
+        }
+
+        /* 手機端適配 */
         @media (max-width: 768px) {
-            .sidebar { width: 0; position: absolute; } /* 手機版隱藏側邊 */
-            .grid-container { grid-template-columns: repeat(2, 1fr); padding: 20px; gap: 12px; }
-            .notice-container { padding: 15px 20px; }
+            .sidebar { width: 60px; }
+            .sidebar span, .sidebar .logo-text { display: none; }
+            .sidebar .p-8 { padding: 20px 0; display: flex; justify-content: center; }
+            .nav-item { justify-content: center; padding: 18px 0; border-left: none; border-bottom: 2px solid transparent; }
+            .nav-item.active { border-bottom-color: #0d9488; background: none; }
+            .card-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="p-8 mb-4">
-            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
-            <div id="user-info-side" class="text-[10px] text-slate-500 mt-2 font-medium">系統管理員</div>
+
+    <aside class="sidebar shadow-2xl">
+        <div class="p-8">
+            <h1 class="text-2xl font-black text-white">J<span class="logo-text">INDE.</span></h1>
         </div>
         <nav class="flex-grow">
-            <div class="nav-link active" onclick="location.href='index.html'"><i class="fas fa-home mr-3"></i><span>中控主頁</span></div>
-            <div class="nav-link" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt mr-3"></i><span>工程月曆</span></div>
-            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-tasks mr-3"></i><span>案場管理</span></div>
-            <div class="nav-link" onclick="location.href='finance.html'"><i class="fas fa-wallet mr-3"></i><span>財務結算</span></div>
+            <div class="nav-item active" onclick="location.href='index.html'"><i class="fas fa-th-large w-6"></i><span>中控台</span></div>
+            <div class="nav-item" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt w-6"></i><span>行程月曆</span></div>
+            <div class="nav-item" onclick="location.href='customer.html'"><i class="fas fa-user-friends w-6"></i><span>客戶資料</span></div>
+            <div class="nav-item" onclick="location.href='project.html'"><i class="fas fa-hammer w-6"></i><span>工地管理</span></div>
+            <div class="nav-item" onclick="location.href='quote.html'"><i class="fas fa-file-invoice-dollar w-6"></i><span>正式報價</span></div>
+            <div class="nav-item" onclick="location.href='staff.html'"><i class="fas fa-users-cog w-6"></i><span>人員點工</span></div>
         </nav>
-        <div class="p-8">
-            <button onclick="logout()" class="text-slate-500 text-xs hover:text-rose-500 transition flex items-center gap-2">
-                <i class="fas fa-sign-out-alt"></i> 登出系統
-            </button>
+        <div class="p-4 border-t border-slate-700">
+            <div class="nav-item" onclick="logout()"><i class="fas fa-power-off w-6"></i><span>登出</span></div>
         </div>
     </aside>
 
-    <main class="main-stage">
-        <header class="flex items-center justify-between px-10 py-6 bg-transparent">
-            <div>
-                <h2 class="text-2xl font-bold text-slate-800">早安，<span id="welcome-name">錦德工程</span></h2>
-                <p class="text-slate-400 text-sm mt-1" id="live-full-date"></p>
-            </div>
-            <div class="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                <div class="text-right px-3 border-r border-slate-100">
-                    <p id="live-time" class="text-lg font-black text-slate-700 leading-none"></p>
-                    <p class="text-[10px] text-teal-600 font-bold uppercase mt-1">System Live</p>
-                </div>
-                <div id="status-dot" class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse ml-2 mr-4"></div>
-            </div>
+    <main class="main-content">
+        <header class="bg-white/80 backdrop-blur px-6 py-4 sticky top-0 z-10 flex justify-between items-center border-b">
+            <h2 class="font-bold text-slate-800">歡迎，<span id="user-name-display">管理員</span></h2>
+            <div id="admin-alert" class="hidden h-2 w-2 bg-rose-500 rounded-full animate-ping"></div>
         </header>
 
-        <div class="section-title">公司公告事項</div>
-        <div id="notice-swipe" class="notice-container">
-            <div class="notice-card animate-pulse">載入中...</div>
-        </div>
+        <div class="card-grid">
+            
+            <div class="action-card" onclick="location.href='calendar.html'">
+                <div class="icon-circle bg-teal-50 text-teal-600"><i class="fas fa-calendar-check"></i></div>
+                <h3 class="font-bold text-sm">行程月曆</h3>
+            </div>
 
-        <div class="section-title">工程核心管理</div>
-        <section class="grid-container">
-            <div class="pro-card" onclick="location.href='calendar.html'">
-                <div class="icon-box bg-teal-50 text-teal-600"><i class="fas fa-calendar-check"></i></div>
-                <h3 class="font-bold text-slate-700">工程月曆</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">檢視每日排程與派工狀況</p>
+            <div class="action-card" onclick="location.href='customer.html'">
+                <div class="icon-circle bg-blue-50 text-blue-600"><i class="fas fa-address-book"></i></div>
+                <h3 class="font-bold text-sm">客戶管理</h3>
             </div>
-            <div class="pro-card" onclick="location.href='project.html'">
-                <div class="icon-box bg-blue-50 text-blue-600"><i class="fas fa-project-diagram"></i></div>
-                <h3 class="font-bold text-slate-700">案場進度</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">追蹤所有在建工程狀態</p>
-            </div>
-            <div class="pro-card" onclick="location.href='staff.html'">
-                <div class="icon-box bg-purple-50 text-purple-600"><i class="fas fa-user-hard-hat"></i></div>
-                <h3 class="font-bold text-slate-700">人員點工</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">管理工班出勤與薪資計算</p>
-            </div>
-            <div class="pro-card" onclick="location.href='customer.html'">
-                <div class="icon-box bg-orange-50 text-orange-600"><i class="far fa-address-book"></i></div>
-                <h3 class="font-bold text-slate-700">客戶名單</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">維護客戶聯絡資訊與歷程</p>
-            </div>
-        </section>
 
-        <div class="section-title">文件與財務報表</div>
-        <section class="grid-container">
-            <div class="pro-card" onclick="location.href='quote.html'">
-                <div class="icon-box bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice-dollar"></i></div>
-                <h3 class="font-bold text-slate-700">報價系統</h3>
-                <p class="text-xs text-slate-400 mt-2">快速生成與發送報價單</p>
+            <div class="action-card" onclick="location.href='project.html'">
+                <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
+                <h3 class="font-bold text-sm">工地管理</h3>
             </div>
-            <div class="pro-card" onclick="location.href='billing.html'">
-                <div class="icon-box bg-rose-50 text-rose-600"><i class="fas fa-receipt"></i></div>
-                <h3 class="font-bold text-slate-700">請款管理</h3>
-                <p class="text-xs text-slate-400 mt-2">進度請款與核銷作業</p>
-            </div>
-            <div class="pro-card" onclick="location.href='finance.html'">
-                <div class="icon-box bg-amber-50 text-amber-600"><i class="fas fa-chart-pie"></i></div>
-                <h3 class="font-bold text-slate-700">財務中心</h3>
-                <p class="text-xs text-slate-400 mt-2">月度損益與公司收支統計</p>
-            </div>
-            <div class="pro-card" onclick="location.href='warranty.html'">
-                <div class="icon-box bg-indigo-50 text-indigo-600"><i class="fas fa-certificate"></i></div>
-                <h3 class="font-bold text-slate-700">保固核發</h3>
-                <p class="text-xs text-slate-400 mt-2">工程完工保固書管理</p>
-            </div>
-        </section>
 
-        <div class="px-10 pb-10 flex justify-end">
-            <button id="add-notice-btn" onclick="openNoticeModal()" class="hidden bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">
-                + 發布公告
-            </button>
+            <div class="action-card" onclick="location.href='staff.html'">
+                <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
+                <h3 class="font-bold text-sm">人員點工</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='quote.html'">
+                <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice"></i></div>
+                <h3 class="font-bold text-sm">正式報價</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='quote_query.html'">
+                <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search"></i></div>
+                <h3 class="font-bold text-sm">報價查詢</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='warranty.html'">
+                <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-award"></i></div>
+                <h3 class="font-bold text-sm">保固產生</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='billing.html'">
+                <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
+                <h3 class="font-bold text-sm">工程請款</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='finance.html'">
+                <div class="icon-circle bg-slate-900 text-white"><i class="fas fa-chart-bar"></i></div>
+                <h3 class="font-bold text-sm">財務損益</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='docs.html'">
+                <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="fas fa-folder-open"></i></div>
+                <h3 class="font-bold text-sm">合約文件</h3>
+            </div>
+
+            <div class="action-card" onclick="location.href='settings.html'">
+                <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
+                <h3 class="font-bold text-sm">系統設定</h3>
+            </div>
+
         </div>
     </main>
 
-    <div id="notice-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl">
-            <h3 class="text-xl font-bold mb-6">新增重要公告</h3>
-            <input type="text" id="n_title" placeholder="公告標題" class="w-full p-4 bg-slate-50 border-none rounded-2xl mb-4 outline-none ring-2 ring-transparent focus:ring-teal-500">
-            <textarea id="n_content" rows="4" placeholder="在此輸入公告詳細內容..." class="w-full p-4 bg-slate-50 border-none rounded-2xl mb-6 outline-none ring-2 ring-transparent focus:ring-teal-500"></textarea>
-            <div class="flex gap-3">
-                <button onclick="closeNoticeModal()" class="flex-1 py-4 text-slate-400 font-bold">取消</button>
-                <button onclick="submitNotice()" class="flex-1 py-4 bg-teal-600 text-white rounded-2xl font-bold">立即發布</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const SUPABASE_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0'; 
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const userName = localStorage.getItem('user_name') || '管理員';
+        document.getElementById('user-name-display').innerText = userName;
 
-        async function initDashboard() {
-            try {
-                // 讀取公告
-                const { data: notices, error } = await _supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5);
-                const swipe = document.getElementById('notice-swipe');
-                if (error) throw error;
-
-                swipe.innerHTML = '';
-                if (notices && notices.length > 0) {
-                    notices.forEach(n => {
-                        swipe.innerHTML += `
-                            <div class="notice-card">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md uppercase">${new Date(n.created_at).toLocaleDateString()}</span>
-                                </div>
-                                <h4 class="font-bold text-slate-800 text-sm mb-1">${n.title}</h4>
-                                <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">${n.content}</p>
-                            </div>`;
-                    });
-                } else {
-                    swipe.innerHTML = '<div class="text-slate-400 text-xs italic">目前沒有新的公告</div>';
-                }
-
-                if (userName === '林忠錦') document.getElementById('add-notice-btn').classList.remove('hidden');
-                document.getElementById('welcome-name').innerText = userName;
-            } catch (err) {
-                console.error(err);
-            }
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
         }
-
-        function updateClock() {
-            const now = new Date();
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-            document.getElementById('live-full-date').innerText = now.toLocaleDateString('zh-TW', options);
-            document.getElementById('live-time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        }
-
-        function openNoticeModal() { document.getElementById('notice-modal').classList.replace('hidden', 'flex'); }
-        function closeNoticeModal() { document.getElementById('notice-modal').classList.replace('flex', 'hidden'); }
-        async function submitNotice() {
-            const title = document.getElementById('n_title').value;
-            const content = document.getElementById('n_content').value;
-            if (!title || !content) return alert('請完整填寫');
-            const { error } = await _supabase.from('notices').insert([{ title, content, author: userName }]);
-            if (!error) { closeNoticeModal(); initDashboard(); }
-        }
-
-        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
-
-        window.onload = function() {
-            updateClock();
-            setInterval(updateClock, 60000);
-            initDashboard();
-        }
+        
+        // 禁止手機端雙擊縮放
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
 </html>
