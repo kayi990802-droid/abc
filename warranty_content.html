@@ -2,87 +2,135 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 保固書生產系統 (日期自訂版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 保固書生產中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap');
-        body { background-color: #0f172a; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 基礎佈局：手機版改為上下堆疊，桌面版為左右並排 */
+        body { background-color: #0f172a; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; font-family: 'Noto Sans TC', sans-serif; }
+        @media (min-width: 1024px) { body { flex-direction: row; } }
+        
         @page { size: A4; margin: 0; }
-        .admin-panel { width: 380px; height: 100vh; background: #1e293b; padding: 30px; z-index: 1000; border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; color: white; flex-shrink: 0; }
-        .preview-area { flex-grow: 1; height: 100vh; overflow-y: auto; padding: 40px; display: flex; justify-content: center; background: #0f172a; }
-        .a4-page { width: 210mm; height: 297mm; padding: 25mm 22mm; background: white; font-family: 'Noto Serif TC', serif; color: #1a1a1a; position: relative; box-sizing: border-box; box-shadow: 0 0 50px rgba(0,0,0,0.5); flex-shrink: 0; }
+        
+        /* 管理面板適配 */
+        .admin-panel { 
+            width: 100%; height: auto; max-height: 50vh; background: #1e293b; padding: 20px; 
+            z-index: 1000; overflow-y: auto; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+        @media (min-width: 1024px) { .admin-panel { width: 380px; height: 100vh; max-height: none; border-right: 1px solid rgba(255,255,255,0.1); border-bottom: none; } }
+        
+        /* 預覽區域適配 */
+        .preview-area { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; justify-content: center; background: #334155; }
+        @media (min-width: 1024px) { .preview-area { padding: 40px; } }
+        
+        /* A4 紙張本體 (手機版透過 CSS Scale 縮小預覽) */
+        .a4-page { 
+            width: 210mm; height: 297mm; padding: 25mm 22mm; background: white; 
+            font-family: 'Noto Serif TC', serif; color: #1a1a1a; position: relative; 
+            box-sizing: border-box; box-shadow: 0 0 50px rgba(0,0,0,0.5); flex-shrink: 0;
+            transform-origin: top center;
+        }
+        @media (max-width: 800px) { .a4-page { transform: scale(0.4); margin-bottom: -180mm; } }
+        @media (max-width: 500px) { .a4-page { transform: scale(0.35); margin-bottom: -190mm; } }
+
         .page-header { border-bottom: 2px solid #000; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .main-title { font-size: 38pt; font-weight: 900; text-align: center; margin: 35pt 0; letter-spacing: 0.5em; }
+        .main-title { font-size: 38pt; font-weight: 900; text-align: center; margin: 35pt 0; letter-spacing: 0.5em; color: #000; }
         .content-body { font-size: 14.5pt; line-height: 2.2; text-align: justify; margin-bottom: 25pt; }
         .underline-input { font-weight: 700; border-bottom: 2px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center; }
-        table { width: 100%; border-collapse: collapse; }
-        td { border: 1.5pt solid #000; padding: 12pt; font-size: 13pt; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        td { border: 1.5pt solid #000; padding: 12pt; font-size: 13pt; color: #000; }
         .bg-gray { background-color: #f5f5f5; font-weight: 700; width: 125px; text-align: center; }
+        
+        /* 圖檔預覽定位 */
         #logo_preview { position: absolute; top: 45mm; right: 22mm; max-width: 55mm; max-height: 25mm; display: none; }
-        #seal_preview { position: absolute; bottom: 105px; right: 145px; width: 145px; display: none; transform: rotate(-8deg); z-index: 10; opacity: 0.9; }
-        @media print { body { background: none; } .no-print { display: none !important; } .preview-area { padding: 0; display: block; overflow: visible; } .a4-page { margin: 0 auto; box-shadow: none; border: none; } }
+        #seal_preview { position: absolute; bottom: 95px; right: 130px; width: 150px; display: none; transform: rotate(-8deg); z-index: 10; opacity: 0.85; pointer-events: none; }
+        
+        /* 手機輸入框優化 (防止縮放) */
+        input, textarea, select { font-size: 16px !important; }
+
+        @media print { 
+            body { background: none; flex-direction: column; overflow: visible; } 
+            .no-print { display: none !important; } 
+            .preview-area { padding: 0; display: block; overflow: visible; background: white; } 
+            .a4-page { transform: scale(1) !important; margin: 0 auto !important; box-shadow: none; border: none; } 
+        }
     </style>
 </head>
 <body>
 
     <div class="no-print admin-panel">
-        <a href="index.html" class="flex items-center gap-2 text-slate-400 mb-8 hover:text-teal-400 transition-all">
-            <i class="fas fa-arrow-left"></i> 返回中台總覽
-        </a>
-        <h2 class="text-2xl font-black mb-6 text-teal-400">核發保固證書</h2>
+        <div class="flex justify-between items-center mb-4">
+            <a href="warranty.html" class="text-slate-400 hover:text-teal-400 text-sm"><i class="fas fa-arrow-left mr-1"></i> 返回</a>
+            <span id="logout-timer" class="text-[10px] font-mono text-rose-400 border border-rose-400/30 px-2 py-1 rounded">30:00</span>
+        </div>
         
-        <div class="space-y-5">
+        <div class="space-y-4">
             <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-slate-400 font-bold uppercase">1. Logo</label><input type="file" class="w-full text-[10px] mt-1" onchange="loadFile(event, 'logo_preview')"></div>
-                <div><label class="text-[10px] text-rose-400 font-bold uppercase">2. 印章</label><input type="file" class="w-full text-[10px] mt-1" onchange="loadFile(event, 'seal_preview')"></div>
+                <div><label class="text-[10px] text-slate-400 font-bold uppercase">Logo</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'logo_preview')"></div>
+                <div><label class="text-[10px] text-rose-400 font-bold uppercase">印章</label><input type="file" class="w-full text-[10px]" onchange="loadFile(event, 'seal_preview')"></div>
             </div>
 
-            <div><label class="text-xs text-slate-400 font-bold">客戶姓名</label><input type="text" id="in_client" placeholder="業主姓名" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none focus:ring-2 focus:ring-teal-500" oninput="sync()"></div>
-            <div><label class="text-xs text-slate-400 font-bold">案場名稱與地址</label><textarea id="in_p_name" rows="2" placeholder="詳細施工地點" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none focus:ring-2 focus:ring-teal-500" oninput="sync()"></textarea></div>
+            <input type="text" id="in_client" placeholder="客戶姓名" class="w-full bg-slate-800 rounded-lg p-3 text-white outline-none focus:ring-1 focus:ring-teal-500" oninput="sync()">
+            <textarea id="in_p_name" rows="2" placeholder="案場名稱與地址" class="w-full bg-slate-800 rounded-lg p-3 text-white outline-none focus:ring-1 focus:ring-teal-500" oninput="sync()"></textarea>
             
-            <div><label class="text-xs text-teal-400 font-bold italic">施工完工日期 (可手動調整)</label><input type="date" id="in_date" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none border border-teal-500/30 text-white" oninput="sync()"></div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-xs text-slate-400 font-bold">保固期限 (年)</label><input type="number" id="in_years" value="3" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></div>
-                <div><label class="text-xs text-slate-400 font-bold">金額 (NT$)</label><input type="number" id="in_amount" placeholder="金額" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" oninput="sync()"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="date" id="in_date" class="bg-slate-800 rounded-lg p-3 text-white text-sm" oninput="sync()">
+                <input type="number" id="in_years" value="3" class="bg-slate-800 rounded-lg p-3 text-white" placeholder="年限" oninput="sync()">
             </div>
 
-            <div><label class="text-xs text-slate-400 font-bold">施工工法</label>
-            <select id="in_work_type" class="w-full bg-slate-800 rounded-xl p-3 text-sm mt-1 outline-none" onchange="sync()">
+            <select id="in_work_type" class="w-full bg-slate-800 rounded-lg p-3 text-white outline-none" onchange="sync()">
                 <option value="高壓灌注止漏工法">高壓灌注止漏工法</option>
                 <option value="複合式防水工程">複合式防水工程</option>
                 <option value="外牆滲漏修繕">外牆滲漏修繕</option>
                 <option value="屋頂隔熱防水">屋頂隔熱防水</option>
-            </select></div>
+            </select>
 
-            <div class="pt-4"><button id="saveBtn" onclick="saveAndPrint()" class="w-full bg-teal-500 hover:bg-teal-400 text-white py-4 rounded-2xl font-black text-lg shadow-lg transition-all active:scale-95"><i class="fas fa-save mr-2"></i> 儲存並列印</button></div>
+            <button id="saveBtn" onclick="saveAndPrint()" class="w-full bg-teal-500 hover:bg-teal-400 text-white py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-print"></i> 儲存並產出 PDF
+            </button>
         </div>
     </div>
 
     <div class="preview-area">
-        <div class="a4-page">
+        <div class="a4-page" id="print-content">
             <div class="page-header">
                 <div class="text-[13pt] font-semibold tracking-[0.6em]">專 業 · 態 度 · 細 心 · 責 任</div>
-                <div class="text-sm italic text-gray-400 font-sans text-right uppercase">Jinde Engineering</div>
+                <div class="text-sm italic text-gray-400 uppercase">Jinde Engineering</div>
             </div>
             <div class="border-b border-black mt-1 mb-12"></div>
-            <img id="logo_preview" src=""><h1 class="main-title">服務保固書</h1>
-            <div class="content-body">茲承攬 <span id="out_client" class="underline-input">未填寫</span> 之 <span id="out_p_name" class="underline-input">未填寫</span> <span id="out_work_type" class="font-bold">高壓灌注止漏工法</span>。本公司承諾對施工品質負完全責任，若於保固期間內發生施工瑕疵導致之滲漏，本公司將負責無償修繕完成。</div>
+            
+            <img id="logo_preview" src="">
+            <h1 class="main-title">服務保固書</h1>
+            
+            <div class="content-body">
+                茲承攬 <span id="out_client" class="underline-input">未填寫</span> 之 <span id="out_p_name" class="underline-input">未填寫</span> <span id="out_work_type" class="font-bold">高壓灌注止漏工法</span>。本公司承諾對施工品質負完全責任，若於保固期間內發生施工瑕疵導致之滲漏，本公司將負責無償修繕完成。
+            </div>
+            
             <table>
                 <tr><td class="bg-gray">保固期限</td><td colspan="3" class="font-bold">自民國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日起，共計 <span id="out_years">3</span> 年。</td></tr>
                 <tr><td class="bg-gray">承攬廠商</td><td class="text-xl font-black">錦德工程行</td><td class="bg-gray">統一編號</td><td class="font-bold">80081612</td></tr>
                 <tr><td class="bg-gray">負責人</td><td class="text-lg">王震昱</td><td class="bg-gray">聯絡電話</td><td class="font-bold">0963-696-032</td></tr>
                 <tr><td class="bg-gray">通訊地址</td><td colspan="3">401 臺中市東區建德街 346 巷 7 號</td></tr>
             </table>
+
             <div class="absolute bottom-[35mm] left-[22mm] flex items-center gap-4">
                 <div class="border border-black p-1 bg-white"><img id="qr_img" src="" class="w-20 h-20"></div>
-                <div class="text-[9pt] leading-relaxed">數位保固驗證系統<br>核發編號：<span id="doc_id" class="font-mono font-bold text-blue-800"></span><br><span class="text-gray-400 tracking-tighter uppercase">Authentic Guarantee</span></div>
+                <div class="text-[9pt] leading-relaxed">
+                    數位保固驗證系統<br>
+                    核發編號：<span id="doc_id" class="font-mono font-bold text-blue-800"></span><br>
+                    <span class="text-gray-400 tracking-tighter uppercase text-[7pt]">Authentic Guarantee</span>
+                </div>
             </div>
+
             <img id="seal_preview" src="">
-            <div class="absolute bottom-[35mm] right-[22mm] text-right"><p class="font-black text-2xl tracking-tight">中 華 民 國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日</p></div>
+            <div class="absolute bottom-[35mm] right-[22mm] text-right">
+                <p class="font-black text-2xl tracking-tight">中 華 民 國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日</p>
+            </div>
         </div>
     </div>
 
@@ -91,12 +139,26 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        // 設定預設日期為今天
+        let timeLeft = 30 * 60;
+
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('in_date').value = today;
+            startTimer();
             sync();
         };
+
+        function startTimer() {
+            const timerObj = document.getElementById('logout-timer');
+            setInterval(() => {
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                timerObj.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if (timeLeft <= 0) location.href = 'index.html';
+                timeLeft--;
+            }, 1000);
+            ['mousedown', 'touchstart'].forEach(e => document.addEventListener(e, () => timeLeft = 30 * 60));
+        }
 
         function loadFile(event, targetId) {
             const output = document.getElementById(targetId);
@@ -107,61 +169,56 @@
         }
 
         function sync() {
-            document.getElementById('out_client').innerText = document.getElementById('in_client').value || "未填寫";
-            document.getElementById('out_p_name').innerText = document.getElementById('in_p_name').value || "未填寫";
-            document.getElementById('out_years').innerText = document.getElementById('in_years').value;
-            document.getElementById('out_work_type').innerText = document.getElementById('in_work_type').value;
+            const client = document.getElementById('in_client').value;
+            const project = document.getElementById('in_p_name').value;
+            const years = document.getElementById('in_years').value;
+            const workType = document.getElementById('in_work_type').value;
+
+            document.getElementById('out_client').innerText = client || "未填寫";
+            document.getElementById('out_p_name').innerText = project || "未填寫";
+            document.getElementById('out_years').innerText = years;
+            document.getElementById('out_work_type').innerText = workType;
 
             if(!window.docId) {
-                const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                window.docId = `JD-${datePart}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+                window.docId = `JD-${new Date().getTime().toString().slice(-8)}`;
             }
             document.getElementById('doc_id').innerText = window.docId;
+            document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jinde.com/verify?id=${window.docId}`;
 
-            const verifyUrl = `https://kayl990802-droid.github.io/jinde-data/verify.html?id=${window.docId}`;
-            document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
-
-            // 處理自訂日期
-            const selectedDate = new Date(document.getElementById('in_date').value);
-            const y = selectedDate.getFullYear() - 1911;
-            const m = selectedDate.getMonth() + 1;
-            const d = selectedDate.getDate();
-            document.querySelectorAll('.d_y').forEach(el => el.innerText = y);
-            document.querySelectorAll('.d_m').forEach(el => el.innerText = m);
-            document.querySelectorAll('.d_d').forEach(el => el.innerText = d);
+            const d = new Date(document.getElementById('in_date').value);
+            document.querySelectorAll('.d_y').forEach(el => el.innerText = d.getFullYear() - 1911);
+            document.querySelectorAll('.d_m').forEach(el => el.innerText = d.getMonth() + 1);
+            document.querySelectorAll('.d_d').forEach(el => el.innerText = d.getDate());
         }
 
         async function saveAndPrint() {
             const btn = document.getElementById('saveBtn');
-            const clientName = document.getElementById('in_client').value;
-            const projectName = document.getElementById('in_p_name').value;
-            const dateValue = document.getElementById('in_date').value;
-
-            if(!clientName || !projectName) return alert("請填寫客戶與案場資料！");
-
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 儲存中...';
+            const client = document.getElementById('in_client').value;
+            const date = document.getElementById('in_date').value;
+            
+            if(!client) return alert("請輸入客戶姓名！");
+            
             btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 處理中...';
 
             try {
-                const { error } = await _supabase.from('warranties').insert([{ 
+                const { error } = await _supabase.from('warranties').insert([{
                     doc_id: window.docId,
-                    warranty_no: window.docId,
-                    client_name: clientName,
-                    project_name: projectName,
-                    work_type: document.getElementById('in_work_type').value,
+                    client_name: client,
+                    project_name: document.getElementById('in_p_name').value,
                     warranty_years: parseInt(document.getElementById('in_years').value),
-                    amount: parseInt(document.getElementById('in_amount').value || 0),
-                    created_at: new Date(dateValue).toISOString(), // 使用自訂日期作為建立時間
-                    status: '有效'
+                    created_at: new Date(date).toISOString()
                 }]);
-
                 if (error) throw error;
-                btn.innerHTML = '✅ 成功';
-                setTimeout(() => { window.print(); btn.disabled = false; btn.innerHTML = '儲存並列印'; }, 800);
+                
+                // 自動更改標題，讓 PDF 檔名正確
+                document.title = `保固書_${client}_${date}`;
+                window.print();
             } catch (err) {
-                alert("存檔失敗：" + err.message);
+                alert("儲存失敗: " + err.message);
+            } finally {
                 btn.disabled = false;
-                btn.innerHTML = '儲存並列印';
+                btn.innerHTML = '<i class="fas fa-print"></i> 儲存並產出 PDF';
             }
         }
     </script>
