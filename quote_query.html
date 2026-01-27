@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JINDE | 報價歷史查詢</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,95 +10,109 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* 電腦版側邊欄 */
+        .sidebar { width: 260px; background: #1e293b; color: white; flex-shrink: 0; display: flex; flex-direction: column; transition: all 0.3s ease; z-index: 50; }
         
-        /* 手機版響應式側邊欄邏輯 */
-        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; display: flex; flex-direction: column; transition: all 0.3s ease; }
+        /* 手機版導航優化：改為底部選單 */
         @media (max-width: 768px) {
-            .sidebar { width: 70px; }
-            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text { display: none; }
-            .sidebar .p-8 { padding: 1.5rem 1rem; text-align: center; }
-            .nav-link { padding: 14px 0; text-align: center; justify-content: center; border-left-width: 0; border-bottom: 2px solid transparent; }
-            .nav-link.active { border-bottom-color: #14b8a6; background: #242e3d; }
+            .sidebar { 
+                position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; 
+                flex-direction: row; border-top: 1px solid rgba(255,255,255,0.1); 
+            }
+            .sidebar .logo-area, .sidebar .sub-text, .sidebar #logout-timer { display: none; }
+            .sidebar nav { display: flex; width: 100%; justify-content: space-around; align-items: center; }
+            .nav-link { flex-direction: column; gap: 4px !important; padding: 10px 0 !important; font-size: 10px !important; border-left: none !important; border-top: 3px solid transparent; }
+            .nav-link.active { border-top-color: #14b8a6; background: transparent; }
+            .main-content { padding-bottom: 70px; }
+            
+            /* 手機版隱藏表格，改用卡片顯示 */
+            .desktop-table { display: none; }
+            .mobile-cards { display: block; }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-cards { display: none; }
         }
 
         .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 12px; }
-        .nav-link:hover { background: #242e3d; color: white; }
-        .nav-link.active { background: #242e3d; color: white; border-left-color: #14b8a6; }
-        
+        .nav-link:hover { background: #334155; color: white; }
+        .nav-link.active { background: #334155; color: white; border-left-color: #14b8a6; }
+
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .scroll-area { padding: 20px md:40px; overflow-y: auto; flex-grow: 1; }
+        .scroll-area { padding: 15px; overflow-y: auto; flex-grow: 1; }
+
+        /* 防止手機輸入框縮放 */
+        input { font-size: 16px !important; }
         
-        /* 避免手機表格崩潰 */
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        
-        /* 自動登出倒數提示 */
-        #logout-timer { font-size: 10px; color: #ef4444; margin-top: 10px; }
+        /* 卡片樣式 */
+        .stat-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-left: 4px solid #14b8a6; }
+        .quote-card { background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter cursor-pointer logo-text" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">錦德工程管理系統</p>
-            <div class="hidden max-[768px]:block text-teal-500 font-black text-xl">J.</div>
-            <div id="logout-timer" class="nav-text"><i class="fas fa-shield-alt mr-1"></i> <span id="timer-count">30:00</span></div>
+
+    <aside class="sidebar no-print">
+        <div class="p-6 logo-area">
+            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">工程管理系統</p>
+            <div id="logout-timer" class="mt-4 text-rose-400 font-mono text-xs italic">
+                <i class="fas fa-clock mr-1"></i>安全時限 <span id="timer-count">30:00</span>
+            </div>
         </div>
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link"><i class="fas fa-th-large w-5"></i><span class="nav-text">總覽面板</span></a>
-            <a href="quote.html" class="nav-link"><i class="fas fa-plus-circle w-5"></i><span class="nav-text">建立新報價</span></a>
-            <a href="quote_query.html" class="nav-link active"><i class="fas fa-history w-5"></i><span class="nav-text">報價歷史查詢</span></a>
-            <a href="project.html" class="nav-link"><i class="fas fa-hammer w-5"></i><span class="nav-text">工地管理</span></a>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large w-5"></i><span>總覽</span></a>
+            <a href="quote.html" class="nav-link"><i class="fas fa-plus-circle w-5"></i><span>報價</span></a>
+            <a href="quote_query.html" class="nav-link active"><i class="fas fa-history w-5"></i><span>紀錄</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer w-5"></i><span>工地</span></a>
         </nav>
     </aside>
 
     <main class="main-content">
-        <header class="h-[70px] border-b bg-white flex items-center justify-between px-6 md:px-10 shrink-0">
-            <div class="flex items-center gap-4">
-                <i class="fas fa-search text-slate-400"></i>
-                <h2 class="text-lg font-black text-slate-800 hidden sm:block">報價紀錄管理</h2>
+        <header class="h-[60px] bg-white border-b flex items-center justify-between px-4 shrink-0 shadow-sm">
+            <div class="flex items-center flex-1 gap-2">
+                <i class="fas fa-search text-slate-300"></i>
+                <input type="text" id="searchInput" oninput="filterQuotes()" placeholder="搜尋客戶或單號..." 
+                       class="w-full bg-transparent border-none outline-none text-sm text-slate-700">
             </div>
-            <div class="flex gap-2 md:gap-4">
-                <input type="text" id="searchInput" oninput="filterQuotes()" placeholder="搜尋客戶或單號..." class="bg-slate-100 px-4 py-2 rounded-lg text-sm outline-none focus:ring-2 ring-teal-500/20 w-40 md:w-64">
-                <button onclick="fetchQuotes()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
+            <button onclick="fetchQuotes()" class="ml-2 text-teal-600 p-2">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         </header>
 
         <div class="scroll-area">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-10">
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-teal-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">本月累計金額</p>
-                    <p id="total_amount" class="text-2xl font-black text-slate-800">NT$ 0</p>
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="stat-card">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">本月金額</p>
+                    <p id="total_amount" class="text-lg font-black text-slate-800">NT$ 0</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-slate-800">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">總報價件數</p>
-                    <p id="total_count" class="text-2xl font-black text-slate-800">0 件</p>
+                <div class="stat-card" style="border-left-color: #1e293b;">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">總件數</p>
+                    <p id="total_count" class="text-lg font-black text-slate-800">0 件</p>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="table-container">
-                    <table class="w-full text-left min-w-[800px]">
-                        <thead class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            <tr>
-                                <th class="px-6 py-4">報價日期</th>
-                                <th class="px-6 py-4">報價單號</th>
-                                <th class="px-6 py-4">客戶名稱</th>
-                                <th class="px-6 py-4">聯絡電話</th>
-                                <th class="px-6 py-4 text-right">報價總額</th>
-                                <th class="px-6 py-4 text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="quote_list" class="divide-y divide-slate-50">
-                            </tbody>
-                    </table>
+            <div id="mobile_list" class="mobile-cards">
                 </div>
-                <div id="empty-state" class="hidden py-20 text-center text-slate-300">
-                    <i class="fas fa-file-invoice-dollar text-5xl mb-4"></i>
-                    <p>找不到相關報價紀錄</p>
-                </div>
+
+            <div class="desktop-table bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase">
+                        <tr>
+                            <th class="px-6 py-4">報價日期</th>
+                            <th class="px-6 py-4">客戶名稱</th>
+                            <th class="px-6 py-4 text-right">報價總額</th>
+                            <th class="px-6 py-4 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quote_list_desktop" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+
+            <div id="empty-state" class="hidden py-20 text-center text-slate-300">
+                <i class="fas fa-file-invoice-dollar text-5xl mb-4"></i>
+                <p>找不到報價紀錄</p>
             </div>
         </div>
     </main>
@@ -109,105 +123,107 @@
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         let allQuotes = [];
-        
-        // --- 1. 自動登出邏輯 (30分鐘) ---
-        let timeLeft = 30 * 60; 
+        let timeLeft = 30 * 60;
+
+        // 安全計時器
         function startTimer() {
-            const timerDisplay = document.getElementById('timer-count');
-            const countdown = setInterval(() => {
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                timerDisplay.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(countdown);
-                    alert("安全登出：您已超過 30 分鐘未操作。");
-                    location.href = "login.html"; // 假設您有登入頁
-                }
+            setInterval(() => {
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                document.getElementById('timer-count').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if (timeLeft <= 0) location.href = "login.html";
                 timeLeft--;
             }, 1000);
-
-            // 監聽使用者行為，重置計時器
-            ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
-                document.addEventListener(evt, () => timeLeft = 30 * 60);
-            });
+            ['touchstart', 'mousedown', 'keydown'].forEach(e => document.addEventListener(e, () => timeLeft = 30 * 60));
         }
 
-        // --- 2. 報價資料邏輯 ---
+        // 抓取資料
         async function fetchQuotes() {
             const { data, error } = await _supabase.from('quotes').select('*').order('created_at', { ascending: false });
-            if (error) { console.error(error); return; }
+            if (error) return alert('讀取失敗');
             allQuotes = data;
-            renderTable(data);
+            renderAll();
             updateStats(data);
         }
 
-        function renderTable(data) {
-            const list = document.getElementById('quote_list');
+        // 渲染畫面（同時處理手機與電腦）
+        function renderAll() {
+            const desktop = document.getElementById('quote_list_desktop');
+            const mobile = document.getElementById('mobile_list');
             const empty = document.getElementById('empty-state');
-            if (data.length === 0) {
-                list.innerHTML = "";
+
+            if (allQuotes.length === 0) {
                 empty.classList.remove('hidden');
                 return;
             }
             empty.classList.add('hidden');
-            list.innerHTML = data.map(q => `
+
+            // 電腦版
+            desktop.innerHTML = allQuotes.map(q => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="px-6 py-4 text-sm text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
-                    <td class="px-6 py-4 font-mono text-xs font-bold text-slate-400">${q.id}</td>
                     <td class="px-6 py-4 font-bold text-slate-800">${q.customer_name}</td>
-                    <td class="px-6 py-4 text-sm text-slate-500">${q.phone || '--'}</td>
                     <td class="px-6 py-4 text-right font-black text-teal-600">NT$ ${Math.round(q.total_amount).toLocaleString()}</td>
                     <td class="px-6 py-4 text-center">
-                        <div class="flex justify-center gap-2">
-                            <button onclick="viewDetail('${q.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:text-teal-600 transition shadow-sm">
-                                <i class="fas fa-edit text-xs"></i>
-                            </button>
-                            <button onclick="deleteQuote('${q.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:text-rose-500 transition shadow-sm">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
-                        </div>
+                        <button onclick="viewDetail('${q.id}')" class="text-teal-600 mr-3"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteQuote('${q.id}')" class="text-rose-400"><i class="fas fa-trash-alt"></i></button>
                     </td>
                 </tr>
+            `).join('');
+
+            // 手機版 (卡片式)
+            mobile.innerHTML = allQuotes.map(q => `
+                <div class="quote-card shadow-sm">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] text-slate-400 font-mono">${q.id}</span>
+                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded">${new Date(q.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="font-bold text-slate-800">${q.customer_name}</p>
+                            <p class="text-teal-600 font-black">NT$ ${Math.round(q.total_amount).toLocaleString()}</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="viewDetail('${q.id}')" class="bg-teal-50 text-teal-600 w-10 h-10 rounded-full"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteQuote('${q.id}')" class="bg-rose-50 text-rose-400 w-10 h-10 rounded-full"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
             `).join('');
         }
 
         function filterQuotes() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allQuotes.filter(q => 
-                q.customer_name.toLowerCase().includes(term) || 
-                q.id.toLowerCase().includes(term)
+                q.customer_name.toLowerCase().includes(term) || q.id.toLowerCase().includes(term)
             );
-            renderTable(filtered);
+            // 這裡簡單化，過濾後重新賦值給渲染函數使用的臨時變量
+            const temp = allQuotes;
+            allQuotes = filtered;
+            renderAll();
+            allQuotes = temp; 
         }
 
         function updateStats(data) {
-            const now = new Date();
-            const thisMonth = data.filter(q => {
-                const d = new Date(q.created_at);
-                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-            });
-            const total = thisMonth.reduce((sum, q) => sum + q.total_amount, 0);
+            const total = data.reduce((sum, q) => sum + q.total_amount, 0);
             document.getElementById('total_amount').innerText = `NT$ ${Math.round(total).toLocaleString()}`;
             document.getElementById('total_count').innerText = `${data.length} 件`;
         }
 
         async function deleteQuote(id) {
-            if (!confirm('確定刪除？此動作不可撤銷。')) return;
+            if (!confirm('確定刪除？')) return;
             const { error } = await _supabase.from('quotes').delete().eq('id', id);
-            if (error) alert('刪除失敗');
-            else fetchQuotes();
+            if (error) alert('失敗'); else fetchQuotes();
         }
 
         function viewDetail(id) {
-            // 存入 localStorage 供 quote.html 讀取回填
             localStorage.setItem('edit_quote_id', id);
             location.href = 'quote.html';
         }
 
         window.onload = () => {
             fetchQuotes();
-            startTimer(); // 啟動安全計時
+            startTimer();
         };
     </script>
 </body>
