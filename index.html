@@ -9,163 +9,195 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
-        :root { --primary-teal: #0d9488; }
-        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary-teal: #0d9488; --sidebar-bg: #1a222d; }
+        
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
 
-        /* 左側導航 */
+        /* 左側導航 - 統一風格 */
         .sidebar {
-            width: 260px; background: #1e293b; color: white;
-            display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0; z-index: 50;
+            width: 260px; background: var(--sidebar-bg); color: white;
+            display: flex; flex-direction: column; flex-shrink: 0; z-index: 50;
+            transition: width 0.3s ease;
         }
 
-        .nav-item {
-            padding: 16px 24px; display: flex; align-items: center; gap: 12px;
-            color: #94a3b8; font-size: 14px; transition: 0.2s;
-            border-left: 4px solid transparent; cursor: pointer;
+        .nav-link {
+            padding: 14px 24px; font-size: 14px; color: #94a3b8;
+            transition: 0.2s; border-left: 4px solid transparent;
+            display: flex; align-items: center; cursor: pointer; text-decoration: none;
         }
-        .nav-item:active, .nav-item.active {
-            background: rgba(255,255,255,0.08); color: white; border-left-color: var(--primary-teal);
+        .nav-link i { margin-right: 12px; width: 20px; text-align: center; font-size: 16px; }
+        .nav-link:hover, .nav-link.active {
+            background: #242e3d; color: white; border-left-color: var(--primary-teal);
         }
 
-        /* 右側主區域 */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+        /* 主內容區 */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: #f1f5f9; }
+        .content-scroll { padding: 20px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
 
         /* 卡片設計系統 */
         .card-grid {
             display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 16px; padding: 20px;
+            gap: 16px; max-width: 1000px; margin: 0 auto;
         }
         
         .action-card {
-            background: white; border-radius: 28px; padding: 20px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.7);
-            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05); transition: 0.2s all;
+            background: white; border-radius: 24px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            transition: all 0.2s ease; cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
+        .action-card:active { transform: scale(0.95); background: #f8fafc; }
         
-        /* 讓第一張卡片變寬，達成 1+10=11 的完美佈局 */
-        .featured-card { grid-column: span 2; aspect-ratio: auto; height: 100px; flex-direction: row; align-items: center; }
-
-        .action-card:active { transform: scale(0.96); filter: brightness(0.95); }
+        /* 1+10 佈局：第一張卡片橫跨 */
+        .featured-card { 
+            grid-column: span 2; flex-direction: row !important; 
+            text-align: left !important; justify-content: flex-start !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+            border: 1px solid #ccfbf1;
+        }
 
         .icon-circle {
-            width: 44px; height: 44px; border-radius: 14px;
-            display: flex; items-center; justify-content: center; font-size: 1.2rem;
+            width: 50px; height: 50px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 12px; transition: 0.3s; font-size: 1.25rem;
         }
+        .featured-card .icon-circle { margin-bottom: 0; margin-right: 16px; width: 60px; height: 60px; }
 
-        /* 手機端寬度優化 */
+        /* 📱 手機端響應式優化 */
         @media (max-width: 768px) {
-            .sidebar { width: 68px; }
-            .sidebar span, .sidebar .logo-text { display: none; }
-            .sidebar .p-8 { padding: 24px 0; text-align: center; }
-            .nav-item { justify-content: center; padding: 20px 0; border-left-width: 0; border-right: 3px solid transparent; }
-            .nav-item.active { border-right-color: var(--primary-teal); background: none; color: var(--primary-teal); }
-            .card-grid { gap: 12px; padding: 16px; }
+            .sidebar { width: 70px; }
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .sec-text { display: none; }
+            .sidebar .p-8 { padding: 1.5rem 0.5rem; text-align: center; }
+            .nav-link { justify-content: center; padding: 22px 0; border-left-width: 3px; }
+            .nav-link i { margin: 0; }
+            .content-scroll { padding: 15px; }
+            .header-title { font-size: 1.25rem !important; }
         }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar shadow-2xl">
-        <div class="p-8 flex justify-center">
-            <h1 class="text-2xl font-black text-white">J<span class="logo-text">INDE.</span></h1>
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer text-white" onclick="location.href='index.html'">JD<span class="text-teal-500">.</span></h1>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">錦德防水工程</p>
         </div>
         <nav class="flex-grow">
-            <div class="nav-item active" onclick="location.href='index.html'"><i class="fas fa-th-large"></i><span>中控台</span></div>
-            <div class="nav-item" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt"></i><span>行程月曆</span></div>
-            <div class="nav-item" onclick="location.href='project.html'"><i class="fas fa-hammer"></i><span>工地管理</span></div>
-            <div class="nav-item" onclick="location.href='staff.html'"><i class="fas fa-user-clock"></i><span>人員點工</span></div>
-            <div class="nav-item" onclick="location.href='quote.html'"><i class="fas fa-file-invoice-dollar"></i><span>正式報價</span></div>
+            <a href="index.html" class="nav-link active"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
+            <a href="calendar.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span class="nav-text">行程月曆</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer"></i> <span class="nav-text">案場進度</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">人員與點工</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line"></i> <span class="nav-text">財務中心</span></a>
         </nav>
-        <div class="p-6 border-t border-slate-700/50">
-            <div class="nav-item opacity-60" onclick="logout()"><i class="fas fa-power-off"></i><span>登出系統</span></div>
+        <div class="p-6 border-t border-slate-700 bg-[#151b23]">
+            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2 sec-text">Security</p>
+            <div class="flex items-center justify-center lg:justify-start gap-2 text-rose-500 font-mono text-xs">
+                <i class="fas fa-user-shield"></i>
+                <span id="logout-timer">30:00</span>
+            </div>
         </div>
     </aside>
 
-    <main class="main-content">
-        <header class="bg-white/70 backdrop-blur-lg px-6 py-5 sticky top-0 z-10 flex justify-between items-center border-b border-slate-200/60">
+    <main class="main-stage">
+        <header class="bg-white px-6 py-5 flex justify-between items-center border-b border-slate-200">
             <div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Dashboard</p>
-                <h2 class="font-black text-slate-800">您好，<span id="user-name-display">管理員</span></h2>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Control Center</p>
+                <h2 class="header-title font-black text-slate-800 text-xl">您好，<span id="user-name-display" class="text-teal-600">管理員</span></h2>
             </div>
-            <div class="relative">
-                <i class="far fa-bell text-slate-400 text-lg"></i>
-                <div id="admin-alert" class="hidden absolute -top-1 -right-1 h-2 w-2 bg-rose-500 rounded-full border-2 border-white"></div>
-            </div>
+            <button onclick="logout()" class="text-slate-400 hover:text-rose-500 transition">
+                <i class="fas fa-power-off"></i>
+            </button>
         </header>
 
-        <div class="card-grid">
-            <div class="action-card featured-card border-teal-100 bg-teal-50/30" onclick="location.href='calendar.html'">
-                <div class="flex items-center gap-4">
+        <div class="content-scroll">
+            <div class="card-grid">
+                
+                <div class="action-card featured-card" onclick="location.href='calendar.html'">
                     <div class="icon-circle bg-teal-600 text-white shadow-lg shadow-teal-200">
                         <i class="fas fa-calendar-check"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-slate-800">行程月曆</h3>
-                        <p class="text-[10px] text-teal-600 font-bold">查看今日派工進度</p>
+                        <h3 class="font-black text-slate-800 text-lg">行程月曆</h3>
+                        <p class="text-[11px] text-teal-600 font-bold">查看今日派工進度與排程</p>
                     </div>
+                    <i class="fas fa-chevron-right text-slate-300 ml-auto mr-2"></i>
                 </div>
-                <i class="fas fa-chevron-right text-slate-300 ml-auto"></i>
-            </div>
 
-            <div class="action-card" onclick="location.href='customer.html'">
-                <div class="icon-circle bg-blue-50 text-blue-600"><i class="fas fa-address-book"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">客戶資料<br>管理</h3>
-            </div>
+                <div class="action-card" onclick="location.href='customer.html'">
+                    <div class="icon-circle bg-blue-50 text-blue-600"><i class="fas fa-address-book"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">客戶資料<br>管理</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='project.html'">
-                <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程案場<br>管理</h3>
-            </div>
+                <div class="action-card" onclick="location.href='project.html'">
+                    <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">工程案場<br>管理</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='staff.html'">
-                <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">人員點工<br>核算</h3>
-            </div>
+                <div class="action-card" onclick="location.href='staff.html'">
+                    <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">人員點工<br>核算</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='quote.html'">
-                <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">正式報價<br>系統</h3>
-            </div>
+                <div class="action-card" onclick="location.href='quote.html'">
+                    <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">報價單<br>系統</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='quote_query.html'">
-                <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search-dollar"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">歷史報價<br>查詢</h3>
-            </div>
+                <div class="action-card" onclick="location.href='quote_query.html'">
+                    <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search-dollar"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">歷史報價<br>查詢</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='warranty.html'">
-                <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-award"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程保固<br>產生器</h3>
-            </div>
+                <div class="action-card" onclick="location.href='warranty.html'">
+                    <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-award"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">工程保固<br>產生器</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='billing.html'">
-                <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">工程請款<br>核銷</h3>
-            </div>
+                <div class="action-card" onclick="location.href='billing.html'">
+                    <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">工程請款<br>核銷</h3>
+                </div>
 
-            <div class="action-card bg-slate-800" onclick="location.href='finance.html'">
-                <div class="icon-circle bg-white/10 text-white"><i class="fas fa-chart-line"></i></div>
-                <h3 class="font-bold text-sm text-white leading-tight">財務損益<br>中心</h3>
-            </div>
+                <div class="action-card bg-slate-800" onclick="location.href='finance.html'">
+                    <div class="icon-circle bg-white/10 text-white"><i class="fas fa-chart-line"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-white leading-tight">財務損益<br>中心</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='docs.html'">
-                <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="fas fa-folder-open"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">雲端合約<br>文件</h3>
-            </div>
+                <div class="action-card" onclick="location.href='docs.html'">
+                    <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="fas fa-folder-open"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">雲端合約<br>文件</h3>
+                </div>
 
-            <div class="action-card" onclick="location.href='settings.html'">
-                <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
-                <h3 class="font-bold text-sm text-slate-700 leading-tight">系統參數<br>設定</h3>
+                <div class="action-card" onclick="location.href='settings.html'">
+                    <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
+                    <h3 class="font-bold text-xs lg:text-sm text-slate-700 leading-tight">系統參數<br>設定</h3>
+                </div>
             </div>
+            
+            <p class="text-center text-[10px] text-slate-400 mt-10 font-bold uppercase tracking-widest">© JINDE Engineering Management</p>
         </div>
     </main>
 
     <script>
         document.getElementById('user-name-display').innerText = localStorage.getItem('user_name') || '管理員';
-        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
         
-        // 禁止手機端雙擊縮放
+        function logout() { 
+            if(confirm('確定要登出系統嗎？')) {
+                localStorage.clear(); 
+                window.location.href = 'login.html'; 
+            }
+        }
+
+        // 計時器功能
+        let timeLeft = 1800;
+        setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }, 1000);
+
+        // 禁止雙擊縮放
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
