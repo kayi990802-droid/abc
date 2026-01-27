@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 報價歷史查詢</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; display: flex; flex-direction: column; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; }
+        .nav-link:hover { background: #242e3d; color: white; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: #14b8a6; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .scroll-area { padding: 40px; overflow-y: auto; flex-grow: 1; }
+        .quote-card { background: white; border: 1px solid #e2e8f0; transition: 0.2s; }
+        .quote-card:hover { border-color: #14b8a6; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理系統</p>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link block">總覽面板</a>
+            <a href="quote.html" class="nav-link block">建立新報價</a>
+            <a href="quote_query.html" class="nav-link block active">報價歷史查詢</a>
+            <a href="project.html" class="nav-link block">工地管理</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="h-[70px] border-b bg-white flex items-center justify-between px-10 shrink-0">
+            <div class="flex items-center gap-4">
+                <i class="fas fa-search text-slate-400"></i>
+                <h2 class="text-lg font-black text-slate-800">報價紀錄管理</h2>
+            </div>
+            <div class="flex gap-4">
+                <input type="text" id="searchInput" oninput="filterQuotes()" placeholder="搜尋客戶名稱或單號..." class="bg-slate-100 px-4 py-2 rounded-lg text-sm outline-none focus:ring-2 ring-teal-500/20 w-64">
+                <button onclick="fetchQuotes()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-teal-600 transition">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="scroll-area">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">本月累計金額</p>
+                    <p id="total_amount" class="text-2xl font-black text-slate-800">NT$ 0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">總報價件數</p>
+                    <p id="total_count" class="text-2xl font-black text-slate-800">0 件</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <tr>
+                            <th class="px-6 py-4">報價日期</th>
+                            <th class="px-6 py-4">報價單號</th>
+                            <th class="px-6 py-4">客戶名稱</th>
+                            <th class="px-6 py-4">聯絡電話</th>
+                            <th class="px-6 py-4 text-right">報價總額</th>
+                            <th class="px-6 py-4 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quote_list" class="divide-y divide-slate-50">
+                        </tbody>
+                </table>
+                <div id="empty-state" class="hidden py-20 text-center text-slate-300">
+                    <i class="fas fa-file-invoice-dollar text-5xl mb-4"></i>
+                    <p>找不到相關報價紀錄</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        let allQuotes = [];
+
+        async function fetchQuotes() {
+            const { data, error } = await _supabase.from('quotes').select('*').order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            allQuotes = data;
+            renderTable(data);
+            updateStats(data);
+        }
+
+        function renderTable(data) {
+            const list = document.getElementById('quote_list');
+            const empty = document.getElementById('empty-state');
+            
+            if (data.length === 0) {
+                list.innerHTML = "";
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            list.innerHTML = data.map(q => `
+                <tr class="hover:bg-slate-50 transition cursor-default">
+                    <td class="px-6 py-4 text-sm text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-mono text-xs font-bold text-slate-400">${q.id}</td>
+                    <td class="px-6 py-4 font-bold text-slate-800">${q.customer_name}</td>
+                    <td class="px-6 py-4 text-sm text-slate-500">${q.phone || '--'}</td>
+                    <td class="px-6 py-4 text-right font-black text-teal-600">NT$ ${q.total_amount.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="viewDetail('${q.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:text-teal-600 transition" title="查看明細">
+                                <i class="fas fa-eye text-xs"></i>
+                            </button>
+                            <button onclick="deleteQuote('${q.id}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 hover:text-rose-500 transition" title="刪除">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterQuotes() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allQuotes.filter(q => 
+                q.customer_name.toLowerCase().includes(term) || 
+                q.id.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }
+
+        function updateStats(data) {
+            const total = data.reduce((sum, q) => sum + q.total_amount, 0);
+            document.getElementById('total_amount').innerText = `NT$ ${total.toLocaleString()}`;
+            document.getElementById('total_count').innerText = `${data.length} 件`;
+        }
+
+        async function deleteQuote(id) {
+            if (!confirm('確定要刪除這筆報價紀錄嗎？此動作無法復原。')) return;
+            const { error } = await _supabase.from('quotes').delete().eq('id', id);
+            if (error) alert('刪除失敗');
+            fetchQuotes();
+        }
+
+        function viewDetail(id) {
+            // 您可以選擇跳轉回 quote.html 並帶入 ID 來重新顯示
+            // 或是彈出一個視窗顯示明細
+            alert('報價單號 ' + id + ' 的明細查詢功能開發中，目前可透過資料庫檢視。');
+        }
+
+        window.onload = fetchQuotes;
+    </script>
+</body>
+</html>
