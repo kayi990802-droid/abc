@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>客戶管理 | JINDE 錦德工程</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JINDE | 客戶管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // 【權限與自動登入逾時檢查】
-        const MAX_IDLE_TIME = 30 * 60 * 1000; // 30 分鐘
+        const MAX_IDLE_TIME = 30 * 60 * 1000; 
         const lastActive = localStorage.getItem('jinde_last_active');
         const now = Date.now();
 
@@ -22,92 +22,120 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
-        /* 側邊欄與手機適配 */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; z-index: 50; }
-        .nav-link { padding: 12px 24px; font-size: 13px; color: #94a3b8; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; text-decoration: none; display: block; white-space: nowrap; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        :root { --primary-teal: #0d9488; --sidebar-bg: #1a222d; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
         
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
+        /* 側邊欄統一風格 */
+        .sidebar {
+            width: 260px; background: var(--sidebar-bg); color: white;
+            display: flex; flex-direction: column; flex-shrink: 0; z-index: 50;
+            transition: width 0.3s ease;
+        }
+        .nav-link {
+            padding: 14px 24px; font-size: 14px; color: #94a3b8;
+            transition: 0.2s; border-left: 4px solid transparent;
+            display: flex; align-items: center; cursor: pointer; text-decoration: none;
+        }
+        .nav-link i { margin-right: 12px; width: 20px; text-align: center; }
+        .nav-link:hover, .nav-link.active {
+            background: #242e3d; color: white; border-left-color: var(--primary-teal);
+        }
         
-        .content-area { padding: 30px; overflow-y: auto; flex-grow: 1; }
+        /* 主舞台與頭部 */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #f8fafc; overflow: hidden; }
+        .top-header { background: white; border-bottom: 1px solid #e2e8f0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         
-        /* 響應式表格容器 */
-        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
-        .data-table th { background: #f8fafc; padding: 12px 20px; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; text-align: left; }
-        .data-table td { padding: 16px 20px; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        .content-scroll { padding: 24px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
         
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        /* 表格優化 */
+        .table-container { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        .data-table th { background: #f8fafc; padding: 14px 20px; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; text-align: left; letter-spacing: 0.1em; }
+        .data-table td { padding: 16px 20px; font-size: 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        /* 彈窗背景 */
+        .modal { 
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 20px; 
+        }
 
+        /* 📱 手機端響應式優化 */
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
-            .sidebar span, .sidebar p, .sidebar h1, .nav-text { display: none; }
-            .nav-link { text-align: center; padding: 15px 0; }
-            .nav-link i { margin: 0 !important; font-size: 18px; }
-            .top-header { padding: 0 20px; }
-            .content-area { padding: 15px; }
-            .top-header input { width: 150px; }
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text { display: none; }
+            .sidebar .p-8 { padding: 1.5rem 0.5rem; text-align: center; }
+            .nav-link { justify-content: center; padding: 22px 0; border-left-width: 3px; }
+            .nav-link i { margin: 0; }
+            .top-header { padding: 12px 16px; }
+            .content-scroll { padding: 16px; }
         }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
+    <aside class="sidebar shadow-2xl">
         <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">客戶管理系統</p>
+            <h1 class="text-2xl font-black tracking-tighter text-white cursor-pointer" onclick="location.href='index.html'">J<span class="logo-text">INDE.</span></h1>
+            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">載入中...</p>
         </div>
-        <nav class="flex-grow overflow-y-auto">
-            <div class="nav-link" onclick="location.href='index.html'"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></div>
-            <div class="nav-link active" onclick="location.href='customer.html'"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶資料管理</span></div>
-            <div class="nav-link" onclick="location.href='project.html'"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">工地管理</span></div>
-            <a href="quote_query.html" class="nav-link"><i class="fas fa-search-dollar mr-3 w-5"></i><span class="nav-text">報價紀錄查詢</span></a>
-            <div class="nav-link" onclick="location.href='staff.html'"><i class="fas fa-users mr-3 w-5"></i><span class="nav-text">人員管理</span></div>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i><span class="nav-text">中台總覽</span></a>
+            <a href="customer.html" class="nav-link active"><i class="far fa-address-book"></i><span class="nav-text">客戶管理</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer"></i><span class="nav-text">案場進度</span></a>
+            <a href="calendar.html" class="nav-link"><i class="fas fa-calendar-alt"></i><span class="nav-text">行程月曆</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line"></i><span class="nav-text">財務中心</span></a>
         </nav>
     </aside>
 
     <main class="main-stage">
         <header class="top-header">
-            <div class="flex items-center gap-4">
-                <input type="text" id="searchInput" oninput="loadCustomers()" placeholder="搜尋客戶姓名或電話..." class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-xs outline-none focus:border-teal-500 transition">
+            <div class="flex items-center gap-3 flex-grow max-w-md">
+                <div class="relative w-full">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-300 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="loadCustomers()" placeholder="搜尋姓名或電話..." class="w-full bg-slate-100 border-none rounded-xl px-9 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 transition">
+                </div>
             </div>
-            <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 md:px-5 py-2 rounded-lg text-xs font-bold transition">
-                <i class="fas fa-plus"></i> <span class="hidden md:inline ml-1">新增客戶</span>
+            <button onclick="openModal()" class="ml-4 bg-slate-900 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl text-xs font-black transition shadow-lg active:scale-95 flex items-center gap-2">
+                <i class="fas fa-plus"></i> <span class="hidden md:inline">新增客戶</span>
             </button>
         </header>
 
-        <section class="content-area">
-            <div class="table-container shadow-sm">
+        <section class="content-scroll">
+            <div class="table-container shadow-sm overflow-x-auto">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>客戶姓名</th>
                             <th>聯絡電話</th>
                             <th>施工地址</th>
-                            <th>備註</th>
-                            <th class="text-right">操作</th>
+                            <th>備註內容</th>
+                            <th class="text-right">管理</th>
                         </tr>
                     </thead>
-                    <tbody id="customer-list"></tbody>
+                    <tbody id="customer-list">
+                        </tbody>
                 </table>
             </div>
         </section>
     </main>
 
-    <div id="customerModal" class="modal">
-        <div class="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl">
-            <h2 class="text-xl font-black mb-6">新增客戶資料</h2>
+    <div id="customerModal" class="modal" onclick="if(event.target==this) closeModal()">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-slate-800">建立客戶檔案<span class="text-teal-500">.</span></h2>
+                <button onclick="closeModal()" class="text-slate-300 hover:text-slate-500"><i class="fas fa-times"></i></button>
+            </div>
             <form onsubmit="saveCustomer(event)" class="space-y-4">
-                <input type="text" id="c_name" placeholder="客戶姓名" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500" required>
-                <input type="text" id="c_phone" placeholder="電話" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500" required>
-                <input type="text" id="c_address" placeholder="施工地址" class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-teal-500">
-                <textarea id="c_remark" placeholder="備註事項" class="w-full p-3 bg-slate-50 border rounded-xl outline-none h-24 focus:border-teal-500"></textarea>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold">取消</button>
-                    <button type="submit" class="flex-1 py-3 bg-teal-600 text-white rounded-xl font-bold">儲存客戶</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="c_name" placeholder="姓名" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold" required>
+                    <input type="text" id="c_phone" placeholder="電話" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold" required>
+                </div>
+                <input type="text" id="c_address" placeholder="施工地址" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold">
+                <textarea id="c_remark" placeholder="備註事項 (如：頂樓漏水、外牆工程)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none h-32 focus:border-teal-500 font-medium"></textarea>
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-teal-600/20 active:scale-95 transition">儲存資料</button>
                 </div>
             </form>
         </div>
@@ -118,7 +146,6 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        // --- 自動登出計時器 ---
         let idleTimer;
         function resetIdleTimer() {
             clearTimeout(idleTimer);
@@ -140,22 +167,21 @@
             }
 
             const { data, error } = await query;
-            if (error) return;
-
             const list = document.getElementById('customer-list');
-            if (data.length === 0) {
-                list.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-400">目前沒有符合的客戶資料</td></tr>`;
+            
+            if (error || !data || data.length === 0) {
+                list.innerHTML = `<tr><td colspan="5" class="text-center py-20 text-slate-300 font-bold">暫無客戶資料</td></tr>`;
                 return;
             }
 
             list.innerHTML = data.map(c => `
-                <tr>
-                    <td class="font-bold text-slate-900">${c.name}</td>
-                    <td class="font-mono text-teal-600">${c.phone}</td>
-                    <td class="text-slate-500">${c.address || '-'}</td>
-                    <td class="text-slate-400 italic text-[11px]">${c.remark || ''}</td>
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="font-black text-slate-900">${c.name}</td>
+                    <td class="font-bold text-teal-600">${c.phone}</td>
+                    <td class="text-slate-500 text-xs">${c.address || '-'}</td>
+                    <td class="text-slate-400 text-xs">${c.remark || '-'}</td>
                     <td class="text-right">
-                        <button onclick="deleteCustomer('${c.id}')" class="text-slate-300 hover:text-rose-500 transition p-2"><i class="fas fa-trash-alt"></i></button>
+                        <button onclick="deleteCustomer('${c.id}')" class="text-slate-200 hover:text-rose-500 transition p-2"><i class="fas fa-trash-alt"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -174,13 +200,11 @@
                 closeModal(); 
                 loadCustomers(); 
                 e.target.reset(); 
-            } else {
-                alert("儲存失敗：" + error.message);
             }
         }
 
         async function deleteCustomer(id) {
-            if (confirm('確定要刪除此客戶資料嗎？此動作不可復原。')) {
+            if (confirm('確定要永久刪除此客戶嗎？')) {
                 const { error } = await _supabase.from('customers').delete().eq('id', id);
                 if (!error) loadCustomers();
             }
