@@ -4,76 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>保固紀錄查詢 | JINDE 錦德工程</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; }
-        .record-card { background: white; border-radius: 16px; transition: 0.3s; border: 1px solid #e2e8f0; }
-        .record-card:active { transform: scale(0.98); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+        .record-card { background: white; border-radius: 20px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; }
+        .record-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border-color: #0d9488; }
+        .shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     </style>
 </head>
 <body class="pb-20">
-
-    <header class="bg-white p-6 shadow-sm mb-4">
-        <div class="flex justify-between items-center">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-10 p-6 border-b border-slate-100">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-black text-slate-800">保固紀錄中心</h1>
-                <p id="status-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">正在連線至 ASUS Server...</p>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">保固紀錄中心</h1>
+                <p id="status-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                    <span id="status-dot" class="inline-block w-2 h-2 bg-slate-300 rounded-full mr-1"></span>
+                    系統連線中...
+                </p>
             </div>
-            <button onclick="loadData()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
-                <i id="refresh-icon" class="fas fa-sync-alt"></i>
-            </button>
+            <div class="flex gap-2">
+                <button onclick="location.href='index.html'" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button onclick="loadData()" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white hover:bg-teal-600 transition shadow-lg">
+                    <i id="refresh-icon" class="fas fa-sync-alt text-xs"></i>
+                </button>
+            </div>
         </div>
     </header>
 
-    <div class="px-6 mb-4">
-        <div class="relative">
-            <i class="fas fa-search absolute left-4 top-3.5 text-slate-300"></i>
-            <input type="text" id="searchInput" oninput="filterData()" placeholder="搜尋客戶名稱或案場..." 
-                class="w-full bg-white border-none rounded-2xl py-3 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+    <div class="max-w-4xl mx-auto px-6 mt-6">
+        <div class="relative mb-8">
+            <i class="fas fa-search absolute left-5 top-4 text-slate-300"></i>
+            <input type="text" id="searchInput" oninput="filterData()" placeholder="搜尋案場名稱、客戶或工法 (如：高壓灌注)..." 
+                class="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-4 shadow-sm focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none text-sm transition-all">
+        </div>
+
+        <div id="recordList" class="space-y-4">
+            <div class="record-card p-6 shimmer h-32"></div>
+            <div class="record-card p-6 shimmer h-32"></div>
         </div>
     </div>
 
-    <div id="recordList" class="px-6 space-y-4">
-        <div class="text-center py-20 text-slate-400 italic">資料載入中...</div>
-    </div>
-
     <script>
-        const pb = new PocketBase('https://unoppressed-nonanimate-albertina.ngrok-free.dev');
+        // Supabase 設定
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
         let allRecords = [];
 
         async function loadData() {
             const list = document.getElementById('recordList');
-            const status = document.getElementById('status-text');
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
             const icon = document.getElementById('refresh-icon');
             
             icon.classList.add('fa-spin');
-            status.innerText = "正在驗證管理員身分...";
-
+            
             try {
-                // --- 重要：直接用管理員身分登入，跳過所有 API Rule 限制 ---
-                // 請將下方改為您的 PB 帳號密碼
-                await pb.admins.authWithPassword('你的管理員信箱', '你的管理員密碼');
+                // 從 warranties 資料表抓取 (請確保 SQL 已建立此表)
+                const { data, error } = await _supabase
+                    .from('warranties') 
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-                status.innerText = "身分驗證成功，抓取資料中...";
-                
-                // 抓取 WarrantyRecords 集合
-                allRecords = await pb.collection('WarrantyRecords').getFullList({
-                    sort: '-created',
-                    requestKey: null
-                });
+                if (error) throw error;
 
+                allRecords = data;
                 renderCards(allRecords);
-                status.innerText = `成功連線：找到 ${allRecords.length} 筆紀錄`;
-                status.classList.replace('text-slate-400', 'text-emerald-500');
-
+                
+                statusText.innerText = `連線正常：已載入 ${data.length} 筆紀錄`;
+                statusDot.className = "inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1";
             } catch (err) {
                 console.error(err);
-                status.innerText = "錯誤：無法連接資料庫";
-                status.classList.replace('text-slate-400', 'text-rose-500');
-                list.innerHTML = `<div class="text-center py-20 text-rose-400 font-bold">連線失敗<br><span class="text-xs font-normal">請檢查 ngrok 或帳密</span></div>`;
+                statusText.innerText = "連線失敗，請檢查資料庫設定";
+                statusDot.className = "inline-block w-2 h-2 bg-rose-500 rounded-full mr-1";
+                list.innerHTML = `<div class="text-center py-20 text-rose-400 font-bold">讀取失敗<br><span class="text-[10px] text-slate-400 font-normal uppercase mt-2 block">Database connection error</span></div>`;
             } finally {
                 icon.classList.remove('fa-spin');
             }
@@ -82,29 +93,42 @@
         function renderCards(data) {
             const list = document.getElementById('recordList');
             if (data.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 text-slate-400">目前尚無保固資料</div>`;
+                list.innerHTML = `<div class="text-center py-20 text-slate-400 italic">目前尚無保固核發紀錄</div>`;
                 return;
             }
 
             list.innerHTML = data.map(item => `
-                <div class="record-card p-5 shadow-sm">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded-md uppercase tracking-tighter">
-                            ${item.warranty_id || 'NO-ID'}
-                        </span>
+                <div class="record-card p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex gap-2">
+                            <span class="text-[9px] font-black bg-slate-900 text-white px-2 py-1 rounded uppercase tracking-tighter">
+                                ${item.warranty_no || 'W-PENDING'}
+                            </span>
+                            ${item.work_type === '高壓灌注' ? 
+                                `<span class="text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-1 rounded uppercase"><i class="fas fa-syringe mr-1"></i>高壓灌注</span>` : ''}
+                        </div>
                         <span class="text-[10px] font-bold text-slate-300 font-mono">
-                            ${new Date(item.created).toLocaleDateString()}
+                            ${new Date(item.created_at).toLocaleDateString()}
                         </span>
                     </div>
-                    <h3 class="text-lg font-black text-slate-800 mb-1">${item.client_name || '未填寫客戶'}</h3>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">${item.client_name}</h3>
                     <p class="text-xs text-slate-500 mb-4 flex items-center">
-                        <i class="fas fa-hammer mr-2 text-slate-300"></i>${item.project_name || '未填寫工程內容'}
+                        <i class="fas fa-map-marker-alt mr-2 text-slate-300"></i>${item.project_name}
                     </p>
-                    <div class="flex justify-between items-center border-t pt-4">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Warranty Period</div>
-                        <div class="bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-full">
-                            ${item.years || 0} 年保固
+                    <div class="flex justify-between items-center border-t border-slate-50 pt-4">
+                        <div class="flex gap-4">
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">保固期限</p>
+                                <p class="text-xs font-black text-teal-600">${item.warranty_years} 年保固</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">完工金額</p>
+                                <p class="text-xs font-black text-slate-700">NT$ ${item.amount?.toLocaleString() || '--'}</p>
+                            </div>
                         </div>
+                        <button onclick="alert('準備生成 PDF...')" class="text-slate-400 hover:text-teal-600 transition text-sm">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -114,12 +138,12 @@
             const keyword = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allRecords.filter(r => 
                 (r.client_name && r.client_name.toLowerCase().includes(keyword)) || 
-                (r.project_name && r.project_name.toLowerCase().includes(keyword))
+                (r.project_name && r.project_name.toLowerCase().includes(keyword)) ||
+                (r.work_type && r.work_type.toLowerCase().includes(keyword))
             );
             renderCards(filtered);
         }
 
-        // 頁面開啟立刻執行
         window.onload = loadData;
     </script>
 </body>
