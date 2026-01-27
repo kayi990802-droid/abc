@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 系統參數設定</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; display: flex; }
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; position: fixed; h-height: 100vh; height: 100%; }
+        .main-content { margin-left: 260px; flex-grow: 1; p-padding: 40px; padding: 40px; }
+        .config-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="p-8 text-2xl font-black">JINDE<span class="text-teal-500">.</span></div>
+        <nav class="px-4 space-y-1">
+            <a href="index.html" class="block p-3 text-slate-400 hover:bg-slate-800 rounded-lg text-sm"><i class="fas fa-th-large mr-3"></i>中台總覽</a>
+            <a href="project.html" class="block p-3 text-slate-400 hover:bg-slate-800 rounded-lg text-sm"><i class="fas fa-hammer mr-3"></i>工地管理</a>
+            <a href="settings.html" class="block p-3 bg-teal-600 text-white rounded-lg text-sm font-bold"><i class="fas fa-cog mr-3"></i>系統參數設定</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="mb-10">
+            <h2 class="text-3xl font-black text-slate-800 tracking-tight">系統參數設定</h2>
+            <p class="text-slate-400 font-medium">管理雲端連線狀態與報價單預設參數</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section class="config-card">
+                <h3 class="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+                    <i class="fas fa-cloud text-blue-500"></i> 雲端資料庫連線
+                </h3>
+                <div class="space-y-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Provider</p>
+                        <p class="text-sm font-bold text-slate-700">Supabase Cloud (PostgreSQL)</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                        <div class="flex items-center gap-2">
+                            <span id="conn-dot" class="w-2 h-2 bg-slate-300 rounded-full"></span>
+                            <span id="conn-text" class="text-sm font-black text-slate-400">正在偵測...</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="checkConnection()" class="mt-6 w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase hover:bg-teal-600 transition shadow-lg">
+                    重新測試連線
+                </button>
+            </section>
+
+            <section class="config-card">
+                <h3 class="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+                    <i class="fas fa-file-invoice-dollar text-teal-500"></i> 報價單與文件參數
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">公司抬頭</label>
+                        <input type="text" id="comp_name" placeholder="錦德工程行" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-slate-700">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">預設營業稅 (%)</label>
+                            <input type="number" id="tax_rate" value="5" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">預設保固年限</label>
+                            <input type="number" id="warranty_def" value="2" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-slate-700">
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveSettings()" class="mt-6 w-full py-3 bg-teal-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-teal-500 transition shadow-lg">
+                    儲存本地參數
+                </button>
+            </section>
+        </div>
+
+        <div class="mt-10 p-6 bg-blue-50 rounded-2xl border border-blue-100">
+            <h4 class="text-blue-800 font-bold text-sm mb-2"><i class="fas fa-shield-alt mr-2"></i>安全說明</h4>
+            <p class="text-xs text-blue-600 leading-relaxed">
+                本系統採用的 Supabase API Key 具備 RLS (Row Level Security) 防護。公司敏感參數僅儲存於此瀏覽器的 LocalStorage 中，不會上傳至公開倉庫。若更換電腦，請重新設定。
+            </p>
+        </div>
+    </main>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function checkConnection() {
+            const dot = document.getElementById('conn-dot');
+            const txt = document.getElementById('conn-text');
+            
+            txt.innerText = "正在偵測中...";
+            dot.className = "w-2 h-2 bg-slate-300 rounded-full animate-ping";
+
+            try {
+                // 嘗試讀取一個資料表來測試 API 連線
+                const { error } = await _supabase.from('projects').select('id').limit(1);
+                
+                if (error) throw error;
+
+                dot.className = "w-2 h-2 bg-emerald-500 rounded-full";
+                txt.innerText = "連線成功：Supabase 服務正常";
+                txt.className = "text-sm font-black text-emerald-600";
+            } catch (err) {
+                dot.className = "w-2 h-2 bg-rose-500 rounded-full";
+                txt.innerText = "連線失敗：請檢查 API 金鑰或網路";
+                txt.className = "text-sm font-black text-rose-600";
+            }
+        }
+
+        function saveSettings() {
+            const settings = {
+                comp_name: document.getElementById('comp_name').value,
+                tax_rate: document.getElementById('tax_rate').value,
+                warranty_def: document.getElementById('warranty_def').value
+            };
+            localStorage.setItem('jinde_settings', JSON.stringify(settings));
+            alert('參數已儲存至本機！');
+        }
+
+        window.onload = () => {
+            const saved = JSON.parse(localStorage.getItem('jinde_settings') || '{}');
+            if(saved.comp_name) document.getElementById('comp_name').value = saved.comp_name;
+            if(saved.tax_rate) document.getElementById('tax_rate').value = saved.tax_rate;
+            if(saved.warranty_def) document.getElementById('warranty_def').value = saved.warranty_def;
+            
+            checkConnection();
+        };
+    </script>
+</body>
+</html>
