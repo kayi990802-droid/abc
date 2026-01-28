@@ -3,49 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JINDE | 保固書生產中心</title>
+    <title>JINDE | 保固紀錄中控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         :root { --primary-teal: #0d9488; --slate-dark: #1a222d; }
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
-
-        /* 側邊欄導航 */
         .sidebar { width: 260px; background: var(--slate-dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
         .nav-link { padding: 16px 28px; font-size: 14px; color: #94a3b8; transition: 0.3s; border-left: 4px solid transparent; display: flex; align-items: center; text-decoration: none; }
-        .nav-link i { margin-right: 14px; width: 20px; font-size: 16px; opacity: 0.7; }
         .nav-link.active { background: #242e3d; color: white; border-left-color: var(--primary-teal); }
         .nav-link:hover { background: #1e293b; color: white; }
-
-        /* 主舞台區 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 40; }
-
-        /* 功能卡片設計 */
-        .function-card { 
-            background: white; border-radius: 32px; padding: 40px; 
-            border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column; align-items: center; text-align: center;
-            position: relative; overflow: hidden; height: 100%;
-        }
+        .function-card { background: white; border-radius: 32px; padding: 40px; border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
         .function-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08); border-color: var(--primary-teal); }
-        
-        .icon-box {
-            width: 80px; height: 80px; border-radius: 24px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 24px; font-size: 32px; transition: 0.4s;
-        }
-
+        .icon-box { width: 80px; height: 80px; border-radius: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; font-size: 32px; transition: 0.4s; }
         .content-scroll::-webkit-scrollbar { width: 6px; }
         .content-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        @media (max-width: 768px) {
-            .sidebar { width: 72px; }
-            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .security-text { display: none; }
-            .nav-link { justify-content: center; padding: 22px 0; }
-            .top-nav { padding: 0 15px; height: 72px; }
-        }
+        .record-row { background: white; transition: 0.3s; border-radius: 16px; margin-bottom: 8px; border: 1px solid #f1f5f9; }
+        .record-row:hover { background: #f8fafc; border-color: var(--primary-teal); }
     </style>
 </head>
 <body>
@@ -56,96 +34,110 @@
         </div>
         <nav class="flex-grow">
             <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">人員與點工</span></a>
-            <a href="projects.html" class="nav-link"><i class="fas fa-hammer"></i> <span class="nav-text">案場進度</span></a>
             <a href="warranty_hub.html" class="nav-link active"><i class="fas fa-file-contract"></i> <span class="nav-text">保固書生產</span></a>
-            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">請款系統</span></a>
+            <a href="toolbox.html" class="nav-link"><i class="fas fa-toolbox"></i> <span class="nav-text">工具箱</span></a>
         </nav>
         <div class="p-6 border-t border-slate-800 bg-[#151b23]">
-            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2 security-text">Session Control</p>
             <div class="flex items-center gap-2 text-rose-500 font-mono text-xs">
-                <i class="fas fa-shield-alt"></i>
-                <span id="logout-timer">30:00</span>
+                <i class="fas fa-shield-alt"></i> <span id="logout-timer">30:00</span>
             </div>
         </div>
     </aside>
 
     <main class="main-stage">
         <header class="top-nav">
-            <div class="flex flex-col">
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">System Node</span>
-                <h2 class="text-xl font-black text-slate-800 tracking-tight">保固書生產中心</h2>
-            </div>
-            
-            <button onclick="location.href='toolbox.html'" class="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs hover:bg-teal-500 transition-all shadow-xl active:scale-95 flex items-center gap-2">
-                <i class="fas fa-toolbox"></i>
-                <span class="hidden sm:inline">開啟工具箱</span>
-            </button>
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">保固管理中心</h2>
+            <div id="sync-status" class="text-[10px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase">DB Connected</div>
         </header>
 
-        <div class="content-scroll overflow-y-auto px-8 py-12 lg:px-20 lg:py-16">
+        <div class="content-scroll overflow-y-auto px-8 py-12 lg:px-20">
             <div class="max-w-5xl mx-auto">
-                <div class="mb-12 text-center md:text-left">
-                    <h3 class="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Generation Steps</h3>
-                    <p class="text-slate-500 mt-2 font-medium">依序完成封面與內容產出，最後使用工具箱進行合併作業。</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                     <a href="warranty_cover.html" class="function-card group">
-                        <div class="icon-box bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-6 transition-all">
+                        <div class="icon-box bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-6">
                             <i class="fas fa-layer-group"></i>
                         </div>
                         <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 01</h4>
                         <p class="text-lg font-bold text-slate-700 mb-3">工程封面產出</p>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">產出具備公司 LOGO 與案場大標題的 A4 封面圖檔。</p>
-                        <div class="mt-auto flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
-                            開始製作封面 <i class="fas fa-arrow-right"></i>
-                        </div>
+                        <p class="text-slate-400 text-sm mb-8">產出具備公司 LOGO 的專業 A4 封面圖檔。</p>
+                        <div class="mt-auto text-blue-600 font-black text-xs uppercase">Go to Cover <i class="fas fa-arrow-right ml-1"></i></div>
                     </a>
 
                     <a href="warranty_content.html" class="function-card group">
-                        <div class="icon-box bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white group-hover:-rotate-6 transition-all">
+                        <div class="icon-box bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white group-hover:-rotate-6">
                             <i class="fas fa-file-signature"></i>
                         </div>
                         <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 02</h4>
                         <p class="text-lg font-bold text-slate-700 mb-3">詳細保固內容</p>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">填寫詳細保固條款、案場資訊並產生數位雲端驗證碼。</p>
-                        <div class="mt-auto flex items-center gap-2 text-teal-600 font-black text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
-                            進入內容編輯 <i class="fas fa-arrow-right"></i>
-                        </div>
+                        <p class="text-slate-400 text-sm mb-8">填寫保固條款、案場資訊與數位印章區。</p>
+                        <div class="mt-auto text-teal-600 font-black text-xs uppercase">Go to Content <i class="fas fa-arrow-right ml-1"></i></div>
                     </a>
                 </div>
 
-                <div class="mt-16 bg-slate-900 rounded-[40px] p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
-                    <div class="relative z-10">
-                        <h5 class="text-white text-2xl font-black italic uppercase">PDF Merger Required</h5>
-                        <p class="text-slate-400 text-sm mt-2 font-medium">產出兩頁 PDF 後，請至工具箱完成最終合併與壓縮作業。</p>
+                <hr class="border-slate-100 mb-12">
+
+                <div class="mb-8 flex justify-between items-end">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-900 italic tracking-tighter uppercase">Recent Records</h3>
+                        <p class="text-slate-400 text-xs font-medium">最近核發的 10 筆保固書資料</p>
                     </div>
-                    <button onclick="location.href='toolbox.html'" class="relative z-10 bg-white text-slate-900 px-10 py-5 rounded-3xl font-black text-sm hover:bg-teal-500 hover:text-white transition-all shadow-2xl active:scale-95 flex items-center gap-3">
-                        <i class="fas fa-tools text-lg"></i>
-                        開啟工具箱
-                    </button>
-                    <i class="fas fa-file-pdf absolute right-[-20px] bottom-[-20px] text-[120px] text-white opacity-[0.03] rotate-12"></i>
+                    <div class="relative w-64">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                        <input type="text" id="searchInput" placeholder="搜尋客戶或案場..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-teal-500 transition-all">
+                    </div>
+                </div>
+
+                <div class="space-y-3" id="record-list">
+                    <div class="text-center py-20 text-slate-300 font-bold animate-pulse">資料同步中...</div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        let timeLeft = 30 * 60;
-        const timerElement = document.getElementById('logout-timer');
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            if (timeLeft <= 0) { window.location.href = 'index.html'; }
-            timeLeft--;
+        async function fetchHistory() {
+            const { data, error } = await _supabase.from('warranties').select('*').order('created_at', { ascending: false }).limit(10);
+            if (error) return console.error(error);
+            
+            const listContainer = document.getElementById('record-list');
+            listContainer.innerHTML = data.map(item => `
+                <div class="record-row p-5 flex items-center justify-between shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-mono font-bold text-teal-600 uppercase mb-1">${item.doc_id}</span>
+                        <h5 class="font-bold text-slate-800">${item.client_name}</h5>
+                    </div>
+                    <div class="text-sm text-slate-500 font-medium hidden md:block">${item.project_name || '未標註案場'}</div>
+                    <div class="flex items-center gap-6">
+                        <span class="text-xs text-slate-400 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
+                        <a href="verify.html?id=${item.doc_id}" target="_blank" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-teal-500 hover:text-white transition-all">
+                            <i class="fas fa-eye text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function resetTimer() { timeLeft = 30 * 60; }
-        ['mousedown', 'touchstart', 'keydown'].forEach(evt => document.addEventListener(evt, resetTimer));
-        setInterval(updateTimer, 1000);
+        // 搜尋過濾
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            document.querySelectorAll('.record-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
+            });
+        });
+
+        window.onload = fetchHistory;
+
+        // 倒數計時與原有邏輯
+        let timeLeft = 30 * 60;
+        setInterval(() => {
+            let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if (timeLeft-- <= 0) location.href = 'index.html';
+        }, 1000);
     </script>
 </body>
 </html>
