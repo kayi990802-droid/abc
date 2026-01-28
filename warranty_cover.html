@@ -16,7 +16,7 @@
         
         @page { size: A4; margin: 0; }
 
-        /* 左側控制面板 - 質感優化 */
+        /* 左側控制面板 */
         .admin-panel {
             width: 100%; background: var(--slate-dark); padding: 24px; z-index: 1000;
             border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
@@ -25,7 +25,7 @@
             .admin-panel { width: 380px; height: 100vh; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.1); border-bottom: none; padding: 40px; } 
         }
 
-        /* 輸入框樣式升級 */
+        /* 輸入框樣式 */
         .glass-input {
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
             color: white; border-radius: 12px; padding: 12px 16px; width: 100%;
@@ -33,7 +33,7 @@
         }
         .glass-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.06); box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1); }
 
-        /* 預覽區域 - 深度與陰影 */
+        /* 預覽區域 */
         .preview-area { 
             flex-grow: 1; padding: 20px; display: flex; justify-content: center; 
             background: radial-gradient(circle at center, #334155 0%, #0f172a 100%); overflow: hidden;
@@ -46,12 +46,12 @@
             box-shadow: 0 40px 100px rgba(0,0,0,0.6); flex-shrink: 0; transform-origin: top center;
         }
 
-        /* 手機縮放邏輯保持不變 */
+        /* 手機縮放邏輯 */
         @media (max-width: 1023px) { .a4-page { transform: scale(0.38); margin-bottom: -180mm; } }
         @media (max-width: 480px) { .a4-page { transform: scale(0.32); margin-bottom: -200mm; } }
 
-        /* A4 內容排版細節 */
-        .cover-logo { width: 90mm; max-height: 90mm; object-fit: contain; margin-bottom: 20mm; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+        /* A4 封面內容排版 */
+        .cover-logo { width: 90mm; max-height: 90mm; object-fit: contain; margin-bottom: 20mm; }
         .cover-title { font-size: 34pt; font-weight: 900; letter-spacing: 0.3em; margin-bottom: 45mm; color: #1a222d; text-align: center; padding: 0 25mm; line-height: 1.6; }
         .cover-footer { position: absolute; bottom: 35mm; text-align: center; color: #64748b; width: 100%; border-top: 1px solid #f1f5f9; padding-top: 10mm; }
 
@@ -81,24 +81,24 @@
 
         <div class="space-y-6">
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-teal-500 uppercase tracking-widest ml-1">快速案場選擇</label>
+                <label class="text-[10px] font-black text-teal-500 uppercase tracking-widest ml-1">案場選擇</label>
                 <select id="projectSelect" onchange="applyProjectTitle()" class="glass-input appearance-none cursor-pointer">
                     <option value="">-- 手動輸入模式 --</option>
                 </select>
             </div>
 
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">1. 企業識別 LOGO</label>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">1. 上傳 LOGO</label>
                 <input type="file" id="logo_input" class="text-[10px] file:bg-teal-600 file:text-white file:border-0 file:rounded-lg file:px-4 file:py-2 file:mr-4 file:font-black cursor-pointer w-full" onchange="loadCover(event)">
             </div>
 
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">2. 保固主標題</label>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">2. 封面文字</label>
                 <textarea id="in_title" class="glass-input h-28 leading-relaxed" oninput="sync()">工程保固證明書</textarea>
             </div>
 
             <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">3. 底部通訊資訊</label>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">3. 底部資訊</label>
                 <textarea id="in_info" class="glass-input h-24 text-[11px]" oninput="sync()">地址：台中市北屯區山西路二段 250 號&#10;專業 · 智能 · 細心 · 責任</textarea>
             </div>
 
@@ -125,7 +125,7 @@
     </div>
 
     <script>
-        // --- 核心邏輯保持不變 ---
+        // 資料庫連線設定
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
@@ -133,6 +133,7 @@
 
         async function init() {
             startTimer();
+            // 從資料庫抓取案場列表
             const { data } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
             if (data) {
                 const select = document.getElementById('projectSelect');
