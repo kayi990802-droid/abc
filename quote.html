@@ -57,7 +57,10 @@
         </div>
         <input type="number" id="in_discount" class="mb-0" placeholder="折扣金額" oninput="calculateFinal()">
     </div>
-    <div class="grid grid-cols-2 gap-3 mt-4">
+    <button onclick="history.back()" class="w-full bg-gray-600 hover:bg-gray-500 py-3 rounded-xl font-bold text-sm mb-3 border border-gray-500 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>返回上一頁
+    </button>
+    <div class="grid grid-cols-2 gap-3">
         <button id="saveBtn" onclick="saveToSupabase()" class="bg-teal-700 py-4 rounded-xl font-bold text-sm border border-teal-600">儲存報價</button>
         <button onclick="window.print()" class="bg-teal-600 py-4 rounded-xl font-bold text-sm shadow-lg">列印 PDF</button>
     </div>
@@ -118,11 +121,7 @@
             </div>
             <div class="mt-4">
                 <span class="info-label">REMARKS 備註與條款</span>
-                <div id="out_terms" contenteditable="true" class="editable-area">1. 本報價有效期為 7 天。
-2. 完工後提供 5 年保固（限本公司施工範圍）。
-3. **保固免責**：若因地震導致結構位移裂縫、人為破壞或第三方施工損傷，不在此限。
-4. **施工環境**：防水施工須符合乾燥標準，如遇雨天工期將自動順延。
-5. **付款準則**：請款若逾期達七日，本公司有權暫停施工，並由業主承擔損失。</div>
+                <div id="out_terms" contenteditable="true" class="editable-area">1. 本報價有效期為 7 天。2. 完工後提供 5 年保固（限本公司施工範圍）。3. **保固免責**：若因地震導致結構位移裂縫、人為破壞或第三方施工損傷，不在此限。4. **施工環境**：防水施工須符合乾燥標準，如遇雨天工期將自動順延。5. **付款準則**：請款若逾期達七日，本公司有權暫停施工，並由業主承擔損失。</div>
             </div>
         </div>
         <div class="sig-container">
@@ -131,20 +130,15 @@
         </div>
     </div>
 </div>
-
 <script>
-    // Supabase 設定
     const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
     const _supabase = supabase.createClient(S_URL, S_KEY);
-
     window.onload = updateOrderInfo;
-
     function updateOrderInfo() {
         document.getElementById('out_date').innerText = new Date().toLocaleDateString();
         document.getElementById('out_id').innerText = 'JD' + Math.floor(Date.now()/1000).toString().slice(-6);
     }
-
     function addRow(name="") {
         const tbody = document.getElementById('out_tbody');
         const tr = document.createElement('tr');
@@ -152,22 +146,18 @@
         tbody.appendChild(tr);
         calculateFinal();
     }
-
     function addPU() {
         addRow('屋頂油性PU三層防水工程(含清運)');
         document.getElementById('out_method').innerText = `【屋頂地面油性PU三層工法】\n1. 素地整理：高壓清洗、舊層剔除、垃圾清運。\n2. 第一層：滲透型油性底漆施作。\n3. 第二層：油性PU中塗材施作（建構主防水層）。\n4. 第三層：抗UV耐候面漆施作（保護防水結構）。`;
     }
-
     function addWaterWall() {
         addRow('牆面水性防水漆五層工程(含清運)');
         document.getElementById('out_method').innerText = `【牆面水性防水漆五層工法】\n1. 素地整理：高壓清洗、裂縫補強、垃圾清運。\n2. 第一層：滲透底漆（封閉水泥毛細孔）。\n3. 第二、三層：高彈性中塗二次施作（採交織塗佈提昇有效膜厚，強化抗拉剪應力）。\n4. 第四、五層：抗UV耐候面漆（抗鹼防褪色，提昇耐候年限）。`;
     }
-
     function syncData() {
         document.getElementById('out_name').innerText = document.getElementById('in_name').value || "未填寫";
         document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "未填寫施工地址";
     }
-
     function calculateFinal() {
         let subtotal = 0;
         document.querySelectorAll('#out_tbody tr').forEach(row => {
@@ -187,7 +177,6 @@
         document.getElementById('disc_row').classList.toggle('hidden', discount === 0);
         document.getElementById('sum_final').innerText = final.toLocaleString();
     }
-
     function loadImage(e, id) {
         const file = e.target.files[0];
         if (file) {
@@ -196,7 +185,6 @@
             el.src = url; el.style.display = 'block';
         }
     }
-
     function loadMultipleImages(e) {
         const files = e.target.files;
         const grid = document.getElementById('photo_grid');
@@ -214,12 +202,10 @@
             grid.appendChild(container);
         });
     }
-
     async function saveToSupabase() {
         const btn = document.getElementById('saveBtn');
         const quoteId = document.getElementById('out_id').innerText;
         btn.disabled = true; btn.innerText = "儲存中...";
-
         const items = [];
         document.querySelectorAll('#out_tbody tr').forEach(row => {
             items.push({
@@ -228,7 +214,6 @@
                 price: row.querySelector('.price').value
             });
         });
-
         const { data, error } = await _supabase.from('quotations').insert([{
             quote_id: quoteId,
             client: document.getElementById('in_name').value || "未填寫",
@@ -238,12 +223,11 @@
             method: document.getElementById('out_method').innerText,
             terms: document.getElementById('out_terms').innerText
         }]);
-
         if (error) {
             alert("儲存失敗: " + error.message);
         } else {
             alert("【儲存成功】單號: " + quoteId);
-            updateOrderInfo(); // 存完自動更新單號，避免重複
+            updateOrderInfo();
         }
         btn.disabled = false; btn.innerText = "儲存報價";
     }
