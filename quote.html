@@ -10,67 +10,46 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #0f172a; margin: 0; color: #1e293b; }
-        
         @media (min-width: 1024px) {
             body { display: flex; height: 100vh; overflow: hidden; }
             .admin-sidebar { width: 400px; height: 100vh; overflow-y: auto; background: #1e293b; color: white; padding: 24px; flex-shrink: 0; }
             .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 40px; background: #334155; display: flex; justify-content: center; }
             .a4-preview { width: 210mm; min-height: 297mm; }
         }
-
         .a4-preview { background: white; color: #1a1a1a; padding: 15mm 20mm; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
         input, textarea { color: #fff; background: #0f172a; border-radius: 8px; padding: 12px; width: 100%; border: 1px solid #334155; margin-bottom: 12px; }
         .preview-input { background: transparent !important; color: #000 !important; border: none !important; padding: 0 !important; font-weight: bold; outline: none !important; width: 100%; }
-        .work-btn { background: #334155; border: 1px solid #475569; padding: 12px 8px; border-radius: 8px; font-size: 13px; font-weight: bold; color: #2dd4bf; transition: all 0.2s; }
-
-        /* 照片與刪除按鈕 */
+        .work-btn { background: #334155; border: 1px solid #475569; padding: 12px 8px; border-radius: 8px; font-size: 13px; font-weight: bold; color: #2dd4bf; transition: all 0.2s; text-align: left; }
         .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
         .photo-item { position: relative; width: 100%; height: 160px; }
         .photo-item img { width: 100%; height: 100%; object-fit: cover; border: 1px solid #eee; border-radius: 4px; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; z-index: 10; }
-
-        /* 手打編輯區 */
-        .editable-area { border: 1px dashed #cbd5e1; padding: 8px; font-size: 12px; font-weight: bold; margin-bottom: 15px; min-height: 40px; white-space: pre-wrap; outline: none; }
-        .editable-area:focus { border: 1px solid #2dd4bf; background: #f8fafc; }
+        .editable-area { border: 1px dashed #cbd5e1; padding: 8px; font-size: 12px; font-weight: bold; margin-bottom: 15px; min-height: 40px; white-space: pre-wrap; outline: none; color: #000; }
         .info-label { font-size: 11px; font-weight: 900; background: #000; color: #fff; padding: 2px 8px; display: inline-block; margin-bottom: 4px; font-style: italic; }
-
-        /* 簽名區與職章綁定 */
         .sig-container { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; }
         .sig-box { border-top: 2px solid #000; padding-top: 8px; font-size: 11px; font-weight: 900; position: relative; }
         #seal_img { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 110px; display: none; mix-blend-mode: multiply; pointer-events: none; }
-
-        @media print {
-            .no-print, .del-btn { display: none !important; }
-            .editable-area { border: none !important; padding: 0; }
-            body { background: white; }
-            .a4-preview { box-shadow: none; width: 210mm; margin: 0; }
-        }
+        @media print { .no-print, .del-btn { display: none !important; } .editable-area { border: none !important; padding: 0; } body { background: white; } .a4-preview { box-shadow: none; width: 210mm; margin: 0; } }
     </style>
 </head>
 <body>
-
 <div class="admin-sidebar no-print">
     <h2 class="text-2xl font-black text-teal-400 mb-6 italic">JINDE 快速報價</h2>
-    
     <label class="block text-[11px] font-bold text-gray-400 mb-2 uppercase">快捷工法</label>
-    <div class="grid grid-cols-2 gap-2 mb-6">
-        <button class="work-btn" onclick="addRow('高壓灌注止漏工法')">💉 高壓灌注</button>
-        <button class="work-btn" onclick="addRow('頂樓五塗防水工程')">🏠 頂樓防水</button>
-        <button class="work-btn" onclick="addRow('外牆滲漏修繕工程')">🧱 外牆修繕</button>
-        <button class="work-btn" onclick="addRow('浴廁漏水防水工程')">🚿 浴廁防水</button>
-        <button class="work-btn" onclick="addRow('')">✏️ 手打項目</button>
+    <div class="grid grid-cols-1 gap-2 mb-6">
+        <button class="work-btn" onclick="addPU()">🏠 屋頂油性PU三層</button>
+        <button class="work-btn" onclick="addWaterWall()">🧱 牆面水性五層</button>
+        <button class="work-btn" onclick="addRow('高壓灌注止漏工法')">💉 高壓灌注止漏</button>
+        <button class="work-btn" onclick="addRow('')">✏️ 自定義項目</button>
     </div>
-
     <label class="block text-[11px] font-bold text-gray-400 mb-2">文件上傳</label>
     <div class="flex flex-col gap-2 mb-6 bg-slate-800 p-3 rounded-lg border border-slate-700">
         <input type="file" class="text-xs" onchange="loadImage(event, 'logo_img')" title="Logo">
         <input type="file" class="text-xs" multiple onchange="loadMultipleImages(event)" title="施工圖">
         <input type="file" class="text-xs" onchange="loadImage(event, 'seal_img')" title="職章">
     </div>
-
     <input type="text" id="in_name" placeholder="客戶名稱" oninput="syncData()">
     <input type="text" id="in_addr" placeholder="施工地址" oninput="syncData()">
-
     <div class="bg-slate-800 p-4 rounded-xl mb-4 border border-slate-700">
         <div class="flex items-center justify-between mb-2 text-xs font-bold text-teal-400">
             <span>營業稅 (5%)</span>
@@ -78,9 +57,8 @@
         </div>
         <input type="number" id="in_discount" class="mb-0" placeholder="折扣金額" oninput="calculateFinal()">
     </div>
-
     <div class="grid grid-cols-2 gap-3 mt-4">
-        <button id="saveBtn" onclick="saveToSupabase()" class="bg-slate-700 py-4 rounded-xl font-bold text-sm border border-slate-600">雲端儲存</button>
+        <button id="saveBtn" onclick="saveToSupabase()" class="bg-teal-700 py-4 rounded-xl font-bold text-sm border border-teal-600">儲存報價</button>
         <button onclick="window.print()" class="bg-teal-600 py-4 rounded-xl font-bold text-sm shadow-lg">列印 PDF</button>
     </div>
 </div>
@@ -94,13 +72,9 @@
             </div>
             <div class="text-right">
                 <img id="logo_img" src="" class="max-h-16 mb-2 ml-auto" style="display:none;">
-                <div class="text-[11px] font-bold">
-                    No: <span id="out_id" class="font-mono bg-yellow-50 px-1"></span><br>
-                    Date: <span id="out_date"></span>
-                </div>
+                <div class="text-[11px] font-bold">No: <span id="out_id" class="font-mono bg-yellow-50 px-1"></span><br>Date: <span id="out_date"></span></div>
             </div>
         </div>
-
         <div class="grid grid-cols-2 gap-8 mb-6">
             <div class="border-l-4 border-black pl-4">
                 <p class="text-[10px] font-black text-gray-400">Customer 客戶</p>
@@ -111,7 +85,6 @@
                 <p id="out_addr" class="text-sm font-bold">未填寫地址</p>
             </div>
         </div>
-
         <div class="flex-grow">
             <table class="w-full mb-6">
                 <thead>
@@ -125,7 +98,6 @@
                 </thead>
                 <tbody id="out_tbody" class="text-sm font-bold divide-y divide-gray-100"></tbody>
             </table>
-
             <div class="flex justify-end mb-6">
                 <div class="w-64 space-y-1 text-sm font-bold">
                     <div class="flex justify-between px-2 text-xs"><span>小計 Subtotal</span><span id="res_sub">0</span></div>
@@ -136,37 +108,38 @@
                     </div>
                 </div>
             </div>
-
             <div>
                 <span class="info-label">METHOD 工法說明</span>
-                <div id="out_method" contenteditable="true" class="editable-area">點擊此處輸入施工工法明細...</div>
+                <div id="out_method" contenteditable="true" class="editable-area">點擊左側快捷按鈕或在此輸入工法...</div>
             </div>
-
             <div>
                 <span class="info-label">PHOTOS 施工現場圖</span>
                 <div id="photo_grid" class="photo-grid"></div>
             </div>
-
             <div class="mt-4">
                 <span class="info-label">REMARKS 備註與條款</span>
-                <div id="out_terms" contenteditable="true" class="editable-area">1. 本報價有效期為30天。
-2. 完工後提供貳年保固。</div>
+                <div id="out_terms" contenteditable="true" class="editable-area">1. 本報價有效期為 7 天。
+2. 完工後提供 5 年保固（限本公司施工範圍）。
+3. **保固免責**：若因地震導致結構位移裂縫、人為破壞或第三方施工損傷，不在此限。
+4. **施工環境**：防水施工須符合乾燥標準，如遇雨天工期將自動順延。
+5. **付款準則**：請款若逾期達七日，本公司有權暫停施工，並由業主承擔損失。</div>
             </div>
         </div>
-
         <div class="sig-container">
-            <div class="sig-box">
-                <img id="seal_img" src="">
-                Authorized Signature (錦德防水)
-            </div>
-            <div class="sig-box">
-                Customer Signature (客戶簽章)
-            </div>
+            <div class="sig-box"><img id="seal_img" src="">Authorized Signature (錦德防水)</div>
+            <div class="sig-box">Customer Signature (客戶簽章)</div>
         </div>
     </div>
 </div>
 
 <script>
+    // Supabase 設定
+    const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    window.onload = updateOrderInfo;
+
     function updateOrderInfo() {
         document.getElementById('out_date').innerText = new Date().toLocaleDateString();
         document.getElementById('out_id').innerText = 'JD' + Math.floor(Date.now()/1000).toString().slice(-6);
@@ -175,46 +148,19 @@
     function addRow(name="") {
         const tbody = document.getElementById('out_tbody');
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="py-4 pl-3"><input type="text" value="${name}" class="preview-input"></td>
-            <td class="py-4 px-2 text-center"><input type="number" value="1" class="qty preview-input text-center" oninput="calculateFinal()"></td>
-            <td class="py-4 px-2 text-center"><input type="text" value="式" class="preview-input text-center"></td>
-            <td class="py-4 px-2 text-right"><input type="number" value="0" class="price preview-input text-right" oninput="calculateFinal()"></td>
-            <td class="py-4 pr-3 text-right font-black subtotal">0</td>
-            <td class="no-print text-center w-8"><button onclick="this.parentElement.parentElement.remove();calculateFinal()" class="text-red-400">×</button></td>
-        `;
+        tr.innerHTML = `<td class="py-4 pl-3"><input type="text" value="${name}" class="preview-input"></td><td class="py-4 px-2 text-center"><input type="number" value="1" class="qty preview-input text-center" oninput="calculateFinal()"></td><td class="py-4 px-2 text-center"><input type="text" value="式" class="preview-input text-center"></td><td class="py-4 px-2 text-right"><input type="number" value="0" class="price preview-input text-right" oninput="calculateFinal()"></td><td class="py-4 pr-3 text-right font-black subtotal">0</td><td class="no-print text-center w-8"><button onclick="this.parentElement.parentElement.remove();calculateFinal()" class="text-red-400">×</button></td>`;
         tbody.appendChild(tr);
         calculateFinal();
     }
 
-    function loadImage(e, id) {
-        const file = e.target.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            const el = document.getElementById(id);
-            el.src = url; el.style.display = 'block';
-        }
+    function addPU() {
+        addRow('屋頂油性PU三層防水工程(含清運)');
+        document.getElementById('out_method').innerText = `【屋頂地面油性PU三層工法】\n1. 素地整理：高壓清洗、舊層剔除、垃圾清運。\n2. 第一層：滲透型油性底漆施作。\n3. 第二層：油性PU中塗材施作（建構主防水層）。\n4. 第三層：抗UV耐候面漆施作（保護防水結構）。`;
     }
 
-    function loadMultipleImages(e) {
-        const files = e.target.files;
-        const grid = document.getElementById('photo_grid');
-        Array.from(files).forEach(file => {
-            const container = document.createElement('div');
-            container.className = 'photo-item';
-            
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            
-            const btn = document.createElement('button');
-            btn.className = 'del-btn no-print';
-            btn.innerHTML = '×';
-            btn.onclick = () => container.remove();
-
-            container.appendChild(img);
-            container.appendChild(btn);
-            grid.appendChild(container);
-        });
+    function addWaterWall() {
+        addRow('牆面水性防水漆五層工程(含清運)');
+        document.getElementById('out_method').innerText = `【牆面水性防水漆五層工法】\n1. 素地整理：高壓清洗、裂縫補強、垃圾清運。\n2. 第一層：滲透底漆（封閉水泥毛細孔）。\n3. 第二、三層：高彈性中塗二次施作（採交織塗佈提昇有效膜厚，強化抗拉剪應力）。\n4. 第四、五層：抗UV耐候面漆（抗鹼防褪色，提昇耐候年限）。`;
     }
 
     function syncData() {
@@ -242,7 +188,65 @@
         document.getElementById('sum_final').innerText = final.toLocaleString();
     }
 
-    window.onload = updateOrderInfo;
+    function loadImage(e, id) {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            const el = document.getElementById(id);
+            el.src = url; el.style.display = 'block';
+        }
+    }
+
+    function loadMultipleImages(e) {
+        const files = e.target.files;
+        const grid = document.getElementById('photo_grid');
+        Array.from(files).forEach(file => {
+            const container = document.createElement('div');
+            container.className = 'photo-item';
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            const btn = document.createElement('button');
+            btn.className = 'del-btn no-print';
+            btn.innerHTML = '×';
+            btn.onclick = () => container.remove();
+            container.appendChild(img);
+            container.appendChild(btn);
+            grid.appendChild(container);
+        });
+    }
+
+    async function saveToSupabase() {
+        const btn = document.getElementById('saveBtn');
+        const quoteId = document.getElementById('out_id').innerText;
+        btn.disabled = true; btn.innerText = "儲存中...";
+
+        const items = [];
+        document.querySelectorAll('#out_tbody tr').forEach(row => {
+            items.push({
+                desc: row.cells[0].querySelector('input').value,
+                qty: row.querySelector('.qty').value,
+                price: row.querySelector('.price').value
+            });
+        });
+
+        const { data, error } = await _supabase.from('quotations').insert([{
+            quote_id: quoteId,
+            client: document.getElementById('in_name').value || "未填寫",
+            address: document.getElementById('in_addr').value || "未填寫",
+            total: document.getElementById('sum_final').innerText.replace(/,/g, ''),
+            items: JSON.stringify(items),
+            method: document.getElementById('out_method').innerText,
+            terms: document.getElementById('out_terms').innerText
+        }]);
+
+        if (error) {
+            alert("儲存失敗: " + error.message);
+        } else {
+            alert("【儲存成功】單號: " + quoteId);
+            updateOrderInfo(); // 存完自動更新單號，避免重複
+        }
+        btn.disabled = false; btn.innerText = "儲存報價";
+    }
 </script>
 </body>
 </html>
