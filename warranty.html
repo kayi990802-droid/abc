@@ -12,7 +12,7 @@
         :root { --primary-teal: #0d9488; --slate-dark: #1a222d; }
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
 
-        /* 側邊欄優化 */
+        /* 側邊欄 */
         .sidebar { width: 260px; background: var(--slate-dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
         .nav-link { padding: 16px 28px; font-size: 14px; color: #94a3b8; transition: 0.3s; border-left: 4px solid transparent; display: flex; align-items: center; text-decoration: none; }
         .nav-link i { margin-right: 14px; width: 20px; font-size: 16px; opacity: 0.7; }
@@ -21,37 +21,33 @@
 
         /* 主舞台 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 40; }
+        .top-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 40; }
 
-        /* 卡片設計升級 */
+        /* 功能卡片 */
         .function-card { 
             background: white; border-radius: 32px; padding: 40px; 
             border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column; align-items: center; text-align: center;
             position: relative; overflow: hidden;
         }
-        .function-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: transparent; transition: 0.3s;
-        }
         .function-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08); border-color: var(--primary-teal); }
-        .function-card:hover::before { background: var(--primary-teal); }
-        .function-card:active { transform: scale(0.97); }
-
+        
         .icon-box {
             width: 80px; height: 80px; border-radius: 24px;
             display: flex; align-items: center; justify-content: center;
             margin-bottom: 24px; font-size: 32px; transition: 0.4s;
         }
 
-        /* 響應式 */
+        /* 自定義捲軸 */
+        .content-scroll::-webkit-scrollbar { width: 6px; }
+        .content-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
         @media (max-width: 768px) {
             .sidebar { width: 72px; }
             .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .security-text { display: none; }
             .nav-link { justify-content: center; padding: 22px 0; }
-            .nav-link i { margin: 0; }
-            .top-nav { padding: 0 20px; }
-            .function-card { padding: 30px 20px; }
+            .top-nav { padding: 0 15px; height: 72px; }
+            .function-card { padding: 30px 15px; }
         }
     </style>
 </head>
@@ -79,23 +75,22 @@
 
     <main class="main-stage">
         <header class="top-nav">
-            <div>
+            <div class="flex flex-col">
                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">System Node</span>
                 <h2 class="text-xl font-black text-slate-800 tracking-tight">保固書生產中心</h2>
             </div>
-            <div class="hidden md:flex items-center gap-3">
-                <div class="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full border border-emerald-100">
-                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span class="text-emerald-700 text-[11px] font-black uppercase">Service Active</span>
-                </div>
-            </div>
+            
+            <button onclick="location.href='toolbox.html'" class="relative z-10 bg-slate-900 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-2xl font-black text-xs lg:text-sm hover:bg-teal-500 transition-all shadow-xl active:scale-95 flex items-center gap-2">
+                <i class="fas fa-toolbox"></i>
+                <span class="hidden sm:inline">開啟工具箱</span>
+            </button>
         </header>
 
-        <div class="content-scroll px-8 py-12 lg:px-20 lg:py-16">
+        <div class="content-scroll overflow-y-auto px-8 py-12 lg:px-20 lg:py-16">
             <div class="max-w-4xl mx-auto">
                 <div class="mb-12 text-center md:text-left">
-                    <h3 class="text-3xl font-black text-slate-900 tracking-tighter">選擇製作階段</h3>
-                    <p class="text-slate-500 mt-2 font-medium">請按照頁面順序進行資料填寫，完成後可下載完整 PDF 檔案。</p>
+                    <h3 class="text-3xl font-black text-slate-900 tracking-tighter italic">Generation Steps</h3>
+                    <p class="text-slate-500 mt-2 font-medium">依序完成封面與內容產出，最後使用工具箱進行合併。</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -105,9 +100,9 @@
                         </div>
                         <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 01</h4>
                         <p class="text-lg font-bold text-slate-700 mb-3">工程封面產出</p>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">包含公司官方 Logo、主標題及案場通訊基礎資訊。</p>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">產出具備公司 LOGO 的專業 A4 封面圖檔。</p>
                         <div class="mt-auto flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
-                            Start Generation <i class="fas fa-chevron-right text-[10px]"></i>
+                            Go to Cover <i class="fas fa-arrow-right"></i>
                         </div>
                     </a>
 
@@ -117,29 +112,31 @@
                         </div>
                         <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 02</h4>
                         <p class="text-lg font-bold text-slate-700 mb-3">詳細保固內容</p>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">填寫客戶資訊、保固條款、年限及官方用印範圍。</p>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">填寫保固條款、案場資訊與數位印章區。</p>
                         <div class="mt-auto flex items-center gap-2 text-teal-600 font-black text-xs uppercase tracking-widest">
-                            Start Generation <i class="fas fa-chevron-right text-[10px]"></i>
+                            Go to Content <i class="fas fa-arrow-right"></i>
                         </div>
                     </a>
                 </div>
 
-                <div class="mt-16 bg-slate-900 rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+                <div class="mt-16 bg-slate-900 rounded-[40px] p-10 flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative">
                     <div class="relative z-10">
-                        <h5 class="text-white text-xl font-black">需要合併多份文件？</h5>
-                        <p class="text-slate-400 text-sm mt-1 font-medium">前往工具箱使用 PDF 合併與優化功能。</p>
+                        <h5 class="text-white text-2xl font-black italic">Need PDF Merger?</h5>
+                        <p class="text-slate-400 text-sm mt-2 font-medium">產出兩頁 PDF 後，請至工具箱完成最終合併作業。</p>
                     </div>
-                    <button class="relative z-10 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-sm hover:bg-teal-500 hover:text-white transition-all shadow-xl active:scale-95">
+                    
+                    <button onclick="location.href='toolbox.html'" class="relative z-10 bg-white text-slate-900 px-10 py-5 rounded-3xl font-black text-sm hover:bg-teal-500 hover:text-white transition-all shadow-2xl active:scale-95 flex items-center gap-3">
+                        <i class="fas fa-tools text-lg"></i>
                         開啟工具箱
                     </button>
-                    <i class="fas fa-tools absolute right-[-20px] bottom-[-20px] text-8xl text-white opacity-[0.03] rotate-12"></i>
+                    
+                    <i class="fas fa-file-pdf absolute right-[-20px] bottom-[-20px] text-[120px] text-white opacity-[0.03] rotate-12"></i>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // --- 核心邏輯保持不變 ---
         let timeLeft = 30 * 60;
         const timerElement = document.getElementById('logout-timer');
 
@@ -147,12 +144,12 @@
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            if (timeLeft <= 0) { window.location.href = 'login.html'; }
+            if (timeLeft <= 0) { window.location.href = 'index.html'; }
             timeLeft--;
         }
 
         function resetTimer() { timeLeft = 30 * 60; }
-        ['mousemove', 'keypress', 'touchstart'].forEach(evt => document.addEventListener(evt, resetTimer));
+        ['mousedown', 'touchstart', 'keydown'].forEach(evt => document.addEventListener(evt, resetTimer));
         setInterval(updateTimer, 1000);
     </script>
 </body>
