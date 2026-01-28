@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德工程雲端管理中台</title>
+    <title>JINDE | 錦德工程管理中台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,22 +12,24 @@
         
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
         
-        /* 側邊欄風格 */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s ease; z-index: 50; }
-        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: flex; align-items: center; }
+        /* 側邊欄：深色經典風格 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: flex; align-items: center; white-space: nowrap; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
         
-        /* 主舞台與捲動區 */
+        /* 主舞台區 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
         .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
         .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
 
-        /* 11 核心功能卡片樣式 */
-        .action-card { background: white; border: 1px solid #f1f5f9; padding: 20px; border-radius: 24px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .action-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.05); border-color: #0d9488; }
-        .icon-circle { width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        /* 核心 11 卡片樣式優化 */
+        .action-card { background: white; border: 1px solid #f1f5f9; padding: 24px; border-radius: 28px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; gap: 14px; position: relative; }
+        .action-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border-color: #0d9488; }
+        .action-card:active { scale: 0.97; }
+        
+        .icon-circle { width: 52px; height: 52px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
 
-        /* 響應式調整 */
+        /* 響應式：手機版側邊欄收合 */
         @media (max-width: 1024px) {
             .sidebar { width: 70px; }
             .sidebar .nav-text, .sidebar h1, .sidebar p { display: none; }
@@ -39,161 +41,146 @@
 </head>
 <body>
 
-    <aside class="sidebar shadow-2xl">
+    <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-info-side" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">使用者：管理員</p>
+            <p id="user-display" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Administrator</p>
         </div>
         <nav class="flex-grow">
             <a href="index.html" class="nav-link active"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
             <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
-            <a href="project.html" class="nav-link"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場工地</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場進度</span></a>
             <a href="staff.html" class="nav-link"><i class="fas fa-users-cog mr-3 w-5"></i><span class="nav-text">人員核算</span></a>
             <a href="quote.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3 w-5"></i><span class="nav-text">報價系統</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
         </nav>
-        <div class="p-6 border-t border-slate-800">
-            <div class="flex items-center gap-2 mb-2">
-                <span id="status-dot" class="w-2 h-2 bg-slate-500 rounded-full animate-pulse"></span>
-                <span id="status-text" class="text-[10px] font-bold text-slate-500 uppercase">偵測中</span>
+        <div class="p-6 border-t border-slate-800/50">
+            <div class="flex items-center gap-2 mb-1">
+                <span id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                <span id="status-text" class="text-[10px] font-bold text-slate-500 uppercase">Cloud Sync ON</span>
             </div>
-            <div class="text-[10px] text-slate-600 font-mono">IDLE: <span id="logout-timer">30:00</span></div>
+            <div class="text-[9px] text-slate-600 font-mono tracking-tighter">REFRESH: <span id="logout-timer">30:00</span></div>
         </div>
     </aside>
 
     <main class="main-stage">
         <header class="top-header">
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+                <span class="w-1 h-4 bg-teal-500 rounded-full"></span>
                 <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase">Management Hub</h2>
             </div>
             <div class="flex items-center gap-6">
                 <div class="text-right hidden md:block">
-                    <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter"></p>
+                    <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase"></p>
                     <p id="live-time" class="text-sm font-black text-slate-800 font-mono"></p>
                 </div>
-                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition shadow-sm active:scale-95">
+                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition shadow-sm border border-slate-100">
                     <i class="fas fa-power-off"></i>
                 </button>
             </div>
         </header>
 
         <div class="content-scroll">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 
                 <div class="col-span-2 bg-slate-900 rounded-[32px] p-8 text-white flex justify-between items-center relative overflow-hidden group cursor-pointer" onclick="location.href='calendar.html'">
                     <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>
+                            <span class="text-teal-400 text-[10px] font-black uppercase tracking-widest">Live Schedule</span>
+                        </div>
                         <h3 class="text-2xl font-black mb-1">今日派工排程</h3>
-                        <p class="text-teal-400 text-[10px] font-bold uppercase tracking-[0.2em]">Master Schedule</p>
+                        <p class="text-slate-400 text-xs">即時查看各案場施工人力配置</p>
                     </div>
                     <i class="fas fa-calendar-check text-8xl text-white/5 absolute -right-4 -bottom-4 group-hover:scale-110 group-hover:text-teal-500/10 transition duration-700"></i>
                 </div>
 
                 <div class="action-card" onclick="location.href='customer.html'">
                     <div class="icon-circle bg-blue-50 text-blue-600"><i class="far fa-address-book"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">客戶管理</h3>
-                    <p class="text-[10px] text-slate-400">業主資料與聯絡名錄</p>
+                    <h3 class="font-black text-sm text-slate-800">客戶管理</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">業主、協力廠商<br>與架構通訊錄</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='project.html'">
                     <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">案場進度</h3>
-                    <p class="text-[10px] text-slate-400">工地現場監修與回報</p>
+                    <h3 class="font-black text-sm text-slate-800">案場進度</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">工地進度監修<br>與階段性驗收</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='staff.html'">
                     <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">人員核算</h3>
-                    <p class="text-[10px] text-slate-400">出勤紀錄與日薪統計</p>
+                    <h3 class="font-black text-sm text-slate-800">人員核算</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">師傅點工紀錄<br>與薪資成本統計</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='quote.html'">
                     <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice-dollar"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">報價系統</h3>
-                    <p class="text-[10px] text-slate-400">建立與產出工程報價單</p>
+                    <h3 class="font-black text-sm text-slate-800">報價系統</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">工項快速報價<br>與 PDF 單據產出</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='warranty.html'">
-                    <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-award"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">保固證明書</h3>
-                    <p class="text-[10px] text-slate-400">完工保固文件自動產生</p>
+                    <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-certificate"></i></div>
+                    <h3 class="font-black text-sm text-slate-800">保固證明</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">自動化產出<br>工程完工保固書</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='billing.html'">
                     <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">請款核銷</h3>
-                    <p class="text-[10px] text-slate-400">應收帳款與期數追蹤</p>
+                    <h3 class="font-black text-sm text-slate-800">請款核銷</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">應收帳款追蹤<br>與期數款項管理</p>
                 </div>
 
-                <div class="action-card" onclick="location.href='finance.html'">
+                <div class="action-card border-slate-900 bg-slate-50" onclick="location.href='finance.html'">
                     <div class="icon-circle bg-slate-900 text-white"><i class="fas fa-chart-line"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">財務中心</h3>
-                    <p class="text-[10px] text-slate-400">損益分析與營收概況</p>
+                    <h3 class="font-black text-sm text-slate-900">財務中心</h3>
+                    <p class="text-[10px] text-slate-500 leading-relaxed">各案場損益分析<br>與營收圖表統計</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='docs.html'">
                     <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="far fa-copy"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">雲端文件</h3>
-                    <p class="text-[10px] text-slate-400">合約文件與圖面存檔</p>
+                    <h3 class="font-black text-sm text-slate-800">雲端文件</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">合約圖面、勞安<br>文件集中化儲存</p>
                 </div>
 
                 <div class="action-card" onclick="location.href='quote_query.html'">
-                    <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search-dollar"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">歷史報價</h3>
-                    <p class="text-[10px] text-slate-400">舊案資料庫快速翻閱</p>
+                    <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search"></i></div>
+                    <h3 class="font-black text-sm text-slate-800">歷史報價</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">過往案場工項<br>單價快速查詢參考</p>
                 </div>
 
-                <div class="action-card border-dashed border-slate-200" onclick="location.href='settings.html'">
+                <div class="action-card border-dashed border-slate-200 shadow-none hover:shadow-none" onclick="location.href='settings.html'">
                     <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
-                    <h3 class="font-black text-sm text-slate-400">系統設定</h3>
-                    <p class="text-[10px] text-slate-300">權限管理與參數調整</p>
+                    <h3 class="font-black text-sm text-slate-500">系統設定</h3>
+                    <p class="text-[10px] text-slate-300 leading-relaxed">帳號權限管理<br>與基礎參數定義</p>
                 </div>
 
             </div>
         </div>
 
-        <footer class="p-6 border-t border-slate-50 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
-            <span>JINDE CLOUD SYSTEM</span>
-            <span class="hidden sm:inline">V4.5.0 - Encrypted SQL Mode</span>
+        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
+            <span>JINDE ENGINEERING CLOUD Hub</span>
+            <span class="hidden sm:inline">V4.6.2 - Secure SQL Environment</span>
         </footer>
     </main>
 
     <script>
-        // Supabase 初始化
-        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0'; 
-        const _supabase = supabase.createClient(S_URL, S_KEY);
-
-        // 雲端狀態檢查
-        async function checkStatus() {
-            try {
-                const { error } = await _supabase.from('staff_profiles').select('id', { head: true, limit: 1 });
-                if (error) throw error;
-                document.getElementById('status-dot').className = "w-2 h-2 bg-emerald-500 rounded-full";
-                document.getElementById('status-text').innerText = "雲端連線正常";
-                document.getElementById('status-text').className = "text-[10px] font-bold text-emerald-500 uppercase";
-            } catch (err) {
-                document.getElementById('status-dot').className = "w-2 h-2 bg-rose-500 rounded-full";
-                document.getElementById('status-text').innerText = "離線模式";
-                document.getElementById('status-text').className = "text-[10px] font-bold text-rose-500 uppercase";
-            }
-        }
-
-        // 即時時鐘
+        // --- 初始化與時鐘 ---
         function updateClock() {
             const now = new Date();
             document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
             document.getElementById('live-time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false });
         }
 
-        // 安全登出
+        // --- 登出功能 ---
         function logout() {
-            if(confirm('確定要安全登出錦德工程系統嗎？')) {
+            if(confirm('確定要登出錦德管理系統？')) {
                 localStorage.clear();
                 window.location.href = 'login.html';
             }
         }
 
-        // 自動登出計時 (30分鐘)
+        // --- 30分鐘自動登出計時 ---
         let timeLeft = 1800;
         setInterval(() => {
             if (timeLeft <= 0) logout();
@@ -206,9 +193,8 @@
         window.onload = () => {
             updateClock();
             setInterval(updateClock, 1000);
-            checkStatus();
-            const user = localStorage.getItem('user_name') || '管理員';
-            document.getElementById('user-info-side').innerText = "使用者：" + user;
+            const user = localStorage.getItem('user_name') || '錦德管理員';
+            document.getElementById('user-display').innerText = user;
         };
     </script>
 </body>
