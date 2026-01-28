@@ -2,210 +2,173 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>錦德工程-請款單(強制顯示單位版)</title>
+    <title>JINDE 錦德防水工程 - 專業請款單</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f1f5f9; padding: 20px; }
-        .print-container { 
-            width: 210mm; 
-            min-height: 297mm; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20mm; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #333; padding: 20px; }
+        .invoice-card { 
+            width: 210mm; min-height: 297mm; margin: 0 auto; 
+            background: white; padding: 40px 60px; position: relative;
         }
-        /* 強制顯示單位格的邊框 */
-        .unit-box {
-            border: 2px solid #3b82f6 !important; /* 強制藍色邊框 */
-            border-radius: 4px;
-            padding: 4px;
-            text-align: center;
-            width: 80px;
-            font-weight: bold;
-            color: #1e40af;
-        }
-        .photo-slot {
-            border: 2px dashed #cbd5e1;
-            height: 150px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8fafc;
-            cursor: pointer;
-        }
-        .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+        .table-head { border-top: 2px solid #000; border-bottom: 2px solid #eee; }
+        input { outline: none; border-bottom: 1px solid transparent; transition: 0.2s; }
+        input:focus { border-bottom: 1px solid #ccc; background-color: #fafafa; }
+        .unit-col { color: #888; font-weight: bold; width: 60px; text-align: center; }
         @media print {
+            body { background: none; padding: 0; }
+            .invoice-card { box-shadow: none; margin: 0; width: 100%; }
             .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .print-container { box-shadow: none; margin: 0; width: 210mm; }
-            .unit-box { border: 1px solid #000 !important; } /* 列印時變細黑框 */
         }
     </style>
 </head>
 <body>
 
-    <div class="print-container">
-        <div style="display: flex; justify-content: space-between; border-bottom: 4px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-            <div>
-                <h1 style="font-size: 28px; font-weight: 900; italic">錦德防水工程請款單</h1>
-                <p style="color: #2563eb; font-weight: bold;">JINDE Engineering Invoice</p>
-            </div>
-            <div style="text-align: right; font-size: 12px;">
-                <p>日期：<span id="dateText"></span></p>
-                <p>單號：<span id="snText"></span></p>
-            </div>
+<div class="invoice-card shadow-2xl">
+    <div class="flex justify-between items-start mb-20">
+        <div>
+            <h1 class="text-4xl font-black tracking-tighter">JINDE.</h1>
+            <p class="text-xs tracking-widest text-gray-400 mt-1">錦德防水工程行</p>
         </div>
-
-        <div style="margin-bottom: 20px;">
-            <input type="text" placeholder="在此輸入：業主名稱/客戶姓名" style="width: 100%; font-size: 20px; font-weight: bold; border-bottom: 1px solid #ccc; outline: none; margin-bottom: 10px;">
-            <input type="text" placeholder="在此輸入：工程項目/案名" style="width: 100%; font-size: 14px; border-bottom: 1px solid #ccc; outline: none;">
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-                <tr style="background: #f8fafc; border-bottom: 2px solid #000;">
-                    <th style="padding: 10px; text-align: left;">施工項目說明</th>
-                    <th style="padding: 10px; text-align: center; color: #2563eb;">單位</th>
-                    <th style="padding: 10px; text-align: center;">數量</th>
-                    <th style="padding: 10px; text-align: right;">單價</th>
-                    <th style="padding: 10px; text-align: right;">小計</th>
-                    <th class="no-print"></th>
-                </tr>
-            </thead>
-            <tbody id="mainTable">
-                <tr>
-                    <td style="padding: 10px;"><input type="text" value="專業防水施作" style="width: 100%; outline: none;"></td>
-                    <td style="padding: 10px; text-align: center;">
-                        <input type="text" value="式" class="unit-box">
-                    </td>
-                    <td style="padding: 10px; text-align: center;"><input type="number" value="1" class="qty" oninput="calc()" style="width: 60px; text-align: center;"></td>
-                    <td style="padding: 10px; text-align: right;"><input type="number" value="0" class="price" oninput="calc()" style="width: 80px; text-align: right;"></td>
-                    <td class="subtotal" style="padding: 10px; text-align: right; font-weight: bold;">0</td>
-                    <td class="no-print"></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <button onclick="addRow()" class="no-print" style="background: #2563eb; color: white; padding: 5px 15px; border-radius: 4px; cursor: pointer;">+ 增加一行項目</button>
-
-        <div style="margin-top: 30px;">
-            <p style="font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 10px;">施工紀錄照片</p>
-            <div style="display: grid; grid-template-cols: 1fr 1fr 1fr; gap: 20px; display: flex;">
-                <div style="flex: 1;">
-                    <div class="photo-slot" onclick="document.getElementById('f1').click()">
-                        <span class="no-print">點擊上傳</span>
-                        <img id="img1" style="display:none">
-                    </div>
-                    <input type="file" id="f1" style="display:none" onchange="showImg(this, 'img1')">
-                    <input type="text" value="施工前" style="width: 100%; text-align: center; margin-top: 5px; font-size: 12px; border: none;">
-                </div>
-                <div style="flex: 1;">
-                    <div class="photo-slot" onclick="document.getElementById('f2').click()">
-                        <span class="no-print">點擊上傳</span>
-                        <img id="img2" style="display:none">
-                    </div>
-                    <input type="file" id="f2" style="display:none" onchange="showImg(this, 'img2')">
-                    <input type="text" value="施工中" style="width: 100%; text-align: center; margin-top: 5px; font-size: 12px; border: none;">
-                </div>
-                <div style="flex: 1;">
-                    <div class="photo-slot" onclick="document.getElementById('f3').click()">
-                        <span class="no-print">點擊上傳</span>
-                        <img id="img3" style="display:none">
-                    </div>
-                    <input type="file" id="f3" style="display:none" onchange="showImg(this, 'img3')">
-                    <input type="text" value="完工後" style="width: 100%; text-align: center; margin-top: 5px; font-size: 12px; border: none;">
-                </div>
-            </div>
-        </div>
-
-        <div style="flex-grow: 1;"></div>
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px;">
-            <div style="width: 50%;">
-                <p style="font-size: 10px; color: #999;">備註：</p>
-                <textarea style="width: 100%; h-20; background: #f9f9f9; border: none; padding: 10px; font-size: 12px;" placeholder="輸入保固內容..."></textarea>
-            </div>
-            <div style="text-align: right;">
-                <p style="font-size: 14px;">未稅合計：<span id="sumBase">0</span></p>
-                <p style="font-size: 14px; color: #2563eb; font-weight: bold;">營業稅 (5%)：<span id="sumTax">0</span></p>
-                <div style="background: #000; color: #fff; padding: 15px 30px; border-radius: 8px; margin-top: 10px;">
-                    <p style="font-size: 10px; color: #3b82f6;">TOTAL AMOUNT</p>
-                    <p style="font-size: 32px; font-weight: 900;">NT$ <span id="sumTotal">0</span></p>
-                    <p id="sumChinese" style="font-size: 12px; color: #ccc;">零元整</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="no-print" style="text-align: center; margin-top: 30px;">
-            <button onclick="window.print()" style="background: #000; color: white; padding: 10px 40px; border-radius: 50px; font-weight: bold; cursor: pointer;">列印請款單 (PDF)</button>
+        <div class="text-right">
+            <h2 class="text-6xl font-black text-gray-100 italic absolute right-16 top-10 select-none">INVOICE</h2>
+            <p class="text-[10px] font-bold mt-12 relative z-10 text-gray-400 uppercase">Serial <span class="text-black ml-2" id="sn">INV-543440</span></p>
         </div>
     </div>
 
-    <script>
-        document.getElementById('dateText').innerText = new Date().toLocaleDateString();
-        document.getElementById('snText').innerText = "JD-" + Math.floor(Math.random()*900000 + 100000);
+    <div class="grid grid-cols-2 gap-20 mb-16 text-sm">
+        <div>
+            <p class="text-[10px] font-black text-blue-600 uppercase mb-2 tracking-widest">Billed To 客戶</p>
+            <input type="text" placeholder="Recipient Name" class="text-2xl font-bold w-full mb-1">
+            <input type="text" placeholder="Project Description" class="text-gray-500 w-full italic">
+        </div>
+        <div class="text-right">
+            <div class="mb-4">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date 發行日期</p>
+                <p class="font-bold text-lg" id="currentDate">2026-01-28</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment 匯款帳資</p>
+                <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                    Bank: <span class="text-black font-bold italic">您的銀行代碼</span><br>
+                    Acc: <span class="text-black font-bold italic">0000-0000-0000</span>
+                </p>
+            </div>
+        </div>
+    </div>
 
-        function addRow() {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding: 10px;"><input type="text" placeholder="項目" style="width: 100%; outline: none;"></td>
-                <td style="padding: 10px; text-align: center;"><input type="text" value="坪" class="unit-box"></td>
-                <td style="padding: 10px; text-align: center;"><input type="number" value="1" class="qty" oninput="calc()" style="width: 60px; text-align: center;"></td>
-                <td style="padding: 10px; text-align: right;"><input type="number" value="0" class="price" oninput="calc()" style="width: 80px; text-align: right;"></td>
-                <td class="subtotal" style="padding: 10px; text-align: right; font-weight: bold;">0</td>
-                <td class="no-print"><button onclick="this.parentElement.parentElement.remove();calc()" style="color:red; margin-left:10px;">✕</button></td>
-            `;
-            document.getElementById('mainTable').appendChild(tr);
-        }
+    <table class="w-full mb-10">
+        <thead>
+            <tr class="table-head text-[10px] font-black uppercase tracking-widest text-gray-500">
+                <th class="py-4 text-left w-10">#</th>
+                <th class="py-4 text-left">Description 項目</th>
+                <th class="py-4 text-center">Unit 單位</th> <th class="py-4 text-center">Qty 數量</th>
+                <th class="py-4 text-right">Price 單價</th>
+                <th class="py-4 text-right">Amount 金額</th>
+                <th class="py-4 w-10 no-print"></th>
+            </tr>
+        </thead>
+        <tbody id="billBody">
+            <tr class="border-b border-gray-50">
+                <td class="py-6 text-gray-300 font-bold italic text-sm">01</td>
+                <td class="py-6"><input type="text" value="工程進度款 / 第一期" class="w-full font-bold"></td>
+                <td class="py-6 text-center"><input type="text" value="式" class="unit-col"></td> <td class="py-6 text-center"><input type="number" value="1" class="w-16 text-center font-bold qty" oninput="calc()"></td>
+                <td class="py-6 text-right"><input type="number" value="0" class="w-24 text-right font-bold price" oninput="calc()"></td>
+                <td class="py-6 text-right font-black text-lg subtotal">0</td>
+                <td class="py-6 text-center no-print"><button onclick="this.parentElement.parentElement.remove();calc()" class="text-gray-200 hover:text-red-500 font-bold">✕</button></td>
+            </tr>
+        </tbody>
+    </table>
 
-        function showImg(input, targetId) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.getElementById(targetId);
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                    img.parentElement.querySelector('span').style.display = 'none';
-                };
-                reader.readAsDataURL(file);
+    <button onclick="addRow()" class="no-print border border-gray-200 px-4 py-2 text-[10px] font-black rounded hover:bg-gray-50 uppercase tracking-widest text-gray-400 transition-all">+ Add Item 新增項目</button>
+
+    <div class="flex justify-between items-end mt-20">
+        <div class="w-1/2">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 italic">Notes 備註</p>
+            <textarea class="w-full h-32 bg-gray-50 rounded p-4 text-xs text-gray-500 outline-none" placeholder="在此輸入條款或注意事項..."></textarea>
+        </div>
+        <div class="text-right">
+            <div class="mb-6">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Total Due 應付總額</p>
+                <div class="flex items-baseline justify-end gap-2 mt-1">
+                    <span class="text-xs text-gray-400 font-bold">TWD</span>
+                    <span class="text-6xl font-black italic tracking-tighter" id="total">0</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">In Words 中文大寫</p>
+                <p class="text-xs font-bold mt-1 text-gray-400" id="totalChinese">零元整</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-20 mt-32 pt-10 border-t border-gray-100 text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em]">
+        <div>
+            <p class="mb-10 italic">Authorized</p>
+            <p class="text-black italic">錦德防水工程行 簽署</p>
+        </div>
+        <div class="text-right">
+            <p class="mb-10 italic">Client Acceptance</p>
+            <p class="text-black italic">業主簽收確認</p>
+        </div>
+    </div>
+
+    <div class="fixed bottom-10 right-10 no-print flex gap-4">
+        <button onclick="window.print()" class="bg-black text-white px-8 py-3 rounded-full font-black text-sm shadow-2xl hover:scale-105 transition-all">PRINT 列印</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById('currentDate').innerText = new Date().toISOString().split('T')[0];
+    
+    function addRow() {
+        const tbody = document.getElementById('billBody');
+        const count = tbody.children.length + 1;
+        const num = count < 10 ? '0' + count : count;
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-gray-50";
+        tr.innerHTML = `
+            <td class="py-6 text-gray-300 font-bold italic text-sm">${num}</td>
+            <td class="py-6"><input type="text" placeholder="項目名稱" class="w-full font-bold"></td>
+            <td class="py-6 text-center"><input type="text" value="坪" class="unit-col"></td>
+            <td class="py-6 text-center"><input type="number" value="1" class="w-16 text-center font-bold qty" oninput="calc()"></td>
+            <td class="py-6 text-right"><input type="number" value="0" class="w-24 text-right font-bold price" oninput="calc()"></td>
+            <td class="py-6 text-right font-black text-lg subtotal">0</td>
+            <td class="py-6 text-center no-print"><button onclick="this.parentElement.parentElement.remove();calc()" class="text-gray-200 hover:text-red-500 font-bold">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calc() {
+        let grandTotal = 0;
+        const rows = document.querySelectorAll('#billBody tr');
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const sub = qty * price;
+            row.querySelector('.subtotal').innerText = sub.toLocaleString();
+            grandTotal += sub;
+        });
+        document.getElementById('total').innerText = grandTotal.toLocaleString();
+        document.getElementById('totalChinese').innerText = numberToChinese(grandTotal);
+    }
+
+    function numberToChinese(n) {
+        if (n === 0) return "零元整";
+        const digit = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
+        const unit = [['元', '萬', '億'], ['', '拾', '佰', '仟']];
+        let s = '整'; n = Math.floor(n);
+        for (let i = 0; i < unit[0].length && n > 0; i++) {
+            let p = '';
+            for (let j = 0; j < unit[1].length && n > 0; j++) {
+                p = digit[n % 10] + (n % 10 !== 0 ? unit[1][j] : '') + p;
+                n = Math.floor(n / 10);
             }
+            s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
         }
+        return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
+    }
+</script>
 
-        function calc() {
-            let base = 0;
-            const rows = document.querySelectorAll('#mainTable tr');
-            rows.forEach(row => {
-                const q = row.querySelector('.qty').value || 0;
-                const p = row.querySelector('.price').value || 0;
-                const sub = q * p;
-                row.querySelector('.subtotal').innerText = sub.toLocaleString();
-                base += sub;
-            });
-            const tax = Math.round(base * 0.05);
-            const total = base + tax;
-            document.getElementById('sumBase').innerText = base.toLocaleString();
-            document.getElementById('sumTax').innerText = tax.toLocaleString();
-            document.getElementById('sumTotal').innerText = total.toLocaleString();
-            document.getElementById('sumChinese').innerText = numberToChinese(total);
-        }
-
-        function numberToChinese(n) {
-            if(!n) return "零元整";
-            const fraction = ['角', '分'];
-            const digit = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
-            const unit = [['元', '萬', '億'], ['', '拾', '佰', '仟']];
-            let s = '';
-            for (let i = 0; i < unit[0].length && n > 0; i++) {
-                let p = '';
-                for (let j = 0; j < unit[1].length && n > 0; j++) {
-                    p = digit[n % 10] + (n % 10 !== 0 ? unit[1][j] : '') + p;
-                    n = Math.floor(n / 10);
-                }
-                s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
-            }
-            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, '零元') + '整';
-        }
-    </script>
 </body>
 </html>
