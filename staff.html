@@ -1,347 +1,181 @@
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
     <title>JINDE | 人員與工資核算</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
     <style>
-
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-
-        
-
         .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
-
         .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: flex; align-items: center; }
-
         .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-
-        
-
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-
         .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; }
-
         .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; }
-
-
-
-        .glass-card { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
-
-        .wage-badge { background: #f0fdfa; color: #0d9488; padding: 2px 8px; border-radius: 6px; font-weight: 900; font-family: monospace; }
-
+        .glass-card { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; position: relative; }
+        
+        /* 確保按鈕在最上層且易於點擊 */
+        .btn-action { position: relative; z-index: 10; cursor: pointer !important; }
+        .btn-action:active { transform: scale(0.95); }
     </style>
-
 </head>
-
 <body>
 
-
-
     <aside class="sidebar">
-
         <div class="p-8">
-
             <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-
             <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Management Hub</p>
-
         </div>
-
         <nav class="flex-grow">
-
             <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></a>
-
             <a href="staff.html" class="nav-link active"><i class="fas fa-users-cog mr-3 w-5"></i><span>人員核算</span></a>
-
             <a href="quote_query.html" class="nav-link"><i class="fas fa-search mr-3 w-5"></i><span>歷史報價</span></a>
-
         </nav>
-
     </aside>
 
-
-
     <main class="main-stage">
-
         <header class="top-header">
-
             <div class="flex items-center gap-2">
-
                 <span class="w-1 h-4 bg-orange-500 rounded-full"></span>
-
                 <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase">Staff & Wage Calc</h2>
-
             </div>
-
+            <button onclick="loadStaff()" class="text-slate-400 hover:text-teal-500 transition"><i class="fas fa-sync-alt"></i></button>
         </header>
 
-
-
         <div class="content-scroll">
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
                 <div class="glass-card p-6 border-l-4 border-teal-500">
-
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">本月預計支出 (工資)</p>
-
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">本月預計支出</p>
                     <p id="total-monthly-wage" class="text-2xl font-black text-slate-800">NT$ 0</p>
-
                 </div>
-
                 <div class="glass-card p-6 border-l-4 border-blue-500">
-
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">正式師傅人數</p>
-
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">正式師傅</p>
                     <p id="active-count" class="text-2xl font-black text-slate-800">0 人</p>
-
                 </div>
-
                 <div class="glass-card p-6 border-l-4 border-orange-500">
-
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">待核准申請</p>
-
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">待核准</p>
                     <p id="pending-count" class="text-2xl font-black text-orange-500">0 位</p>
-
                 </div>
-
             </div>
 
-
-
-            <div class="space-y-6">
-
-                <section>
-
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-
-                        <i class="fas fa-user-check text-teal-500"></i> 人員名單與薪資結算
-
-                    </h3>
-
-                    <div id="staff-list" class="grid gap-4">
-
-                        </div>
-
-                </section>
-
-            </div>
-
+            <div id="staff-list" class="grid gap-4">
+                </div>
         </div>
-
     </main>
 
-
-
     <script>
-
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
-
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-
-
         async function loadStaff() {
-
-            // 這裡模擬從 DB 讀取，實務上會從 attendance 表加總工數
-
-            const { data: staff, error } = await _supabase.from('staff').select('*').order('status');
-
-            
+            const { data: staff, error } = await _supabase.from('staff').select('*').order('status', { ascending: false });
+            if (error) return alert("資料讀取失敗");
 
             const listDiv = document.getElementById('staff-list');
-
             listDiv.innerHTML = '';
-
             
-
-            let totalWage = 0;
-
-            let activeNum = 0;
-
-            let pendingNum = 0;
-
-
+            let totalW = 0, activeC = 0, pendingC = 0;
 
             staff.forEach(p => {
-
                 const isPending = p.status === 'pending';
-
-                if(isPending) pendingNum++; else activeNum++;
-
-
-
-                // 假設欄位有 total_days (本月工數)，若無則預設 0
-
-                const days = p.total_days || 0; 
-
-                const currentTotal = days * (p.daily_wage || 0);
-
-                totalWage += currentTotal;
-
-
+                isPending ? pendingC++ : activeC++;
+                const days = p.total_days || 0;
+                const daily = p.daily_wage || 0;
+                const total = days * daily;
+                totalW += total;
 
                 listDiv.innerHTML += `
-
-                    <div class="glass-card p-5 flex flex-wrap justify-between items-center gap-4 ${isPending ? 'bg-orange-50/30 border-dashed' : ''}">
-
+                    <div class="glass-card p-5 flex flex-wrap justify-between items-center gap-4 ${isPending ? 'bg-orange-50/50 border-orange-200 border-dashed' : ''}">
                         <div class="flex items-center gap-4">
-
                             <div class="w-12 h-12 ${isPending ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'} rounded-2xl flex items-center justify-center font-black">
-
                                 ${p.name[0]}
-
                             </div>
-
                             <div>
-
                                 <div class="font-black text-slate-800">${p.name} ${isPending ? '<span class="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded ml-2">待核准</span>' : ''}</div>
-
-                                <div class="text-[10px] text-slate-400 font-bold tracking-tight">${p.email || '無電子郵件'}</div>
-
+                                <div class="text-[10px] text-slate-400 font-bold">${p.email || '未提供 Email'}</div>
                             </div>
-
                         </div>
 
-
-
-                        <div class="flex items-center gap-8">
-
+                        <div class="flex items-center gap-6">
                             ${!isPending ? `
-
                                 <div class="text-right">
-
-                                    <p class="text-[9px] font-black text-slate-400 uppercase">設定日薪</p>
-
-                                    <p class="text-sm font-black text-slate-700">$${(p.daily_wage || 0).toLocaleString()}</p>
-
+                                    <p class="text-[9px] font-black text-slate-400 uppercase">日薪</p>
+                                    <p class="text-sm font-black text-slate-700">$${daily.toLocaleString()}</p>
                                 </div>
-
                                 <div class="text-right">
-
-                                    <p class="text-[9px] font-black text-slate-400 uppercase">本月工數</p>
-
-                                    <p class="text-sm font-black text-blue-600">${days} 工</p>
-
+                                    <p class="text-[9px] font-black text-slate-400 uppercase">工數</p>
+                                    <p class="text-sm font-black text-blue-600">${days}</p>
                                 </div>
-
                                 <div class="text-right">
-
-                                    <p class="text-[9px] font-black text-slate-400 uppercase">應付工資</p>
-
-                                    <p class="text-sm font-black text-teal-600">$${currentTotal.toLocaleString()}</p>
-
+                                    <p class="text-[9px] font-black text-slate-400 uppercase">應付</p>
+                                    <p class="text-sm font-black text-teal-600">$${total.toLocaleString()}</p>
                                 </div>
-
                             ` : ''}
-
                             
-
                             <div class="flex gap-2">
-
                                 ${isPending ? 
-
-                                    `<button onclick="approve('${p.id}', '${p.name}')" class="bg-slate-900 text-white text-[11px] font-black px-4 py-2 rounded-xl">核准入職</button>` : 
-
-                                    `<button onclick="addWork('${p.id}', '${p.name}')" class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center hover:bg-teal-600 hover:text-white transition"><i class="fas fa-plus"></i></button>
-
-                                     <button onclick="editWage('${p.id}', ${p.daily_wage})" class="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><i class="fas fa-pen text-xs"></i></button>`
-
+                                    `<button onclick="event.stopPropagation(); approve('${p.id}', '${p.name}')" class="btn-action bg-slate-900 text-white text-[11px] font-black px-4 py-2 rounded-xl shadow-lg">核准並設薪</button>` : 
+                                    `<button onclick="event.stopPropagation(); addWork('${p.id}', '${p.name}')" class="btn-action w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center hover:bg-teal-600 hover:text-white transition"><i class="fas fa-plus"></i></button>
+                                     <button onclick="event.stopPropagation(); editWage('${p.id}', ${p.daily_wage})" class="btn-action w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><i class="fas fa-pen text-xs"></i></button>`
                                 }
-
                             </div>
-
                         </div>
-
                     </div>
-
                 `;
-
             });
 
-
-
-            document.getElementById('total-monthly-wage').innerText = `NT$ ${totalWage.toLocaleString()}`;
-
-            document.getElementById('active-count').innerText = `${activeNum} 人`;
-
-            document.getElementById('pending-count').innerText = `${pendingNum} 位`;
-
+            document.getElementById('total-monthly-wage').innerText = `NT$ ${totalW.toLocaleString()}`;
+            document.getElementById('active-count').innerText = `${activeC} 人`;
+            document.getElementById('pending-count').innerText = `${pendingC} 位`;
         }
 
-
-
-        // --- 功能函數 ---
-
+        // --- 修復後的核准函數 ---
         async function approve(id, name) {
+            const wage = prompt(`請為 ${name} 設定日薪數字：`, "2500");
+            if (wage === null || wage === "") return;
 
-            const wage = prompt(`請輸入 ${name} 的日薪：`, "2500");
+            const wageNum = parseInt(wage);
+            if (isNaN(wageNum)) return alert("請輸入正確數字");
 
-            if(!wage) return;
+            const { error } = await _supabase
+                .from('staff')
+                .update({ 
+                    status: 'active', 
+                    daily_wage: wageNum,
+                    total_days: 0 // 初始化工數
+                })
+                .eq('id', id);
 
-            await _supabase.from('staff').update({ status: 'active', daily_wage: parseInt(wage) }).eq('id', id);
-
-            loadStaff();
-
+            if (error) {
+                alert("核准失敗: " + error.message);
+            } else {
+                alert("✅ 核准成功！");
+                loadStaff(); // 重新整理頁面
+            }
         }
-
-
 
         async function addWork(id, name) {
-
-            const day = prompt(`為 ${name} 增加報工數量（可輸入 0.5 或 1）：`, "1");
-
-            if(!day) return;
-
-            // 這裡邏輯：實務上應寫入 attendance 表，此處簡化為直接更新 staff 表的累積工數
-
+            const day = prompt(`為 ${name} 增加工數 (目前採累加制)：`, "1");
+            if (!day) return;
             const { data } = await _supabase.from('staff').select('total_days').eq('id', id).single();
-
             const newTotal = (data.total_days || 0) + parseFloat(day);
-
             await _supabase.from('staff').update({ total_days: newTotal }).eq('id', id);
-
             loadStaff();
-
         }
-
-
 
         async function editWage(id, current) {
-
-            const wage = prompt(`修改日薪：`, current);
-
-            if(!wage) return;
-
+            const wage = prompt(`修改 ${current} 的日薪為：`, current);
+            if (!wage) return;
             await _supabase.from('staff').update({ daily_wage: parseInt(wage) }).eq('id', id);
-
             loadStaff();
-
         }
 
-
-
         window.onload = loadStaff;
-
     </script>
-
 </body>
-
 </html>
