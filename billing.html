@@ -10,19 +10,20 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
 
-        /* A4 容器核心優化 */
+        /* A4 容器核心：增加視覺結構 */
         .print-container {
             width: 210mm;
-            height: 297mm; /* 固定高度確保內容不縮減 */
+            height: 297mm;
             margin: 20px auto;
             background: white;
-            padding: 20mm 18mm; /* 加大內邊距提升高級感 */
+            padding: 25mm 20mm; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             position: relative;
             display: flex;
             flex-direction: column;
+            border-top: 8px solid #0f172a; /* 頂部粗邊線增加重量感 */
         }
 
         @media print {
@@ -38,140 +39,133 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            .billing-input { border: none !important; background: transparent !important; }
         }
 
-        /* 撐開空間讓內容填滿 A4 */
-        .content-body { flex-grow: 1; }
+        /* 確保內容分布均勻，避免下半部留白 */
+        .content-body { flex-grow: 1; margin-top: 2rem; }
 
-        /* 專業格線與輸入框 */
-        .billing-input { border-bottom: 2px solid #f1f5f9; transition: all 0.3s; background: transparent; }
+        /* 專業格線與欄位 */
+        .billing-input { border-bottom: 1px solid #e2e8f0; transition: all 0.3s; background: transparent; }
         .billing-input:focus { border-bottom: 2px solid #2563eb; outline: none; }
         
-        /* 表格視覺加強 */
-        th { border-bottom: 2px solid #1e293b !important; color: #64748b !important; font-size: 11px !important; }
-        .item-row { border-bottom: 1px solid #f1f5f9; }
+        /* 強化表格質感 */
+        th { background-color: #f8fafc; border-bottom: 2px solid #0f172a !important; text-transform: uppercase; font-size: 11px; }
+        .item-row { border-bottom: 1px solid #f1f5f9; height: 60px; }
     </style>
 </head>
 <body>
 
     <div class="print-container">
-        <div class="flex justify-between items-start mb-12">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-3xl font-black italic shadow-lg shadow-blue-200">JD</div>
-                <div>
-                    <h1 class="text-4xl font-black text-slate-900 tracking-tighter italic">INVOICE / 請款單</h1>
-                    <p class="text-[10px] text-blue-600 font-black tracking-[0.4em] uppercase mt-1">錦德防水工程行 JINDE Engineering</p>
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter italic mb-1">JINDE ENGINEERING</h1>
+                <h2 class="text-2xl font-bold text-slate-700 tracking-[0.2em]">錦德防水工程行</h2>
+                <p class="text-[10px] text-slate-400 mt-2 font-mono">TEL: (02) XXXX-XXXX | ADD: 您的通訊地址</p>
+            </div>
+            <div class="text-right border-l-4 border-slate-900 pl-6 h-20 flex flex-col justify-center">
+                <h3 class="text-3xl font-black text-slate-900 italic">INVOICE</h3>
+                <p class="text-xs font-bold text-slate-500 mt-1">NO: <span id="billId" class="font-mono text-slate-900 ml-1"></span></p>
+            </div>
+        </div>
+
+        <div class="h-px bg-slate-200 w-full mb-8"></div>
+
+        <div class="grid grid-cols-2 gap-16 mb-12">
+            <div>
+                <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-4 italic">Customer Info / 業主資訊</p>
+                <div class="space-y-6">
+                    <div class="flex items-end gap-3 border-b border-slate-100 pb-1">
+                        <span class="text-xs text-slate-400 font-bold whitespace-nowrap">業主名稱</span>
+                        <input type="text" id="custName" class="w-full font-bold text-lg outline-none bg-transparent">
+                    </div>
+                    <div class="flex items-end gap-3 border-b border-slate-100 pb-1">
+                        <span class="text-xs text-slate-400 font-bold whitespace-nowrap">工程名稱</span>
+                        <input type="text" id="projName" class="w-full font-medium text-slate-600 outline-none bg-transparent">
+                    </div>
                 </div>
             </div>
-            <div class="text-right pt-2 border-r-4 border-blue-600 pr-6">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Serial <span id="billId" class="text-slate-900 ml-2 font-mono text-xs italic"></span></p>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date <span id="currentDate" class="text-slate-900 ml-2 text-xs italic"></span></p>
+
+            <div>
+                <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-4 italic">Settlement / 請款資訊</p>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">請款日期 Date:</span>
+                        <span id="currentDate" class="font-bold text-slate-700"></span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">匯款銀行 Bank:</span>
+                        <input type="text" value="您的銀行名稱" class="bg-transparent text-right font-bold w-32 outline-none">
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">匯款帳號 Account:</span>
+                        <input type="text" value="您的帳號" class="bg-transparent text-right font-mono font-bold w-40 outline-none text-blue-700">
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="content-body">
-            <div class="grid grid-cols-2 gap-12 mb-10">
-                <div class="space-y-6">
-                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Client Information / 客戶資訊</p>
-                    <div class="space-y-4">
-                        <div class="relative">
-                            <label class="text-[9px] font-bold text-slate-400 absolute -top-4">客戶名稱 Customer</label>
-                            <input type="text" id="custName" placeholder="請輸入業主名稱" class="billing-input w-full font-bold text-xl py-2 text-slate-800">
-                        </div>
-                        <div class="relative">
-                            <label class="text-[9px] font-bold text-slate-400 absolute -top-4">工程項目 Project</label>
-                            <input type="text" id="projName" placeholder="工程地址或項目名稱" class="billing-input w-full py-2 font-medium text-slate-600">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-50 p-6 rounded-2xl border-t-2 border-blue-600">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <i class="fas fa-university"></i> 匯款資訊 Payment
-                    </p>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between border-b border-white pb-1">
-                            <span class="text-slate-400 text-[11px] font-bold">銀行</span>
-                            <input type="text" value="XX銀行 (000)" class="text-right bg-transparent font-bold outline-none w-40">
-                        </div>
-                        <div class="flex justify-between border-b border-white pb-1">
-                            <span class="text-slate-400 text-[11px] font-bold">帳戶名稱</span>
-                            <input type="text" value="錦德防水工程行" class="text-right bg-transparent font-bold outline-none w-40">
-                        </div>
-                        <div class="flex justify-between pt-1">
-                            <span class="text-blue-600 text-[11px] font-bold italic">匯款帳號</span>
-                            <input type="text" value="1234-567-890123" class="text-right font-mono font-black text-slate-900 outline-none w-48">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <table class="w-full mb-6">
+            <table class="w-full">
                 <thead>
-                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <th class="py-4 text-left">Description / 項目說明</th>
-                        <th class="py-4 text-right w-48">Amount / 金額 (TWD)</th>
-                        <th class="no-print w-12"></th>
+                    <tr class="text-slate-500">
+                        <th class="py-4 px-4 text-left">Description / 工程請款項目描述</th>
+                        <th class="py-4 px-4 text-right w-48">Amount / 金額 (TWD)</th>
+                        <th class="no-print w-10"></th>
                     </tr>
                 </thead>
-                <tbody id="billTable" class="divide-y divide-slate-100">
+                <tbody id="billTable">
                     </tbody>
             </table>
-
-            <button onclick="addBillRow()" class="no-print w-full py-4 border-2 border-dashed border-slate-100 text-slate-300 rounded-2xl hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50/50 transition-all text-xs font-bold">
-                + 新增項目 / Add Line Item
+            
+            <button onclick="addBillRow()" class="no-print mt-4 w-full py-3 border border-dashed border-slate-200 text-slate-400 rounded hover:bg-slate-50 transition-all text-xs font-bold uppercase">
+                + Add Item 新增項目
             </button>
         </div>
 
-        <div class="grid grid-cols-5 gap-10 items-end mb-16">
-            <div class="col-span-3">
-                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Notice 備註說明</p>
-                <textarea id="billNote" class="w-full h-28 p-5 bg-slate-50 border border-slate-100 rounded-3xl text-xs text-slate-500 italic leading-relaxed outline-none" placeholder="請在此輸入相關注意事項..."></textarea>
+        <div class="grid grid-cols-5 gap-0 items-stretch mb-20">
+            <div class="col-span-3 border border-slate-200 p-6 rounded-l-2xl">
+                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">Notice / 備註</p>
+                <textarea id="billNote" class="w-full h-24 bg-transparent text-xs text-slate-500 leading-relaxed outline-none resize-none" placeholder="輸入相關備註內容..."></textarea>
             </div>
-            <div class="col-span-2">
-                <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                    <div class="relative z-10 text-right">
-                        <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2 italic">Total Balance Due</p>
-                        <p class="text-4xl font-black font-mono tracking-tighter italic">NT$ <span id="billFinal">0</span></p>
-                        <div class="h-px bg-slate-700 my-4"></div>
-                        <p id="chineseAmount" class="text-sm font-black text-slate-300 italic">零元整</p>
-                    </div>
+            <div class="col-span-2 bg-slate-900 p-8 rounded-r-2xl text-white flex flex-col justify-center text-right">
+                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1 italic">Balance Due 應付總額</p>
+                <p class="text-4xl font-black font-mono tracking-tighter italic">NT$ <span id="billFinal">0</span></p>
+                <div class="h-px bg-slate-700 my-4"></div>
+                <p id="chineseAmount" class="text-xs font-bold text-slate-400 italic">零元整</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-24 border-t border-slate-100 pt-10">
+            <div>
+                <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 italic mb-16">Verified By</p>
+                <div class="flex flex-col gap-1">
+                    <p class="text-sm font-black text-slate-800">錦德防水工程行</p>
+                    <p class="text-xs text-slate-400 italic">經辦人簽章：____________________</p>
                 </div>
             </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-20 border-t-2 border-slate-900 pt-10">
-            <div>
-                <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 italic mb-12">Authorized Signature</p>
-                <p class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2 w-64">錦德防水工程行 (經辦人簽章)</p>
-            </div>
             <div class="text-right flex flex-col items-end">
-                <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 italic mb-12">Client Approval</p>
-                <p class="text-sm font-bold text-slate-400 italic underline underline-offset-[12px] decoration-slate-200">業主簽收確認 (簽名或蓋章)</p>
+                <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 italic mb-16">Approved By</p>
+                <p class="text-sm font-bold text-slate-400 italic underline underline-offset-[16px] decoration-slate-200">業主簽名確認 (簽章後生效)</p>
             </div>
         </div>
 
-        <div class="mt-12 flex justify-center gap-4 no-print">
-            <button onclick="saveToSupabase()" class="bg-blue-600 text-white px-10 py-4 rounded-full font-bold shadow-xl hover:bg-blue-700 transition flex items-center gap-2">
-                <i class="fas fa-save"></i> 同步資料
-            </button>
-            <button onclick="window.print()" class="bg-slate-900 text-white px-10 py-4 rounded-full font-bold shadow-xl hover:bg-slate-800 transition flex items-center gap-2">
-                <i class="fas fa-print"></i> 列印 PDF
+        <div class="no-print mt-12 flex justify-center gap-6">
+            <button onclick="window.print()" class="bg-slate-900 text-white px-12 py-4 rounded-full font-black shadow-2xl hover:bg-slate-800 transition flex items-center gap-3">
+                <i class="fas fa-print"></i> 立即列印請款單
             </button>
         </div>
     </div>
 
     <script>
-        // ... (保持原本的 Supabase 密鑰與計算邏輯) ...
+        // 核心計算邏輯與 Supabase 初始化 (請保留您的 S_URL 與 S_KEY)
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         window.onload = () => {
             document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-TW');
-            document.getElementById('billId').innerText = "INV-" + Date.now().toString().slice(-8);
-            addBillRow("工程進度款 (第一期款)"); 
+            document.getElementById('billId').innerText = "JD-" + Date.now().toString().slice(-6);
+            addBillRow("工程進度款"); 
         };
 
         function addBillRow(text = "") {
@@ -179,9 +173,9 @@
             const tr = document.createElement('tr');
             tr.className = "item-row";
             tr.innerHTML = `
-                <td class="py-6"><input type="text" value="${text}" class="w-full text-lg font-bold text-slate-700 outline-none bg-transparent"></td>
-                <td class="py-6"><input type="number" value="0" class="bill-amount w-full text-right outline-none font-mono font-black text-2xl text-blue-600 bg-transparent" oninput="calcBilling()" onfocus="this.select()"></td>
-                <td class="no-print text-right"><button onclick="this.parentElement.parentElement.remove();calcBilling()" class="text-slate-200 hover:text-red-500 p-2 transition"><i class="fas fa-trash-alt"></i></button></td>`;
+                <td class="px-4"><input type="text" value="${text}" class="w-full text-lg font-bold text-slate-700 outline-none bg-transparent"></td>
+                <td class="px-4"><input type="number" value="0" class="bill-amount w-full text-right outline-none font-mono font-black text-2xl text-blue-600 bg-transparent" oninput="calcBilling()" onfocus="this.select()"></td>
+                <td class="no-print text-center"><button onclick="this.parentElement.parentElement.remove();calcBilling()" class="text-slate-200 hover:text-red-500 transition"><i class="fas fa-times-circle"></i></button></td>`;
             tbody.appendChild(tr);
         }
 
@@ -207,8 +201,6 @@
             }
             return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
         }
-
-        async function saveToSupabase() { alert("功能已連動，同步完成！"); }
     </script>
 </body>
 </html>
