@@ -2,88 +2,64 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>JINDE | 保固書生產中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
-        body { background-color: #f1f5f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
-        
-        /* 側邊欄 - 電腦版 */
-        .sidebar { 
-            width: 260px; 
-            background: #1a222d; 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            z-index: 50;
-            transition: width 0.3s ease;
-        }
-        
-        .nav-link { 
-            padding: 14px 24px; 
-            font-size: 14px; 
-            color: #94a3b8; 
-            transition: 0.2s; 
-            border-left: 4px solid transparent; 
-            display: flex; 
-            align-items: center; 
-            white-space: nowrap; 
-            text-decoration: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .nav-link i { margin-right: 12px; width: 20px; text-align: center; font-size: 16px; }
-        .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        :root { --primary-teal: #0d9488; --slate-dark: #1a222d; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
+
+        /* 側邊欄優化 */
+        .sidebar { width: 260px; background: var(--slate-dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
+        .nav-link { padding: 16px 28px; font-size: 14px; color: #94a3b8; transition: 0.3s; border-left: 4px solid transparent; display: flex; align-items: center; text-decoration: none; }
+        .nav-link i { margin-right: 14px; width: 20px; font-size: 16px; opacity: 0.7; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: var(--primary-teal); }
         .nav-link:hover { background: #1e293b; color: white; }
 
-        /* 主內容區 */
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        .content-scroll { padding: 40px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        /* 主舞台 */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .top-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 40; }
 
-        /* 📱 響應式優化：手機版導覽 */
-        @media (max-width: 768px) {
-            .sidebar { width: 70px; } /* 手機版寬度縮窄 */
-            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .security-text { display: none; }
-            .sidebar .p-8 { padding: 1.5rem 0.5rem; text-align: center; }
-            .nav-link { justify-content: center; padding: 25px 0; border-left-width: 3px; }
-            .content-scroll { padding: 20px 15px; }
-            .main-title { font-size: 1.875rem !important; }
-        }
-
-        /* 功能卡片優化 */
+        /* 卡片設計升級 */
         .function-card { 
-            background: white; border-radius: 20px; padding: 30px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-            transition: all 0.3s ease; 
-            border: 1px solid #e2e8f0;
+            background: white; border-radius: 32px; padding: 40px; 
+            border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column; align-items: center; text-align: center;
-            text-decoration: none;
-            cursor: pointer;
-            touch-action: manipulation;
+            position: relative; overflow: hidden;
         }
-        .function-card:active { transform: scale(0.97); background: #f8fafc; }
-        
-        @media (min-width: 1024px) {
-            .function-card:hover { transform: translateY(-8px); border-color: #0d9488; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .function-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: transparent; transition: 0.3s;
+        }
+        .function-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08); border-color: var(--primary-teal); }
+        .function-card:hover::before { background: var(--primary-teal); }
+        .function-card:active { transform: scale(0.97); }
+
+        .icon-box {
+            width: 80px; height: 80px; border-radius: 24px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px; font-size: 32px; transition: 0.4s;
         }
 
-        .icon-circle {
-            width: 70px; height: 70px; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 20px; transition: 0.3s;
+        /* 響應式 */
+        @media (max-width: 768px) {
+            .sidebar { width: 72px; }
+            .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text, .sidebar .security-text { display: none; }
+            .nav-link { justify-content: center; padding: 22px 0; }
+            .nav-link i { margin: 0; }
+            .top-nav { padding: 0 20px; }
+            .function-card { padding: 30px 20px; }
         }
     </style>
 </head>
 <body>
-
     <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter cursor-pointer logo-text" onclick="location.href='index.html'">JD<span class="text-teal-500">.</span></h1>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 sub-text">錦德防水工程</p>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2 sub-text">Engineering</p>
         </div>
         <nav class="flex-grow">
             <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
@@ -92,65 +68,78 @@
             <a href="warranty.html" class="nav-link active"><i class="fas fa-file-contract"></i> <span class="nav-text">保固書生產</span></a>
             <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">請款系統</span></a>
         </nav>
-        <div class="p-6 border-t border-slate-700 bg-[#151b23] text-center lg:text-left">
-            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2 security-text">Security</p>
-            <div class="flex items-center justify-center lg:justify-start gap-2 text-rose-500 font-mono text-xs">
-                <i class="fas fa-user-shield"></i>
+        <div class="p-6 border-t border-slate-800 bg-[#151b23]">
+            <p class="text-[9px] text-slate-500 tracking-widest uppercase mb-2 security-text">Session Control</p>
+            <div class="flex items-center gap-2 text-rose-500 font-mono text-xs">
+                <i class="fas fa-shield-alt"></i>
                 <span id="logout-timer">30:00</span>
             </div>
         </div>
     </aside>
 
     <main class="main-stage">
-        <header class="p-8 lg:p-10 pb-0">
-            <div class="flex justify-between items-end">
-                <div>
-                    <h2 class="main-title text-4xl font-black text-slate-800 tracking-tight">保固書簽發中控</h2>
-                    <p class="text-slate-500 mt-2 text-sm lg:text-base">手機點選下方卡片即可開始製作。</p>
-                </div>
-                <div class="hidden lg:block">
-                    <span class="bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-xs font-bold border border-teal-100">
-                        系統狀態：正常運行
-                    </span>
+        <header class="top-nav">
+            <div>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">System Node</span>
+                <h2 class="text-xl font-black text-slate-800 tracking-tight">保固書生產中心</h2>
+            </div>
+            <div class="hidden md:flex items-center gap-3">
+                <div class="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full border border-emerald-100">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span class="text-emerald-700 text-[11px] font-black uppercase">Service Active</span>
                 </div>
             </div>
         </header>
 
-        <div class="content-scroll">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
-                
-                <a href="warranty_cover.html" class="function-card group">
-                    <div class="icon-circle bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white">
-                        <i class="fas fa-image text-2xl lg:text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl lg:text-2xl font-black text-slate-800 mb-3">第一頁：保固書封面</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-6">包含公司形象標誌、工程名稱及底部通訊資訊。</p>
-                    <span class="inline-flex items-center text-blue-600 font-bold text-sm">
-                        進入生產器 <i class="fas fa-arrow-right ml-2"></i>
-                    </span>
-                </a>
+        <div class="content-scroll px-8 py-12 lg:px-20 lg:py-16">
+            <div class="max-w-4xl mx-auto">
+                <div class="mb-12 text-center md:text-left">
+                    <h3 class="text-3xl font-black text-slate-900 tracking-tighter">選擇製作階段</h3>
+                    <p class="text-slate-500 mt-2 font-medium">請按照頁面順序進行資料填寫，完成後可下載完整 PDF 檔案。</p>
+                </div>
 
-                <a href="warranty_content.html" class="function-card group">
-                    <div class="icon-circle bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white">
-                        <i class="fas fa-file-signature text-2xl lg:text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl lg:text-2xl font-black text-slate-800 mb-3">第二頁：詳細內容頁</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-6">填寫客戶、地址、年限、合約條款及用印區。</p>
-                    <span class="inline-flex items-center text-teal-600 font-bold text-sm">
-                        進入生產器 <i class="fas fa-arrow-right ml-2"></i>
-                    </span>
-                </a>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <a href="warranty_cover.html" class="function-card group">
+                        <div class="icon-box bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-6">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 01</h4>
+                        <p class="text-lg font-bold text-slate-700 mb-3">工程封面產出</p>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">包含公司官方 Logo、主標題及案場通訊基礎資訊。</p>
+                        <div class="mt-auto flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
+                            Start Generation <i class="fas fa-chevron-right text-[10px]"></i>
+                        </div>
+                    </a>
 
-            </div>
-            
-            <div class="mt-8 text-center lg:hidden">
-                <p class="text-xs text-slate-400 font-bold italic"><i class="fas fa-info-circle mr-1"></i> 建議在環境穩定的地方使用「橫屏」預覽 PDF</p>
+                    <a href="warranty_content.html" class="function-card group">
+                        <div class="icon-box bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white group-hover:-rotate-6">
+                            <i class="fas fa-file-signature"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 02</h4>
+                        <p class="text-lg font-bold text-slate-700 mb-3">詳細保固內容</p>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-8 px-4">填寫客戶資訊、保固條款、年限及官方用印範圍。</p>
+                        <div class="mt-auto flex items-center gap-2 text-teal-600 font-black text-xs uppercase tracking-widest">
+                            Start Generation <i class="fas fa-chevron-right text-[10px]"></i>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="mt-16 bg-slate-900 rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+                    <div class="relative z-10">
+                        <h5 class="text-white text-xl font-black">需要合併多份文件？</h5>
+                        <p class="text-slate-400 text-sm mt-1 font-medium">前往工具箱使用 PDF 合併與優化功能。</p>
+                    </div>
+                    <button class="relative z-10 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-sm hover:bg-teal-500 hover:text-white transition-all shadow-xl active:scale-95">
+                        開啟工具箱
+                    </button>
+                    <i class="fas fa-tools absolute right-[-20px] bottom-[-20px] text-8xl text-white opacity-[0.03] rotate-12"></i>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
-        // --- 自動登出計時邏輯 (維持 30 分鐘) ---
+        // --- 核心邏輯保持不變 ---
         let timeLeft = 30 * 60;
         const timerElement = document.getElementById('logout-timer');
 
@@ -158,19 +147,12 @@
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (timeLeft <= 0) {
-                alert('為了您的帳戶安全，系統已自動登出。');
-                window.location.href = 'login.html'; 
-            }
+            if (timeLeft <= 0) { window.location.href = 'login.html'; }
             timeLeft--;
         }
 
         function resetTimer() { timeLeft = 30 * 60; }
-        document.addEventListener('mousemove', resetTimer);
-        document.addEventListener('keypress', resetTimer);
-        document.addEventListener('touchstart', resetTimer);
-
+        ['mousemove', 'keypress', 'touchstart'].forEach(evt => document.addEventListener(evt, resetTimer));
         setInterval(updateTimer, 1000);
     </script>
 </body>
