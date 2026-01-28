@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德防水工程專業合約系統</title>
+    <title>JINDE | 錦德防水工程專業報價系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -13,7 +13,7 @@
         
         @media (min-width: 1024px) {
             body { display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
-            .admin-sidebar { width: 420px; height: 100vh; overflow-y: auto; background: #0f172a; border-right: 1px solid rgba(255,255,255,0.1); }
+            .admin-sidebar { width: 400px; height: 100vh; overflow-y: auto; background: #0f172a; border-right: 1px solid rgba(255,255,255,0.1); }
             .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 40px; background: #334155; }
         }
 
@@ -28,11 +28,7 @@
         @media (max-width: 1023px) {
             .admin-sidebar { width: 100%; padding: 20px; }
             .main-content { width: 100%; padding: 10px 0; }
-            .a4-preview { 
-                transform: scale(calc(100vw / 225mm)); 
-                transform-origin: top center; 
-                margin-bottom: calc(-297mm * (1 - (100vw / 225mm))); 
-            }
+            .a4-preview { transform: scale(calc(100vw / 225mm)); transform-origin: top center; margin-bottom: calc(-297mm * (1 - (100vw / 225mm))); }
         }
 
         .editable { border: none; background: transparent; width: 100%; color: inherit; font-size: inherit; font-weight: inherit; padding: 2px; }
@@ -51,16 +47,23 @@
 <body>
 
     <aside class="admin-sidebar no-print p-6 space-y-6">
+        <a href="javascript:void(0);" onclick="goBack()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold group mb-2">
+            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-teal-500 transition-all">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            返回主頁面
+        </a>
+
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-black text-teal-400 italic">JINDE <span class="text-white font-light">PRO</span></h2>
             <button onclick="confirmReset()" class="text-[10px] bg-rose-500/20 text-rose-400 px-3 py-1 rounded-full border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all">
-                <i class="fas fa-undo mr-1"></i>重設報價
+                <i class="fas fa-undo mr-1"></i>重設內容
             </button>
         </div>
 
         <section class="bg-slate-800/80 p-4 rounded-xl space-y-4">
             <div class="flex items-center justify-between">
-                <p class="text-[10px] font-black text-teal-400 uppercase tracking-widest">發票稅務 (5%)</p>
+                <p class="text-[10px] font-black text-teal-400 uppercase tracking-widest">開發票 (5% 稅金)</p>
                 <input type="checkbox" id="tax_switch" class="w-5 h-5 accent-teal-500" onchange="calculateTotal()">
             </div>
             <input type="text" id="in_name" placeholder="客戶姓名 (甲方)" class="sidebar-input" oninput="sync()">
@@ -68,16 +71,16 @@
         </section>
 
         <section class="space-y-3">
-            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest underline decoration-teal-500">項目管理</p>
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest underline decoration-teal-500">工程項目管理</p>
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="addItemRow('', 1, '式', 0)" class="bg-teal-600 hover:bg-teal-500 py-3 rounded-xl text-xs font-black">+ 新增項目</button>
-                <button onclick="document.getElementById('file1').click()" class="bg-slate-700 py-3 rounded-xl text-xs font-black"><i class="fas fa-camera mr-1"></i> 上傳照片</button>
+                <button onclick="addItemRow('', 1, '式', 0)" class="bg-teal-600 hover:bg-teal-500 py-3 rounded-xl text-xs font-black transition-all">+ 新增工項</button>
+                <button onclick="document.getElementById('file1').click()" class="bg-slate-700 py-3 rounded-xl text-xs font-black"><i class="fas fa-camera mr-1"></i> 上傳現場圖</button>
             </div>
             <input type="file" id="file1" hidden accept="image/*" onchange="previewImg(this)">
         </section>
 
         <section class="bg-slate-800/50 p-4 rounded-xl space-y-3">
-            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">付款比例設定 (%)</p>
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">付款比例 (%) - 訂/開/完</p>
             <div class="grid grid-cols-3 gap-2">
                 <input type="number" id="pay1_p" value="30" class="sidebar-input text-center" oninput="calculateTotal()">
                 <input type="number" id="pay2_p" value="40" class="sidebar-input text-center" oninput="calculateTotal()">
@@ -86,60 +89,58 @@
         </section>
 
         <section class="space-y-3">
-            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest underline decoration-teal-500">合約條款庫</p>
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest underline decoration-teal-500">合約快速條款</p>
             <div class="flex flex-wrap gap-2 mb-2">
                 <button onclick="addTerm('本工程防水保固貳年。')" class="text-[10px] bg-slate-800 border border-slate-700 px-2 py-1 rounded">保固貳年</button>
-                <button onclick="addTerm('不含廢棄物清運費。')" class="text-[10px] bg-slate-800 border border-slate-700 px-2 py-1 rounded">不含清運</button>
-                <button onclick="addTerm('需提供水電及車位。')" class="text-[10px] bg-slate-800 border border-slate-700 px-2 py-1 rounded">水電提供</button>
+                <button onclick="addTerm('報價不含廢棄物清運。')" class="text-[10px] bg-slate-800 border border-slate-700 px-2 py-1 rounded">不含清運</button>
             </div>
             <textarea id="in_terms" rows="4" class="sidebar-input text-xs" oninput="sync()">1. 保固期限：貳年。&#10;2. 本報價含工帶料。</textarea>
         </section>
 
-        <button onclick="window.print()" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-900 py-4 rounded-2xl font-black text-xl shadow-xl transition-all active:scale-95">
-            <i class="fas fa-print mr-2"></i> 列印 / 產生 PDF
+        <button onclick="window.print()" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-900 py-4 rounded-2xl font-black text-xl shadow-xl transition-all">
+            <i class="fas fa-file-pdf mr-2"></i> 列印 / 儲存 PDF
         </button>
     </aside>
 
     <main class="main-content">
-        <div class="a4-preview" id="print-area">
+        <div class="a4-preview">
             <div class="flex justify-between items-end border-b-4 border-slate-900 pb-4 mb-8">
                 <div>
                     <h1 class="text-4xl font-black italic tracking-tighter text-slate-900">QUOTATION</h1>
-                    <p class="text-[10px] font-bold text-slate-400 tracking-widest">錦德防水工程行 JINDE WATERPROOFING</p>
+                    <p class="text-[10px] font-bold text-slate-400">錦德防水工程行 JINDE WATERPROOFING</p>
                 </div>
                 <div class="text-right text-[10px] font-mono leading-tight">
-                    <p>編號: <span id="out_id" class="text-slate-900 font-bold"></span></p>
-                    <p>日期: <span id="out_date" class="text-slate-900 font-bold"></span></p>
+                    <p>編號: <span id="out_id"></span></p>
+                    <p>日期: <span id="out_date"></span></p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-2 gap-6 mb-8 text-slate-800">
                 <div class="border-l-8 border-teal-500 pl-4 py-2 bg-slate-50 rounded-r-xl">
                     <p class="text-[9px] text-slate-400 font-black uppercase">Customer (甲方)</p>
-                    <p id="out_name" class="font-black text-xl text-slate-800">未填寫客戶</p>
+                    <p id="out_name" class="font-black text-xl">未填寫客戶</p>
                 </div>
                 <div class="border-l-8 border-slate-300 pl-4 py-2 bg-slate-50 rounded-r-xl">
                     <p class="text-[9px] text-slate-400 font-black uppercase">Project Location</p>
-                    <p id="out_addr" class="text-xs font-bold leading-tight text-slate-800">未填寫施工地址</p>
+                    <p id="out_addr" class="text-xs font-bold leading-tight">未填寫施工地址</p>
                 </div>
             </div>
 
             <table class="w-full mb-4">
                 <thead>
-                    <tr class="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
-                        <th class="py-3 pl-3 text-left rounded-l-lg">項目工法細節 (可直接點擊修改)</th>
+                    <tr class="bg-slate-900 text-white text-[10px] font-black uppercase">
+                        <th class="py-3 pl-3 text-left">施工項目項目與細節 (可修改)</th>
                         <th class="py-3 text-center w-20">數量</th>
                         <th class="py-3 text-center w-16">單位</th>
                         <th class="py-3 text-right w-24">單價</th>
-                        <th class="py-3 pr-3 text-right rounded-r-lg w-32">小計 (TWD)</th>
+                        <th class="py-3 pr-3 text-right w-32">小計 (TWD)</th>
                     </tr>
                 </thead>
-                <tbody id="item_tbody" class="text-sm font-bold text-slate-800">
-                    </tbody>
+                <tbody id="item_tbody" class="text-sm font-bold text-slate-800"></tbody>
             </table>
 
             <div class="flex justify-end mb-8">
-                <div class="w-72 text-sm font-bold space-y-1 bg-slate-50 p-4 rounded-2xl">
+                <div class="w-72 text-sm font-bold bg-slate-50 p-4 rounded-2xl space-y-1">
                     <div class="flex justify-between text-slate-500"><span>工程小計 (未稅):</span><span id="tax_sub">0</span></div>
                     <div id="tax_row" class="flex justify-between text-rose-500 hidden"><span>營業稅 (5%):</span><span id="tax_val">0</span></div>
                     <div class="flex justify-between border-t border-slate-300 pt-2 text-xl font-black text-slate-900">
@@ -151,78 +152,70 @@
             <div class="grid grid-cols-2 gap-10 mt-auto">
                 <div class="space-y-6">
                     <div>
-                        <h4 class="text-[10px] font-black bg-slate-900 text-white px-2 py-1 mb-2 uppercase border-l-4 border-teal-500">工程合約條款</h4>
+                        <h4 class="text-[10px] font-black bg-slate-900 text-white px-2 py-1 mb-2 border-l-4 border-teal-500 uppercase">工程合約條款</h4>
                         <pre id="out_terms" class="text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed font-sans font-bold"></pre>
                     </div>
-                    <div class="h-44 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden flex items-center justify-center">
+                    <div class="h-40 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
                         <img id="p1" class="hidden w-full h-full object-cover">
-                        <span class="text-[10px] text-slate-300 font-black">施工位置現場圖</span>
+                        <span class="text-[10px] text-slate-300 font-black">施工位置示意圖</span>
                     </div>
                 </div>
 
                 <div class="space-y-6">
                     <div>
-                        <h4 class="text-[10px] font-black bg-slate-900 text-white px-2 py-1 mb-4 uppercase border-l-4 border-teal-500">付款進度分期</h4>
+                        <h4 class="text-[10px] font-black bg-slate-900 text-white px-2 py-1 mb-4 border-l-4 border-teal-500 uppercase">付款分期說明</h4>
                         <div class="text-[11px] space-y-4 font-bold text-slate-700">
                             <div class="flex justify-between border-b pb-1"><span>1. 簽訂合約 (訂金 <span id="v_p1"></span>%)</span><span id="v_p1_val">0</span></div>
                             <div class="flex justify-between border-b pb-1"><span>2. 工程進場 (開工 <span id="v_p2"></span>%)</span><span id="v_p2_val">0</span></div>
                             <div class="flex justify-between border-b pb-1 text-teal-600 font-black"><span>3. 驗收完成 (尾款 <span id="v_p3"></span>%)</span><span id="v_p3_val">0</span></div>
                         </div>
                     </div>
-                    
-                    <div class="bg-slate-900 rounded-3xl p-6 text-white text-right shadow-2xl relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-teal-500"></div>
-                        <p class="text-[10px] font-black text-teal-400 uppercase tracking-widest mb-1">Final Total Amount</p>
-                        <p class="text-4xl font-black italic font-mono tracking-tighter text-white">
-                            <span class="text-sm mr-2 opacity-50 font-sans">TWD</span><span id="sum_final">0</span>
-                        </p>
+                    <div class="bg-slate-900 rounded-3xl p-6 text-white text-right shadow-2xl relative">
+                        <p class="text-[9px] text-teal-400 font-black tracking-widest uppercase">Total Amount</p>
+                        <p class="text-4xl font-black font-mono italic">NT$ <span id="sum_final">0</span></p>
                     </div>
                 </div>
             </div>
 
             <div class="mt-12 pt-10 border-t-2 border-slate-100 grid grid-cols-2 gap-20 text-center">
-                <div>
-                    <p class="text-[9px] text-slate-400 uppercase font-black mb-14 italic tracking-widest">Authorized Contractor (乙方)</p>
-                    <p class="font-black text-sm border-b border-slate-900 pb-2">錦德防水工程行 (簽章)</p>
-                </div>
-                <div>
-                    <p class="text-[9px] text-slate-400 uppercase font-black mb-14 italic tracking-widest">Client Confirmation (甲方)</p>
-                    <p class="font-black text-sm border-b border-slate-300 pb-2 text-slate-300 italic">Signature Here</p>
-                </div>
+                <div><p class="text-[9px] text-slate-400 font-black mb-12">承攬人 (乙方)</p><p class="font-black text-sm">錦德防水工程行 (簽章)</p></div>
+                <div><p class="text-[9px] text-slate-400 font-black mb-12">定作人 (甲方)</p><p class="font-black text-sm text-slate-300">請客戶在此簽名</p></div>
             </div>
         </div>
     </main>
 
     <script>
-        // 初始化
-        window.onload = () => {
-            resetDoc();
-        };
+        window.onload = () => { resetDoc(); };
 
         function resetDoc() {
             const today = new Date();
             document.getElementById('out_date').innerText = today.toLocaleDateString('zh-TW');
             document.getElementById('out_id').innerText = 'JD-' + Date.now().toString().slice(-6);
             document.getElementById('item_tbody').innerHTML = "";
-            addItemRow('屋頂防水隔熱工程', 1, '式', 0);
+            addItemRow('屋頂防水施工項目', 1, '式', 0);
             sync();
         }
 
+        function goBack() {
+            if (confirm("確定要離開目前的報價單並返回主頁嗎？未儲存的資料將會遺失。")) {
+                window.location.href = "index.html"; // 這裡請改為您的主頁網址
+            }
+        }
+
         function confirmReset() {
-            if (confirm("確定要重設目前所有內容嗎？")) {
+            if (confirm("確定要重設全單內容嗎？")) {
                 document.getElementById('in_name').value = "";
                 document.getElementById('in_addr').value = "";
-                document.getElementById('in_terms').value = "1. 保固期限：貳年。\n2. 本報價含工帶料。";
                 document.getElementById('tax_switch').checked = false;
-                document.getElementById('p1').classList.add('hidden');
                 document.getElementById('p1').src = "";
+                document.getElementById('p1').classList.add('hidden');
                 resetDoc();
             }
         }
 
         function sync() {
             document.getElementById('out_name').innerText = document.getElementById('in_name').value || "未填寫客戶";
-            document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "未填寫施工地址";
+            document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "未填寫地址";
             document.getElementById('out_terms').innerText = document.getElementById('in_terms').value;
             calculateTotal();
         }
@@ -239,11 +232,11 @@
             tr.className = "border-b border-slate-100 group";
             tr.innerHTML = `
                 <td class="py-4 pl-2"><input type="text" value="${name}" class="editable font-black text-slate-900" oninput="calculateTotal()"></td>
-                <td class="text-center"><input type="number" value="${qty}" class="editable text-center qty" oninput="calculateTotal()" inputmode="decimal"></td>
+                <td class="text-center"><input type="number" value="${qty}" class="editable text-center qty" oninput="calculateTotal()"></td>
                 <td class="text-center"><input type="text" value="${unit}" class="editable text-center"></td>
-                <td class="text-right"><input type="number" value="${price}" class="editable text-right price" oninput="calculateTotal()" inputmode="decimal"></td>
-                <td class="text-right pr-3 font-black font-mono subtotal text-slate-900">0</td>
-                <td class="no-print w-8 text-center"><button onclick="this.closest('tr').remove(); calculateTotal();" class="text-slate-300 hover:text-rose-500 transition-colors">×</button></td>
+                <td class="text-right"><input type="number" value="${price}" class="editable text-right price" oninput="calculateTotal()"></td>
+                <td class="text-right pr-3 font-black font-mono subtotal">0</td>
+                <td class="no-print w-8 text-center"><button onclick="this.closest('tr').remove(); calculateTotal();" class="text-rose-400 transition-all">×</button></td>
             `;
             tbody.appendChild(tr);
             calculateTotal();
@@ -271,7 +264,6 @@
             if(isTax) document.getElementById('tax_row').classList.remove('hidden');
             else document.getElementById('tax_row').classList.add('hidden');
 
-            // 分期付款計算
             const p1 = parseFloat(document.getElementById('pay1_p').value) || 0;
             const p2 = parseFloat(document.getElementById('pay2_p').value) || 0;
             const p3 = parseFloat(document.getElementById('pay3_p').value) || 0;
@@ -279,7 +271,6 @@
             document.getElementById('v_p1').innerText = p1;
             document.getElementById('v_p2').innerText = p2;
             document.getElementById('v_p3').innerText = p3;
-
             document.getElementById('v_p1_val').innerText = Math.round(finalTotal * p1 / 100).toLocaleString();
             document.getElementById('v_p2_val').innerText = Math.round(finalTotal * p2 / 100).toLocaleString();
             document.getElementById('v_p3_val').innerText = Math.round(finalTotal * p3 / 100).toLocaleString();
@@ -289,12 +280,12 @@
             const file = input.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = e => {
                     const img = document.getElementById('p1');
                     img.src = e.target.result;
                     img.classList.remove('hidden');
                     img.nextElementSibling.classList.add('hidden');
-                }
+                };
                 reader.readAsDataURL(file);
             }
         }
