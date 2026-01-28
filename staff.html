@@ -3,136 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 案場進度管理</title>
+    <title>JINDE | 人員與薪資管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* 側邊欄風格保持一致 */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: width 0.3s; }
-        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; border-left: 4px solid transparent; display: flex; align-items: center; transition: 0.2s; text-decoration: none; }
-        .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .content-scroll { padding: 24px; overflow-y: auto; flex-grow: 1; }
-
-        /* 案場卡片與進度條 */
-        .project-card { background: white; border-radius: 24px; border: 1px solid #eef2f6; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05); }
-        .progress-bar { height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden; }
-        .progress-fill { height: 100%; background: #0d9488; transition: width 1s ease-out; }
-
-        .status-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; }
-        .status-working { background: #f0fdf4; color: #166534; }
-        .status-inspect { background: #fff7ed; color: #c2410c; }
-
-        @media (max-width: 768px) {
-            .sidebar { width: 70px; }
-            .sidebar .nav-text, .sidebar h1, .sidebar p { display: none; }
-            .nav-link { justify-content: center; padding: 20px 0; }
-            .nav-link i { margin: 0 !important; font-size: 18px; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
     </style>
 </head>
-<body>
-    <aside class="sidebar">
-        <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-info" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理</p>
-        </div>
-        <nav class="flex-grow">
-            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
-            <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
-            <a href="project.html" class="nav-link active"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場進度</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-users mr-3 w-5"></i><span class="nav-text">人員管理</span></a>
-            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
-        </nav>
-    </aside>
+<body class="p-4 bg-slate-50">
 
-    <main class="main-stage">
-        <header class="h-[70px] bg-white border-b border-gray-100 flex items-center justify-between px-8 shrink-0">
-            <h2 class="text-xl font-black text-slate-800 tracking-tight">案場監修中心</h2>
-            <button onclick="openProjectModal()" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2">
-                <i class="fas fa-plus"></i> 建立新案場
-            </button>
-        </header>
-
-        <div class="content-scroll">
-            <div class="flex flex-col md:flex-row gap-4 mb-8">
-                <div class="flex-1 bg-white p-6 rounded-3xl border border-slate-100 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-tasks"></i></div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">目前施工中</p>
-                        <p id="active-count" class="text-2xl font-black text-slate-800">0 <span class="text-xs font-normal">處</span></p>
-                    </div>
-                </div>
-                <div class="flex-1 bg-white p-6 rounded-3xl border border-slate-100 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-file-invoice-dollar"></i></div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">總工程合約額</p>
-                        <p id="total-contract-val" class="text-2xl font-black text-slate-800">$0</p>
-                    </div>
-                </div>
+    <div class="max-w-md mx-auto space-y-6">
+        <div class="flex justify-between items-center px-2">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800">人員與工資</h1>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Staff & Wage Management</p>
             </div>
-
-            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                </div>
+            <button onclick="location.href='index.html'" class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-    </main>
+
+        <section>
+            <h2 class="text-xs font-black text-orange-500 mb-3 ml-2 flex items-center">
+                <i class="fas fa-user-plus mr-2"></i> 待核准申請
+            </h2>
+            <div id="pending-list" class="space-y-3">
+                </div>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-black text-teal-600 mb-3 ml-2 flex items-center">
+                <i class="fas fa-users mr-2"></i> 正式成員 (點擊可修改薪資)
+            </h2>
+            <div id="active-list" class="space-y-3">
+                </div>
+        </section>
+    </div>
 
     <script>
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        async function loadProjects() {
-            const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
+        async function init() {
+            const { data: staff, error } = await _supabase.from('staff').select('*').order('created_at', { ascending: false });
             if (error) return;
 
-            const grid = document.getElementById('projectGrid');
-            document.getElementById('active-count').innerText = data.filter(p => p.status === '施工中').length;
+            const pendingDiv = document.getElementById('pending-list');
+            const activeDiv = document.getElementById('active-list');
             
-            const totalVal = data.reduce((sum, p) => sum + (Number(p.contract_value) || 0), 0);
-            document.getElementById('total-contract-val').innerText = '$' + totalVal.toLocaleString();
+            pendingDiv.innerHTML = '';
+            activeDiv.innerHTML = '';
 
-            grid.innerHTML = data.map(p => `
-                <div class="project-card p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="status-badge ${p.status === '施工中' ? 'status-working' : 'status-inspect'}">${p.status}</span>
-                        <button onclick="deleteProject('${p.id}')" class="text-slate-200 hover:text-rose-500 transition"><i class="fas fa-ellipsis-h"></i></button>
-                    </div>
-                    <h3 class="text-lg font-black text-slate-800 mb-1">${p.project_name}</h3>
-                    <p class="text-xs text-slate-400 mb-6 flex items-center gap-1">
-                        <i class="fas fa-map-marker-alt"></i> ${p.address || '未標註地址'}
-                    </p>
-                    
-                    <div class="mb-6">
-                        <div class="flex justify-between text-[10px] font-black uppercase mb-2">
-                            <span class="text-slate-400">工程進度</span>
-                            <span class="text-teal-600">${p.progress}%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${p.progress}%"></div>
-                        </div>
-                    </div>
+            staff.forEach(person => {
+                if (person.status === 'pending') {
+                    pendingDiv.innerHTML += `
+                        <div class="glass-card p-4 flex justify-between items-center border-l-4 border-orange-400">
+                            <div>
+                                <div class="font-black text-slate-800">${person.name}</div>
+                                <div class="text-[10px] text-slate-400 font-bold">${person.email}</div>
+                            </div>
+                            <button onclick="approveStaff('${person.id}', '${person.name}')" class="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-black active:scale-90 transition">
+                                核准並設薪
+                            </button>
+                        </div>`;
+                } else {
+                    activeDiv.innerHTML += `
+                        <div class="glass-card p-4 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center font-black">
+                                    ${person.name[0]}
+                                </div>
+                                <div>
+                                    <div class="font-black text-slate-800">${person.name}</div>
+                                    <div class="text-[10px] text-teal-600 font-bold">日薪：$${person.daily_wage || 0}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="updateWage('${person.id}', '${person.name}', ${person.daily_wage})" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </button>
+                                <button onclick="deleteStaff('${person.id}')" class="w-8 h-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            });
 
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-50">
-                        <div>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">工程合約</p>
-                            <p class="text-sm font-black text-slate-700">$${(Number(p.contract_value) || 0).toLocaleString()}</p>
-                        </div>
-                        <button class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-teal-600 hover:text-white transition">
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            if (!pendingDiv.innerHTML) pendingDiv.innerHTML = '<p class="text-center text-slate-300 text-xs py-4">暫無新申請</p>';
         }
 
-        window.onload = loadProjects;
+        // 核准並設定起薪
+        async function approveStaff(id, name) {
+            const wage = prompt(`請設定【${name}】的日薪：`, "2500");
+            if (wage === null || wage === "") return;
+
+            const { error } = await _supabase
+                .from('staff')
+                .update({ 
+                    status: 'active',
+                    daily_wage: parseInt(wage)
+                })
+                .eq('id', id);
+
+            if (!error) {
+                alert("✅ 核准成功！");
+                init();
+            }
+        }
+
+        // 修改薪資
+        async function updateWage(id, name, currentWage) {
+            const newWage = prompt(`修改【${name}】的日薪：`, currentWage);
+            if (newWage === null || newWage === "") return;
+
+            await _supabase.from('staff').update({ daily_wage: parseInt(newWage) }).eq('id', id);
+            init();
+        }
+
+        // 刪除成員
+        async function deleteStaff(id) {
+            if (!confirm("確定要刪除此成員？")) return;
+            await _supabase.from('staff').delete().eq('id', id);
+            init();
+        }
+
+        init();
     </script>
 </body>
 </html>
