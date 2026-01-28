@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JINDE | 數位工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        :root { --accent: #2dd4bf; --bg-dark: #0f172a; }
+        
+        body { 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            background: var(--bg-dark); 
+            color: #f8fafc; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 玻璃質感卡片 */
+        .tool-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .tool-card:active { transform: scale(0.95); background: rgba(45, 212, 191, 0.1); border-color: var(--accent); }
+
+        /* 霓虹裝飾 */
+        .neon-glow {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(45, 212, 191, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .btn-main {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="w-full max-w-md mb-8 mt-4 text-center">
+        <h1 class="text-4xl font-black italic tracking-tighter text-white">JINDE<span class="text-teal-400">.</span></h1>
+        <p class="text-[10px] font-bold text-slate-500 tracking-[0.4em] uppercase mt-2">Digital Field Toolbox</p>
+    </header>
+
+    <main class="w-full max-w-md grid grid-cols-2 gap-4">
+        
+        <a href="billing.html" class="tool-card btn-main col-span-2 p-8 rounded-[2rem] flex items-center justify-between group">
+            <div class="neon-glow"></div>
+            <div class="flex items-center gap-5">
+                <div class="w-14 h-14 bg-teal-500/10 rounded-2xl flex items-center justify-center border border-teal-500/20">
+                    <i class="fas fa-file-invoice-dollar text-2xl text-teal-400"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-xl text-white">專業報價單</h3>
+                    <p class="text-xs text-slate-500 font-bold">Quotation System</p>
+                </div>
+            </div>
+            <i class="fas fa-chevron-right text-slate-700 group-hover:text-teal-400 transition-colors"></i>
+        </a>
+
+        <div class="tool-card p-6 rounded-[2rem] flex flex-col gap-4">
+            <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+                <i class="fas fa-user-clock text-xl text-blue-400"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-base text-white">點工記錄</h3>
+                <p class="text-[10px] text-slate-500 font-bold">Man-hour Log</p>
+            </div>
+        </div>
+
+        <div class="tool-card p-6 rounded-[2rem] flex flex-col gap-4">
+            <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+                <i class="fas fa-box-open text-xl text-purple-400"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-base text-white">材料管理</h3>
+                <p class="text-[10px] text-slate-500 font-bold">Material List</p>
+            </div>
+        </div>
+
+        <div class="tool-card p-6 rounded-[2rem] flex flex-col gap-4">
+            <div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
+                <i class="fas fa-shield-alt text-xl text-amber-400"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-base text-white">保固追蹤</h3>
+                <p class="text-[10px] text-slate-500 font-bold">Warranty Tracker</p>
+            </div>
+        </div>
+
+        <div class="tool-card p-6 rounded-[2rem] flex flex-col gap-4">
+            <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center border border-rose-500/20">
+                <i class="fas fa-camera-retro text-xl text-rose-400"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-base text-white">施工相簿</h3>
+                <p class="text-[10px] text-slate-500 font-bold">Site Photos</p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto pt-10 pb-4 text-center">
+        <div class="flex items-center justify-center gap-2 mb-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+            <span class="text-[10px] font-black text-slate-500 tracking-widest uppercase">Cloud Sync Enabled</span>
+        </div>
+        <p class="text-[9px] text-slate-600">© 2026 JINDE WATERPROOFING TECHNOLOGY</p>
+    </footer>
+
+    <script>
+        // 加入簡單的觸控回饋效果
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.addEventListener('touchstart', () => {}); 
+        });
+    </script>
+</body>
+</html>
