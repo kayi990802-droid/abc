@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JINDE | 保固內容生產</title>
+    <title>JINDE | 雲端保固系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -12,11 +12,11 @@
         
         :root { --primary: #0d9488; --slate-dark: #1a222d; }
         body { background-color: #0f172a; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+        
         @media (min-width: 1024px) { body { flex-direction: row; } }
         
         @page { size: A4; margin: 0; }
 
-        /* 左側管理面板：工業風優化 */
         .admin-panel { 
             width: 100%; background: var(--slate-dark); padding: 24px; 
             z-index: 1000; overflow-y: auto; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); 
@@ -25,7 +25,6 @@
             .admin-panel { width: 400px; height: 100vh; border-right: 1px solid rgba(255,255,255,0.1); border-bottom: none; padding: 40px; } 
         }
 
-        /* 輸入框樣式 */
         .glass-input {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             color: white; border-radius: 12px; padding: 14px; width: 100%;
@@ -33,7 +32,6 @@
         }
         .glass-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.08); }
 
-        /* 預覽區域與 A4 縮放 */
         .preview-area { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; justify-content: center; background: radial-gradient(circle at center, #334155 0%, #0f172a 100%); }
         @media (min-width: 1024px) { .preview-area { padding: 50px; } }
 
@@ -43,11 +41,10 @@
             box-sizing: border-box; box-shadow: 0 50px 100px rgba(0,0,0,0.5); flex-shrink: 0;
             transform-origin: top center;
         }
-        /* 手機預覽自動縮放 */
+
         @media (max-width: 1023px) { .a4-page { transform: scale(0.42); margin-bottom: -170mm; } }
         @media (max-width: 500px) { .a4-page { transform: scale(0.32); margin-bottom: -200mm; } }
 
-        /* A4 內部排版樣式 */
         .page-header { border-bottom: 2pt solid #000; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
         .main-title { font-size: 40pt; font-weight: 900; text-align: center; margin: 40pt 0; letter-spacing: 0.6em; color: #000; }
         .content-body { font-size: 15pt; line-height: 2.3; text-align: justify; margin-bottom: 30pt; }
@@ -57,7 +54,6 @@
         td { border: 1.2pt solid #000; padding: 12pt; font-size: 13pt; color: #000; vertical-align: middle; }
         .bg-gray { background-color: #f8fafc; font-weight: 700; width: 120px; text-align: center; font-family: 'Noto Sans TC', sans-serif; }
 
-        /* 圖檔與印章定位 */
         #logo_preview { position: absolute; top: 48mm; right: 22mm; max-width: 50mm; max-height: 25mm; display: none; filter: grayscale(1); opacity: 0.8; }
         #seal_preview { position: absolute; bottom: 105px; right: 140px; width: 140px; display: none; transform: rotate(-10deg); z-index: 10; opacity: 0.9; pointer-events: none; mix-blend-mode: multiply; }
 
@@ -73,14 +69,14 @@
     <div class="no-print admin-panel">
         <div class="flex justify-between items-center mb-8">
             <a href="warranty.html" class="text-slate-500 hover:text-teal-400 text-xs font-black uppercase tracking-widest transition-all">
-                <i class="fas fa-arrow-left mr-1"></i> Back
+                <i class="fas fa-arrow-left mr-1"></i> 返回列表
             </a>
             <span id="logout-timer" class="text-[10px] font-black font-mono text-rose-400 bg-rose-400/10 px-3 py-1 rounded-full">30:00</span>
         </div>
 
         <div class="mb-8">
-            <h2 class="text-2xl font-black text-white italic tracking-tighter">WARRANTY<span class="text-teal-500">.</span></h2>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">保固內容詳情生產</p>
+            <h2 class="text-2xl font-black text-white italic tracking-tighter">JINDE<span class="text-teal-500">.</span></h2>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">服務保固書生產系統</p>
         </div>
 
         <div class="space-y-5">
@@ -138,7 +134,7 @@
         <div class="a4-page" id="print-content">
             <div class="page-header">
                 <div class="text-[14pt] font-bold tracking-[0.5em] font-sans">專 業 · 態 度 · 細 心 · 責 任</div>
-                <div class="text-[10pt] italic text-gray-400 font-sans tracking-tighter">JINDE ENGINEERING HUB</div>
+                <div class="text-[10pt] italic text-gray-400 font-sans tracking-tighter uppercase">Jinde Engineering Hub</div>
             </div>
             <div class="border-b-[1.5pt] border-black mt-1 mb-14"></div>
             
@@ -148,7 +144,7 @@
             <div class="content-body">
                 茲承攬 <span id="out_client" class="underline-input italic">未填寫</span> 之 <span id="out_p_name" class="underline-input italic">未填寫</span> <span id="out_work_type" class="font-bold underline-input">高壓灌注止漏工法</span>。本公司承諾對施工品質負完全責任，若於保固期間內發生施工瑕疵導致之滲漏，本公司將負責無償修繕完成。
             </div>
-            
+
             <table>
                 <tr><td class="bg-gray">保固期限</td><td colspan="3" class="font-bold">自民國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日起，共計 <span id="out_years">3</span> 年。</td></tr>
                 <tr><td class="bg-gray">承攬廠商</td><td class="text-xl font-black">錦德工程行</td><td class="bg-gray">統一編號</td><td class="font-bold font-sans">80081612</td></tr>
@@ -173,7 +169,6 @@
     </div>
 
     <script>
-        // --- 核心邏輯保持不變 ---
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
@@ -185,6 +180,12 @@
             startTimer();
             sync();
         };
+
+        function generateId() {
+            const ts = new Date().getTime().toString().slice(-6);
+            const rnd = Math.random().toString(36).substring(2, 5).toUpperCase();
+            return `JD-${ts}-${rnd}`;
+        }
 
         function startTimer() {
             const timerObj = document.getElementById('logout-timer');
@@ -218,25 +219,31 @@
             document.getElementById('out_work_type').innerText = workType;
 
             if(!window.docId) {
-                window.docId = `JD-${new Date().getTime().toString().slice(-8)}`;
+                window.docId = generateId();
             }
+            
             document.getElementById('doc_id').innerText = window.docId;
             document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://jinde.com/verify?id=${window.docId}`;
 
-            const d = new Date(document.getElementById('in_date').value);
-            document.querySelectorAll('.d_y').forEach(el => el.innerText = d.getFullYear() - 1911);
-            document.querySelectorAll('.d_m').forEach(el => el.innerText = d.getMonth() + 1);
-            document.querySelectorAll('.d_d').forEach(el => el.innerText = d.getDate());
+            const dVal = document.getElementById('in_date').value;
+            if(dVal) {
+                const d = new Date(dVal);
+                document.querySelectorAll('.d_y').forEach(el => el.innerText = d.getFullYear() - 1911);
+                document.querySelectorAll('.d_m').forEach(el => el.innerText = d.getMonth() + 1);
+                document.querySelectorAll('.d_d').forEach(el => el.innerText = d.getDate());
+            }
         }
 
         async function saveAndPrint() {
             const btn = document.getElementById('saveBtn');
             const client = document.getElementById('in_client').value;
             const date = document.getElementById('in_date').value;
+            
             if(!client) return alert("請輸入客戶姓名！");
             
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 處理中...';
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 儲存中...';
 
             try {
                 const { error } = await _supabase.from('warranties').insert([{
@@ -246,14 +253,28 @@
                     warranty_years: parseInt(document.getElementById('in_years').value),
                     created_at: new Date(date).toISOString()
                 }]);
-                if (error) throw error;
+
+                if (error) {
+                    if(error.code === '23505') {
+                        window.docId = generateId(); // 自動更換 ID
+                        sync();
+                        throw new Error("編號重複，系統已自動更換，請點擊【確定】後再按一次儲存。");
+                    }
+                    throw error;
+                }
+
                 document.title = `保固書_${client}_${date}`;
                 window.print();
+                
+                // 成功後清空 ID 並刷新預覽
+                window.docId = null;
+                sync();
+                
             } catch (err) {
-                alert("儲存失敗: " + err.message);
+                alert("提示：" + err.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-file-pdf"></i> 儲存並產出 PDF';
+                btn.innerHTML = originalHTML;
             }
         }
     </script>
