@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 保固紀錄查證</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 側邊欄 */
+        .sidebar { width: 260px; background: #1a222d; color: white; flex-shrink: 0; }
+        .nav-link { padding: 14px 24px; display: flex; align-items: center; color: #94a3b8; text-decoration: none; border-left: 4px solid transparent; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #14b8a6; }
+
+        /* 主舞台 */
+        .main-stage { flex-grow: 1; overflow-y: auto; background: #fdfdfd; display: flex; flex-direction: column; }
+        
+        /* 狀態標籤 */
+        .status-badge { font-size: 10px; font-weight: 900; padding: 4px 12px; rounded: 99px; text-transform: uppercase; }
+        .status-active { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+        .status-expired { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+
+        /* 列印模板 */
+        #print-template { display: none; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; overflow: visible; }
+            #print-template { display: block !important; width: 100%; }
+            .print-paper { padding: 20mm !important; border: none !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar no-print">
+        <div class="p-8">
+            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Inspection Hub</p>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3 w-5"></i><span>總覽</span></a>
+            <a href="quote_query.html" class="nav-link"><i class="fas fa-history mr-3 w-5"></i><span>報價紀錄</span></a>
+            <a href="warranty_hub.html" class="nav-link active"><i class="fas fa-shield-alt mr-3 w-5"></i><span>保固查證</span></a>
+        </nav>
+    </aside>
+
+    <main class="main-stage no-print">
+        <header class="h-[70px] bg-white border-b flex items-center justify-between px-8 shrink-0">
+            <div class="flex items-center gap-4">
+                <h2 class="text-sm font-black text-slate-800 tracking-widest">保固資料查證</h2>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                    <input type="text" id="searchBox" oninput="fetchWarranties()" placeholder="輸入客戶姓名搜尋..." 
+                           class="pl-9 pr-4 py-1.5 bg-slate-50 border-none rounded-lg text-xs w-48 focus:ring-1 focus:ring-teal-500 outline-none">
+                </div>
+            </div>
+            <button onclick="addNewRecord()" class="text-teal-600 text-xs font-bold hover:underline"><i class="fas fa-plus mr-1"></i>快速登記</button>
+        </header>
+
+        <div id="warranty-list" class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </main>
+
+    <div id="print-template">
+        <div class="max-w-[800px] mx-auto bg-white p-[25mm] border border-slate-200 shadow-2xl mt-10 print-paper">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl font-black tracking-[8px] text-slate-900 border-b-4 border-slate-900 inline-block pb-2">工程保固證明書</h1>
+                <p class="text-[10px] tracking-[3px] text-slate-400 font-bold mt-2">WARRANTY VERIFICATION</p>
+            </div>
+
+            <div class="space-y-8">
+                <div>
+                    <span class="text-[10px] font-black text-slate-400 uppercase">客戶名稱 / Customer</span>
+                    <p id="p-customer" class="text-xl font-black border-b border-slate-100 pb-2">---</p>
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <span class="text-[10px] font-black text-slate-400 uppercase">案場位置 / Site</span>
+                        <p id="p-site" class="text-base font-bold">---</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black text-slate-400 uppercase">保固期限 / Period</span>
+                        <p id="p-range" class="text-base font-bold font-mono">---</p>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-slate-400 uppercase">保固內容 / Coverage</span>
+                    <p id="p-items" class="text-sm bg-slate-50 p-4 rounded-lg leading-relaxed">---</p>
+                </div>
+            </div>
+
+            <div class="mt-24 flex justify-between items-end">
+                <div>
+                    <p class="font-black text-xl italic text-slate-900">錦德工程有限公司</p>
+                    <p class="text-[10px] text-slate-400 mt-1">Verification Code: <span id="p-id">---</span></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] font-black text-slate-400">查證日期</p>
+                    <p id="p-today" class="font-bold">---</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function fetchWarranties() {
+            const search = document.getElementById('searchBox').value;
+            let query = _supabase.from('warranties').select('*').order('warranty_end', { ascending: true });
+            if (search) query = query.ilike('customer_name', `%${search}%`);
+
+            const { data, error } = await query;
+            if (error) return;
+
+            const now = new Date();
+            const container = document.getElementById('warranty-list');
+            container.innerHTML = data.map(w => {
+                const isExpired = new Date(w.warranty_end) < now;
+                return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="status-badge ${isExpired ? 'status-expired' : 'status-active'}">
+                            ${isExpired ? '已過期' : '效期內'}
+                        </span>
+                        <button onclick="handleVerify('${w.id}')" class="text-slate-400 hover:text-teal-600 transition">
+                            <i class="fas fa-eye mr-1"></i>查證
+                        </button>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800">${w.customer_name}</h3>
+                    <p class="text-xs text-slate-400 font-bold mb-3">${w.project_site}</p>
+                    <p class="text-[11px] font-mono text-slate-500">截止日期：${w.warranty_end}</p>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function handleVerify(id) {
+            const { data, error } = await _supabase.from('warranties').select('*').eq('id', id).single();
+            if (error) return;
+
+            document.getElementById('p-customer').innerText = data.customer_name;
+            document.getElementById('p-site').innerText = data.project_site;
+            document.getElementById('p-range').innerText = `${data.warranty_start} ~ ${data.warranty_end}`;
+            document.getElementById('p-items').innerText = data.coverage_items;
+            document.getElementById('p-id').innerText = data.id.substring(0, 8).toUpperCase();
+            document.getElementById('p-today').innerText = new Date().toLocaleDateString();
+
+            setTimeout(() => { window.print(); }, 200);
+        }
+
+        async function addNewRecord() {
+            const name = prompt("客戶姓名：");
+            if (!name) return;
+            const site = prompt("案場地點：");
+            const end = prompt("保固結束日期 (YYYY-MM-DD)：", "2028-01-28");
+            
+            await _supabase.from('warranties').insert([{ 
+                customer_name: name, 
+                project_site: site, 
+                warranty_start: new Date().toISOString().split('T')[0],
+                warranty_end: end,
+                coverage_items: "基礎工程保固"
+            }]);
+            fetchWarranties();
+        }
+
+        window.onload = fetchWarranties;
+    </script>
+</body>
+</html>
