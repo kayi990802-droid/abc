@@ -3,336 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 人員管理系統</title>
+    <title>JINDE | 案場進度管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* --- 響應式側邊欄 --- */
-        .sidebar { 
-            width: 260px; 
-            background: #1a222d; 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            z-index: 100;
-            transition: transform 0.3s ease;
-        }
-        
-        @media (max-width: 1024px) {
-            .sidebar {
-                position: fixed;
-                height: 100vh;
-                transform: translateX(-100%);
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-        }
-        
-        .nav-link { 
-            padding: 14px 24px; 
-            font-size: 14px; 
-            color: #94a3b8; 
-            transition: 0.2s; 
-            border-left: 4px solid transparent; 
-            display: flex; 
-            align-items: center; 
-            text-decoration: none;
-        }
+        /* 側邊欄風格保持一致 */
+        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: width 0.3s; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; border-left: 4px solid transparent; display: flex; align-items: center; transition: 0.2s; text-decoration: none; }
         .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
+        
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        .content-scroll { padding: 24px; overflow-y: auto; flex-grow: 1; }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        .content-scroll { padding: 20px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        /* 案場卡片與進度條 */
+        .project-card { background: white; border-radius: 24px; border: 1px solid #eef2f6; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05); }
+        .progress-bar { height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden; }
+        .progress-fill { height: 100%; background: #0d9488; transition: width 1s ease-out; }
 
-        .staff-card { background: white; border-radius: 20px; border: 1px solid #eef2f6; transition: 0.3s; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .staff-card:hover { border-color: #0d9488; }
+        .status-badge { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; }
+        .status-working { background: #f0fdf4; color: #166534; }
+        .status-inspect { background: #fff7ed; color: #c2410c; }
 
-        /* 審核卡片特殊樣式 */
-        .pending-card { border: 2px dashed #f59e0b; background: #fffbeb; }
-
-        .modal { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.5); 
-            backdrop-filter: blur(4px); 
-            align-items: flex-end; 
-            justify-content: center; 
-            z-index: 1000; 
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .nav-text, .sidebar h1, .sidebar p { display: none; }
+            .nav-link { justify-content: center; padding: 20px 0; }
+            .nav-link i { margin: 0 !important; font-size: 18px; }
         }
-        @media (min-width: 768px) { .modal { align-items: center; } }
-        .modal-content {
-            background: white;
-            padding: 24px;
-            width: 100%;
-            max-width: 450px;
-            border-radius: 24px 24px 0 0;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        @media (min-width: 768px) { .modal-content { border-radius: 24px; } }
-
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; }
-        .overlay.active { display: block; }
     </style>
 </head>
 <body>
-
-    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
-
-    <aside id="sidebar" class="sidebar">
+    <aside class="sidebar">
         <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter cursor-pointer" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理</p>
+            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
+            <p id="user-info" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德工程管理</p>
         </div>
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3"></i> 總覽面板</a>
-            <a href="staff.html" class="nav-link active"><i class="fas fa-users mr-3"></i> 人員與點工</a>
-            <a href="projects.html" class="nav-link"><i class="fas fa-hammer mr-3"></i> 案場進度</a>
-            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3"></i> 請款系統</a>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
+            <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
+            <a href="project.html" class="nav-link active"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場進度</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users mr-3 w-5"></i><span class="nav-text">人員管理</span></a>
+            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
         </nav>
     </aside>
 
     <main class="main-stage">
-        <header class="h-[70px] bg-white border-b border-gray-100 flex items-center justify-between px-6 shrink-0">
-            <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden mr-4 text-slate-600 text-xl">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h2 class="text-xl font-black text-slate-800">人員管理</h2>
-            </div>
-            <button onclick="openAddModal()" class="bg-teal-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg lg:w-auto lg:px-5 lg:rounded-full lg:text-xs lg:font-bold">
-                <i class="fas fa-plus lg:mr-2"></i><span class="hidden lg:inline">新增員工</span>
+        <header class="h-[70px] bg-white border-b border-gray-100 flex items-center justify-between px-8 shrink-0">
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">案場監修中心</h2>
+            <button onclick="openProjectModal()" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2">
+                <i class="fas fa-plus"></i> 建立新案場
             </button>
         </header>
 
         <div class="content-scroll">
-            <div id="pendingSection" class="hidden mb-10">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="flex h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-                    <h3 class="text-amber-800 font-black text-sm uppercase tracking-wider">待審核成員申請</h3>
-                </div>
-                <div id="pendingGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    </div>
-                <hr class="mt-8 border-slate-200">
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="bg-slate-900 p-6 rounded-3xl text-white shadow-xl">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">本月出勤工數</p>
-                    <p id="total-hours" class="text-3xl font-black font-mono">0.0</p>
-                </div>
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
+            <div class="flex flex-col md:flex-row gap-4 mb-8">
+                <div class="flex-1 bg-white p-6 rounded-3xl border border-slate-100 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-tasks"></i></div>
                     <div>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">應付工資</p>
-                        <p id="total-wages" class="text-2xl font-black text-rose-600 font-mono">$0</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">目前施工中</p>
+                        <p id="active-count" class="text-2xl font-black text-slate-800">0 <span class="text-xs font-normal">處</span></p>
                     </div>
-                    <i class="fas fa-coins text-slate-100 text-3xl"></i>
+                </div>
+                <div class="flex-1 bg-white p-6 rounded-3xl border border-slate-100 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">總工程合約額</p>
+                        <p id="total-contract-val" class="text-2xl font-black text-slate-800">$0</p>
+                    </div>
                 </div>
             </div>
 
-            <h3 class="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-4">正式成員名單</h3>
-            <div id="staffGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-20">
+            <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 </div>
         </div>
     </main>
-
-    <div id="historyModal" class="modal">
-        <div class="modal-content">
-            <h3 id="historyTitle" class="text-xl font-black mb-2">出勤明細</h3>
-            <div id="personalStats" class="mb-6 p-4 bg-teal-50 rounded-2xl flex justify-between items-center">
-                <div>
-                    <p class="text-[9px] text-teal-600 font-bold uppercase">本月累計</p>
-                    <p id="p-earn" class="text-lg font-black text-teal-800">$0</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-[9px] text-teal-600 font-bold uppercase">總工數</p>
-                    <p id="p-days" class="text-lg font-black text-teal-800">0 天</p>
-                </div>
-            </div>
-            <div id="historyList" class="space-y-3"></div>
-            <button onclick="closeModal('historyModal')" class="mt-6 w-full py-4 bg-slate-100 font-bold rounded-2xl text-slate-500">關閉視窗</button>
-        </div>
-    </div>
-
-    <div id="addModal" class="modal">
-        <form onsubmit="handleStaffSubmit(event)" class="modal-content">
-            <h3 class="text-xl font-black mb-6">建立新檔案</h3>
-            <div class="space-y-4">
-                <div class="bg-gray-50 p-4 rounded-2xl">
-                    <label class="text-[10px] font-black text-slate-400 uppercase">姓名</label>
-                    <input type="text" id="s_name" class="w-full bg-transparent font-bold outline-none" placeholder="輸入姓名" required>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-2xl">
-                    <label class="text-[10px] font-black text-slate-400 uppercase">日薪</label>
-                    <input type="number" id="s_wage" class="w-full bg-transparent font-bold outline-none" placeholder="例如: 2500" required>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-2xl">
-                    <label class="text-[10px] font-black text-slate-400 uppercase">職稱</label>
-                    <input type="text" id="s_pos" class="w-full bg-transparent font-bold outline-none" placeholder="技工 / 粗工 / 領班">
-                </div>
-            </div>
-            <div class="flex gap-3 mt-8">
-                <button type="button" onclick="closeModal('addModal')" class="flex-1 py-4 font-bold text-gray-400">取消</button>
-                <button type="submit" class="flex-1 py-4 bg-teal-600 text-white rounded-2xl font-bold shadow-lg">儲存檔案</button>
-            </div>
-        </form>
-    </div>
 
     <script>
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').classList.toggle('active');
-        }
+        async function loadProjects() {
+            const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
+            if (error) return;
 
-        async function init() {
-            // 同時讀取所有員工與出勤紀錄
-            const { data: allStaff } = await _supabase.from('staff_profiles').select('*').order('name');
-            const { data: attendance } = await _supabase.from('staff_attendance').select('*').order('work_date', { ascending: false });
-
-            const pendingGrid = document.getElementById('pendingGrid');
-            const staffGrid = document.getElementById('staffGrid');
-            const pendingSection = document.getElementById('pendingSection');
+            const grid = document.getElementById('projectGrid');
+            document.getElementById('active-count').innerText = data.filter(p => p.status === '施工中').length;
             
-            pendingGrid.innerHTML = '';
-            staffGrid.innerHTML = '';
-            
-            let totalH = 0; let totalW = 0;
-            let hasPending = false;
+            const totalVal = data.reduce((sum, p) => sum + (Number(p.contract_value) || 0), 0);
+            document.getElementById('total-contract-val').innerText = '$' + totalVal.toLocaleString();
 
-            allStaff.forEach(s => {
-                const logs = attendance.filter(a => a.staff_id === s.id);
-                const hours = logs.length;
-                const earn = hours * Number(s.daily_wage);
+            grid.innerHTML = data.map(p => `
+                <div class="project-card p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="status-badge ${p.status === '施工中' ? 'status-working' : 'status-inspect'}">${p.status}</span>
+                        <button onclick="deleteProject('${p.id}')" class="text-slate-200 hover:text-rose-500 transition"><i class="fas fa-ellipsis-h"></i></button>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">${p.project_name}</h3>
+                    <p class="text-xs text-slate-400 mb-6 flex items-center gap-1">
+                        <i class="fas fa-map-marker-alt"></i> ${p.address || '未標註地址'}
+                    </p>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between text-[10px] font-black uppercase mb-2">
+                            <span class="text-slate-400">工程進度</span>
+                            <span class="text-teal-600">${p.progress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${p.progress}%"></div>
+                        </div>
+                    </div>
 
-                if (!s.is_active) {
-                    // 待審核清單
-                    hasPending = true;
-                    pendingGrid.innerHTML += `
-                        <div class="staff-card pending-card p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
-                                    <div>
-                                        <h4 class="font-black text-slate-800">${s.name}</h4>
-                                        <p class="text-[10px] text-amber-600 font-bold uppercase">${s.position || '申請中'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="approveStaff('${s.id}')" class="flex-1 py-3 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md">核准</button>
-                                <button onclick="rejectStaff('${s.id}')" class="flex-1 py-3 bg-slate-200 text-slate-500 rounded-xl text-xs font-bold">拒絕</button>
-                            </div>
-                        </div>`;
-                } else {
-                    // 正式員工清單
-                    totalH += hours; totalW += earn;
-                    staffGrid.innerHTML += `
-                        <div class="staff-card p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-slate-800 text-white rounded-full flex items-center justify-center font-black">${s.name[0]}</div>
-                                    <div>
-                                        <h4 class="font-black text-slate-800">${s.name}</h4>
-                                        <p class="text-[10px] text-teal-600 font-bold uppercase">${s.position || '技工'}</p>
-                                    </div>
-                                </div>
-                                <button onclick="deleteStaff('${s.id}', '${s.name}')" class="text-slate-300 hover:text-rose-500 p-2"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
-                                <div onclick="viewHistory('${s.id}', '${s.name}', ${s.daily_wage})" class="bg-slate-50 p-3 rounded-2xl text-center cursor-pointer hover:bg-teal-50 transition">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">出勤</p>
-                                    <p class="text-lg font-black">${hours} 天</p>
-                                </div>
-                                <div class="bg-slate-50 p-3 rounded-2xl text-center">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">薪資</p>
-                                    <p class="text-lg font-black text-rose-600">$${earn.toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <button onclick="checkIn('${s.id}', '${s.name}')" class="w-full py-4 bg-teal-50 text-teal-700 rounded-2xl text-sm font-bold active:bg-teal-600 active:text-white transition">
-                                登記今日出勤
-                            </button>
-                        </div>`;
-                }
-            });
-
-            pendingSection.style.display = hasPending ? 'block' : 'none';
-            document.getElementById('total-hours').innerText = totalH.toFixed(1);
-            document.getElementById('total-wages').innerText = `$${totalW.toLocaleString()}`;
-        }
-
-        async function approveStaff(id) {
-            await _supabase.from('staff_profiles').update({ is_active: true }).eq('id', id);
-            init();
-        }
-
-        async function rejectStaff(id) {
-            if(confirm("確定刪除此申請？")) {
-                await _supabase.from('staff_profiles').delete().eq('id', id);
-                init();
-            }
-        }
-
-        async function checkIn(id, name) {
-            const today = new Date().toISOString().split('T')[0];
-            const proj = prompt(`[${today}] 登記 ${name} 案場：`, "一般案場");
-            if(!proj) return;
-            await _supabase.from('staff_attendance').insert([{ staff_id: id, project_name: proj, work_date: today }]);
-            init();
-        }
-
-        async function viewHistory(id, name, wage) {
-            const { data } = await _supabase.from('staff_attendance').select('*').eq('staff_id', id).order('work_date', { ascending: false });
-            
-            // 更新統計
-            const days = data.length;
-            document.getElementById('historyTitle').innerText = `${name} 明細`;
-            document.getElementById('p-days').innerText = `${days} 天`;
-            document.getElementById('p-earn').innerText = `$${(days * wage).toLocaleString()}`;
-
-            const list = document.getElementById('historyList');
-            list.innerHTML = data.map(h => `
-                <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
-                    <span class="font-mono text-sm font-bold text-slate-600">${h.work_date}</span>
-                    <span class="text-xs font-black text-slate-800">${h.project_name}</span>
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-50">
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">工程合約</p>
+                            <p class="text-sm font-black text-slate-700">$${(Number(p.contract_value) || 0).toLocaleString()}</p>
+                        </div>
+                        <button class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-teal-600 hover:text-white transition">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
-            document.getElementById('historyModal').style.display = 'flex';
         }
 
-        async function deleteStaff(id, name) {
-            if(confirm(`確定移除 ${name}？歷史紀錄將保留。`)) {
-                await _supabase.from('staff_profiles').update({ is_active: false }).eq('id', id);
-                init();
-            }
-        }
-
-        async function handleStaffSubmit(e) {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById('s_name').value,
-                position: document.getElementById('s_pos').value,
-                daily_wage: Number(document.getElementById('s_wage').value),
-                is_active: true // 管理員手動新增預設為正式
-            };
-            await _supabase.from('staff_profiles').insert([payload]);
-            closeModal('addModal'); 
-            init();
-        }
-
-        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        window.onload = init;
+        window.onload = loadProjects;
     </script>
 </body>
 </html>
