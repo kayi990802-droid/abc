@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>JINDE | 財務收支與結算系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,223 +10,189 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { background-color: #f4f7f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        
-        /* 電腦版側邊欄 */
-        @media (min-width: 1024px) {
-            body { flex-direction: row; overflow: hidden; }
-            .sidebar { width: 260px; height: 100vh; background: #1a222d; display: flex; flex-direction: column; flex-shrink: 0; }
-            .main-stage { flex-grow: 1; height: 100vh; overflow: hidden; }
-            .content-scroll { padding: 40px; overflow-y: auto; height: calc(100vh - 70px); }
-        }
+        :root { --primary-teal: #0d9488; --slate-dark: #1a222d; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
 
-        /* 手機版側邊欄優化 */
+        /* --- 側邊欄優化區 --- */
+        .sidebar { width: 260px; background: var(--slate-dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
+        
+        .nav-link { 
+            padding: 16px 28px; font-size: 14px; color: #94a3b8; display: flex; align-items: center; 
+            text-decoration: none; border-left: 4px solid transparent; transition: 0.3s; 
+        }
+        .nav-link i { margin-right: 12px; width: 18px; text-align: center; font-size: 16px; }
+        .nav-link:hover { background: #242e3d; color: white; }
+        .nav-link.active { background: #242e3d; color: white; border-left-color: var(--primary-teal); }
+
+        /* 手機版 (Mobile) 專屬修正 */
         @media (max-width: 1023px) {
-            .sidebar { width: 100%; height: auto; background: #1a222d; padding: 10px 0; }
-            .sidebar .p-8 { padding: 10px 20px; }
-            .sidebar p { display: none; } /* 隱藏小字節省空間 */
-            .nav-link { display: inline-block; padding: 10px 15px; font-size: 12px; border-left: none; border-bottom: 2px solid transparent; }
-            .nav-link.active { border-left: none; border-bottom-color: #0d9488; }
-            .main-stage { flex-grow: 1; overflow-y: auto; }
-            .top-header { padding: 0 20px; }
-            .content-scroll { padding: 20px 15px; }
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; }
+            .sidebar .p-8 { padding: 15px 20px; }
+            .sidebar p { display: none; }
+            
+            /* 選單橫向滑動 */
+            .sidebar nav { 
+                display: flex; overflow-x: auto; white-space: nowrap; 
+                scrollbar-width: none; -ms-overflow-style: none; 
+            }
+            .sidebar nav::-webkit-scrollbar { display: none; }
+            
+            .nav-link { 
+                padding: 12px 20px; border-left: none; border-bottom: 3px solid transparent; 
+                flex-shrink: 0; 
+            }
+            .nav-link.active { border-bottom-color: var(--primary-teal); background: transparent; }
+            
+            .main-stage { height: calc(100vh - 110px); }
         }
 
-        .nav-link { color: #94a3b8; transition: 0.2s; cursor: pointer; text-decoration: none; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left: 4px solid #0d9488; }
-
-        .main-stage { display: flex; flex-direction: column; background: #fdfdfd; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; background: white; flex-shrink: 0; }
+        /* --- 主舞台與卡片 --- */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: #fdfdfd; }
+        .content-scroll { flex-grow: 1; overflow-y: auto; padding: 24px; }
+        .content-scroll::-webkit-scrollbar { width: 6px; }
+        .content-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         
-        .finance-card { background: white; border-radius: 20px; border: 1px solid #eef2f6; transition: all 0.3s; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .finance-card { background: white; border-radius: 24px; border: 1px solid #eef2f6; transition: all 0.3s ease; }
+        .finance-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
 
-        /* 手機版輸入框字體強制 16px 防止縮放 */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 100; padding: 20px; }
         input, select { font-size: 16px !important; }
     </style>
 </head>
 <body>
-
     <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter cursor-pointer text-white" onclick="location.href='index.html'">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德財務結算系統</p>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">錦德財務管理系統</p>
         </div>
-        <nav class="flex-grow whitespace-nowrap overflow-x-auto no-scrollbar">
-            <a href="index.html" class="nav-link">總覽面板</a>
-            <a href="customer.html" class="nav-link">客戶管理</a>
-            <a href="project.html" class="nav-link">工地管理</a>
-            <a href="billing.html" class="nav-link">請款單系統</a>
-            <a href="finance.html" class="nav-link active">財務收支</a>
+        <nav>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> 總覽面板</a>
+            <a href="customer.html" class="nav-link"><i class="fas fa-users"></i> 客戶管理</a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer"></i> 工地管理</a>
+            <a href="billing.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> 請款系統</a>
+            <a href="finance.html" class="nav-link active"><i class="fas fa-wallet"></i> 財務收支</a>
         </nav>
     </aside>
 
     <main class="main-stage">
-        <header class="top-header">
+        <header class="h-[70px] border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
             <div class="flex items-center gap-3">
-                <i class="fas fa-wallet text-slate-400 ml-5"></i>
-                <h2 id="currentMonthTitle" class="text-sm lg:text-lg font-black text-slate-800">載入中...</h2>
+                <i class="fas fa-wallet text-slate-400"></i>
+                <h2 id="currentMonthTitle" class="text-sm lg:text-lg font-black text-slate-800 italic">載入中...</h2>
             </div>
-            <div class="mr-5">
-                <button onclick="openModal()" class="bg-slate-900 text-white px-4 py-2 rounded-full text-[10px] lg:text-xs font-bold hover:bg-teal-600 transition shadow-lg">+ 新增單據</button>
-            </div>
+            <button onclick="openModal()" class="bg-slate-900 text-white px-5 py-2 rounded-full text-xs font-black hover:bg-teal-600 transition shadow-lg active:scale-95">
+                + 新增單據
+            </button>
         </header>
 
         <div class="content-scroll">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-8 mb-8">
-                <div class="finance-card p-6 lg:p-8 border-t-4 border-t-emerald-500">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">本月累計總營收</p>
-                    <p id="stat-income" class="text-2xl lg:text-4xl font-mono font-black text-slate-900">$0</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="finance-card p-6 border-t-4 border-t-emerald-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">本月總營收 (已請款)</p>
+                    <p id="stat-income" class="text-3xl font-black text-slate-900">$0</p>
                 </div>
-                <div class="finance-card p-6 lg:p-8 border-t-4 border-t-rose-500">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">本月累計總支出</p>
-                    <p id="stat-expense" class="text-2xl lg:text-4xl font-mono font-black text-slate-900">$0</p>
+                <div class="finance-card p-6 border-t-4 border-t-rose-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">本月總支出 (成本)</p>
+                    <p id="stat-expense" class="text-3xl font-black text-slate-900">$0</p>
                 </div>
-                <div class="finance-card p-6 lg:p-8 bg-slate-900 text-white">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-teal-500">本月結餘 (預估淨利)</p>
-                    <p id="stat-profit" class="text-2xl lg:text-4xl font-mono font-black text-teal-400">$0</p>
+                <div class="finance-card p-6 bg-slate-900 text-white shadow-xl shadow-slate-200">
+                    <p class="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-1">預估本月結餘</p>
+                    <p id="stat-profit" class="text-3xl font-black text-teal-400">$0</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-slate-50 bg-slate-50/50">
-                        <h3 class="text-[10px] lg:text-sm font-black text-slate-800 uppercase tracking-widest">近期請款單紀錄 (收入)</h3>
+                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">近期請款單紀錄 (收入)</h3>
+                        <a href="billing.html" class="text-[10px] font-bold text-teal-600 hover:underline">查看全部</a>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <tbody id="billing-list" class="divide-y divide-slate-50">
-                                </tbody>
+                        <table class="w-full text-left">
+                            <tbody id="billing-list" class="divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 lg:p-8">
-                    <h3 class="text-[10px] lg:text-sm font-black text-slate-800 uppercase tracking-widest mb-6">本月支出分佈</h3>
-                    <div id="expense-bars" class="space-y-5">
-                        </div>
+                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-8">本月支出費用分佈</h3>
+                    <div id="expense-bars" class="space-y-6"></div>
                 </div>
             </div>
         </div>
     </main>
 
     <div id="financeModal" class="modal">
-        <div class="bg-white w-full max-w-md rounded-3xl p-6 lg:p-8 shadow-2xl">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl scale-in">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black">新增財務紀錄</h2>
-                <button onclick="closeModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
+                <h2 class="text-xl font-black text-slate-800">新增財務紀錄</h2>
+                <button onclick="closeModal()" class="text-slate-300 hover:text-slate-900 transition"><i class="fas fa-times text-xl"></i></button>
             </div>
-            <form onsubmit="handleRecordSubmit(event)" class="space-y-4">
+            <form onsubmit="handleRecordSubmit(event)" class="space-y-5">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 ml-1">項目名稱</label>
-                    <input type="text" id="f_title" placeholder="如：採購防水塗料" class="w-full p-3 bg-slate-50 border rounded-xl outline-none mt-1" required>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">項目名稱</label>
+                    <input type="text" id="f_title" placeholder="如：12月份水泥採購" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none mt-1 focus:border-teal-500 transition-all" required>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-1">類型</label>
-                        <select id="f_type" class="w-full p-3 bg-slate-50 border rounded-xl outline-none mt-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">類型</label>
+                        <select id="f_type" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none mt-1">
                             <option value="expense">支出 (-)</option>
-                            <option value="income">其他收入 (+)</option>
+                            <option value="income">額外收入 (+)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-1">分類</label>
-                        <select id="f_category" class="w-full p-3 bg-slate-50 border rounded-xl outline-none mt-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">分類</label>
+                        <select id="f_category" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none mt-1">
                             <option value="材料">材料費</option>
-                            <option value="工資">點工工資</option>
+                            <option value="工資">工資</option>
                             <option value="機具">機具油資</option>
-                            <option value="雜支">辦公雜支</option>
+                            <option value="雜支">雜支</option>
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 ml-1">金額 (TWD)</label>
-                    <input type="number" id="f_amount" placeholder="輸入金額" class="w-full p-3 bg-slate-50 border rounded-xl outline-none mt-1" required>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">金額 (TWD)</label>
+                    <input type="number" id="f_amount" placeholder="0" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-mono font-bold outline-none mt-1 focus:border-teal-500 transition-all" required>
                 </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">取消</button>
-                    <button type="submit" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold">儲存紀錄</button>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95 transition">取消</button>
+                    <button type="submit" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm active:scale-95 transition shadow-lg">儲存紀錄</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // Supabase 配置 (維持您的原始 Key)
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         async function initFinance() {
             const now = new Date();
-            document.getElementById('currentMonthTitle').innerText = `${now.getFullYear()}年 ${now.getMonth() + 1}月 財務分析`;
+            document.getElementById('currentMonthTitle').innerText = `${now.getFullYear()} / ${now.getMonth() + 1} 財務分析`;
             
+            // 抓取請款單 (收入)
             const { data: billings } = await _supabase.from('billings').select('*');
-            const totalBilling = billings.reduce((sum, item) => sum + (Number(item.final_amount) || 0), 0);
-            
+            // 抓取財務紀錄 (支出與額外收入)
             const { data: records } = await _supabase.from('finance_records').select('*');
-            const totalExpense = records.filter(r => r.type === 'expense').reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-            const otherIncome = records.filter(r => r.type === 'income').reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-            const totalIncome = totalBilling + otherIncome;
+            const totalBilling = (billings || []).reduce((sum, b) => sum + (Number(b.final_amount) || 0), 0);
+            const totalExpense = (records || []).filter(r => r.type === 'expense').reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+            const extraIncome = (records || []).filter(r => r.type === 'income').reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+            
+            const totalIncome = totalBilling + extraIncome;
+            const netProfit = totalIncome - totalExpense;
 
             document.getElementById('stat-income').innerText = `$${totalIncome.toLocaleString()}`;
             document.getElementById('stat-expense').innerText = `$${totalExpense.toLocaleString()}`;
-            document.getElementById('stat-profit').innerText = `$${(totalIncome - totalExpense).toLocaleString()}`;
+            document.getElementById('stat-profit').innerText = `$${netProfit.toLocaleString()}`;
 
+            // 渲染列表
             const billingList = document.getElementById('billing-list');
-            billingList.innerHTML = billings.slice(0, 5).map(b => `
+            billingList.innerHTML = (billings || []).slice(0, 6).map(b => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-4">
-                        <p class="text-slate-900 font-bold text-xs lg:text-sm">${b.project_name || '工程單'}</p>
-                        <p class="text-[9px] text-slate-400 uppercase">${b.customer_name}</p>
-                    </td>
-                    <td class="p-4 text-right font-mono font-black text-emerald-600 text-xs lg:text-sm">+$${Number(b.final_amount).toLocaleString()}</td>
-                </tr>
-            `).join('');
-
-            renderExpenseBars(records);
-        }
-
-        function renderExpenseBars(records) {
-            const categories = ['材料', '工資', '機具', '雜支'];
-            const expenses = records.filter(r => r.type === 'expense');
-            const totalExp = expenses.reduce((sum, r) => sum + Number(r.amount), 0) || 1;
-
-            const html = categories.map(cat => {
-                const amount = expenses.filter(r => r.category === cat).reduce((sum, r) => sum + Number(r.amount), 0);
-                const percent = Math.round((amount / totalExp) * 100);
-                return `
-                    <div>
-                        <div class="flex justify-between text-[10px] font-bold mb-1">
-                            <span class="text-slate-500">${cat}</span>
-                            <span class="text-slate-900">$${amount.toLocaleString()}</span>
-                        </div>
-                        <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-slate-900 transition-all duration-1000" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('expense-bars').innerHTML = html;
-        }
-
-        async function handleRecordSubmit(e) {
-            e.preventDefault();
-            const payload = {
-                title: document.getElementById('f_title').value,
-                type: document.getElementById('f_type').value,
-                category: document.getElementById('f_category').value,
-                amount: Number(document.getElementById('f_amount').value)
-            };
-            const { error } = await _supabase.from('finance_records').insert([payload]);
-            if (!error) { closeModal(); initFinance(); e.target.reset(); }
-        }
-
-        function openModal() { document.getElementById('financeModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('financeModal').style.display = 'none'; }
-
-        window.onload = initFinance;
-    </script>
-</body>
-</html>
+                        <p class="text-slate-900 font-black text-xs lg:text-sm">${b.project_name || '未名工程'}</p>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase">${b.customer_name || '一般客戶'}</p
