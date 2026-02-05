@@ -163,10 +163,14 @@
 </div>
 
 <script>
-    const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // 請填入完整 Key
-    const _supabase = supabase.createClient(S_URL, S_KEY);
+ // 1. Supabase 專案網址
+const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
 
+// 2. Supabase Anon Key (請確保這是從 Project Settings -> API 複製的最長那一串)
+const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+
+// 3. 初始化客戶端
+const _supabase = supabase.createClient(S_URL, S_KEY);
     window.onload = updateOrderInfo;
 
     function updateOrderInfo() {
@@ -247,38 +251,42 @@
         });
     }
 
-    async function saveToSupabase() {
-        const btn = document.getElementById('saveBtn');
-        const quoteId = document.getElementById('out_id').innerText;
-        btn.disabled = true; btn.innerText = "同步中...";
+ async function saveToSupabase() {
+    const btn = document.getElementById('saveBtn');
+    const quoteId = document.getElementById('out_id').innerText;
+    btn.disabled = true; btn.innerText = "同步中...";
 
-        const items = [];
-        document.querySelectorAll('#out_tbody tr').forEach(row => {
-            items.push({
-                desc: row.cells[0].querySelector('input').value,
-                qty: row.querySelector('.qty').value,
-                price: row.querySelector('.price').value
-            });
+    const items = [];
+    document.querySelectorAll('#out_tbody tr').forEach(row => {
+        items.push({
+            desc: row.cells[0].querySelector('input').value,
+            qty: row.querySelector('.qty').value,
+            price: row.querySelector('.price').value
         });
+    });
 
-        const { error } = await _supabase.from('quotations').insert([{
-            quote_id: quoteId,
-            client: document.getElementById('in_name').value,
-            address: document.getElementById('in_addr').value,
-            total: parseFloat(document.getElementById('sum_final').innerText.replace(/,/g, '')),
-            items: items, // 直接傳 Array，Supabase 會處理 JSONB
-            method: document.getElementById('out_method').innerText,
-            terms: document.getElementById('out_terms').innerText
-        }]);
+    // --- 這裡要改 ---
+    const { error } = await _supabase.from('quotations').insert([{
+        quote_id: quoteId,
+        client: document.getElementById('in_name').value || "未填寫",
+        address: document.getElementById('in_addr').value || "未填寫",
+        // 必須把顯示用的逗號拿掉，轉成數字
+        total: parseFloat(document.getElementById('sum_final').innerText.replace(/,/g, '')),
+        items: items, 
+        method: document.getElementById('out_method').innerText,
+        terms: document.getElementById('out_terms').innerText,
+        created_at: new Date().toISOString()
+    }]);
+    // ----------------
 
-        if (error) {
-            alert("錯誤: " + error.message);
-        } else {
-            alert("✅ 已儲存至雲端資料表：quotations");
-            updateOrderInfo();
-        }
-        btn.disabled = false; btn.innerText = "儲存至雲端 (Quotations)";
+    if (error) {
+        alert("錯誤: " + error.message);
+    } else {
+        alert("✅ 已成功儲存至雲端！");
+        updateOrderInfo();
     }
+    btn.disabled = false; btn.innerText = "儲存至雲端 (Quotations)";
+}
 </script>
 </body>
 </html>
