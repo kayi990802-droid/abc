@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 員工薪資核算中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        .input-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; width: 100%; font-size: 14px; outline: none; }
+        .input-box:focus { border-color: #0d9488; ring: 2px solid #0d9488; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .label-text { font-size: 11px; font-weight: 900; color: #64748b; margin-bottom: 4px; display: block; }
+        
+        /* PDF 樣式 */
+        #pdf-content { padding: 15mm; background: white; color: #000; font-size: 12px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+        .pdf-header { text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body class="pb-20">
+
+<nav class="bg-slate-800 text-white p-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <span class="text-xl font-black italic tracking-tighter text-teal-400">JINDE PAYROLL</span>
+            <div class="flex items-center bg-slate-700 rounded-lg overflow-hidden">
+                <button onclick="changeMonth(-1)" class="px-3 py-1 hover:bg-slate-600 border-r border-slate-600 text-xs">◀ 上月</button>
+                <input type="month" id="current-month" class="bg-transparent text-white px-3 py-1 border-none outline-none font-bold text-sm" onchange="fetchDataByMonth()">
+                <button onclick="changeMonth(1)" class="px-3 py-1 hover:bg-slate-600 border-l border-slate-600 text-xs">下月 ▶</button>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="addRow()" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-teal-500"><i class="fas fa-plus mr-1"></i> 新增員工</button>
+            <button id="save-btn" onclick="saveToSupabase()" class="bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-sky-500"><i class="fas fa-cloud-upload-alt mr-1"></i> 儲存雲端</button>
+            <button onclick="exportPDF()" class="bg-white text-slate-900 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100"><i class="fas fa-file-pdf mr-1 text-rose-500"></i> 產出 PDF</button>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto p-4 mt-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4 border-l-4 border-teal-500">
+            <span class="label-text">應發薪資總計</span>
+            <p id="total-gross" class="text-xl font-black text-slate-800">0</p>
+        </div>
+        <div class="card p-4 border-l-4 border-rose-500">
+            <span class="label-text">實發金額總計</span>
+            <p id="total-net" class="text-xl font-black text-teal-600">0</p>
+        </div>
+    </div>
+
+    <div id="staff-container" class="space-y-4"></div>
+</main>
+
+<div id="pdf-container" style="position: absolute; left: -9999px;">
+    <div id="pdf-content">
+        <div class="pdf-header">
+            <h1 style="font-size: 20px; margin: 0;">錦德防水工程 員工薪資冊</h1>
+            <p id="pdf-period-display"></p>
+        </div>
+        <table class="pdf-table">
+            <thead>
+                <tr style="background: #eee;">
+                    <th>編號</th><th>姓名</th><th>日薪</th><th>天數</th><th>本薪</th><th>全勤</th><th>應發合計</th>
+                    <th>勞保</th><th>健保</th><th>實發合計</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    window.onload = () => {
+        const now = new Date();
+        const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        document.getElementById('current-month').value = monthVal;
+        fetchDataByMonth();
+    };
+
+    // 修改：切換月份功能 (查上個月/下個月)
+    function changeMonth(delta) {
+        const picker = document.getElementById('current-month');
+        let [year, month] = picker.value.split('-').map(Number);
+        let date = new Date(year, month - 1 + delta, 1);
+        picker.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        fetchDataByMonth();
+    }
+
+    // 修改：新增員工時自動推算下一個 ID
+    function addRow(data = {}) {
+        const container = document.getElementById('staff-container');
+        
+        // 自動生成 ID 邏輯
+        let nextId = "";
+        if (!data.staff_no) {
+            const lastRow = container.querySelector('.staff-row:last-child .s-id');
+            if (lastRow && !isNaN(lastRow.value)) {
+                nextId = String(parseInt(lastRow.value) + 1);
+            } else {
+                nextId = "91106"; // 預設起點
+            }
+        }
+
+        const id = data.staff_no || nextId;
+        const name = data.staff_name || "";
+        const daily = data.daily_wage || 1300;
+        const days = data.work_days || 22;
+        const bonus = data.bonus_all || 700;
+        const labor = data.labor_insurance || 679;
+        const health = data.health_insurance || 458;
+
+        const row = document.createElement('div');
+        row.className = "card p-5 grid grid-cols-2 md:grid-cols-11 gap-3 items-end staff-row";
+        row.innerHTML = `
+            <div class="col-span-1">
+                <span class="label-text">編號</span>
+                <input type="text" value="${id}" class="input-box s-id">
+            </div>
+            <div class="col-span-1">
+                <span class="label-text">姓名</span>
+                <input type="text" value="${name}" class="input-box s-name font-bold">
+            </div>
+            <div>
+                <span class="label-text">日薪</span>
+                <input type="number" value="${daily}" class="input-box s-daily" oninput="calc()">
+            </div>
+            <div>
+                <span class="label-text">天數</span>
+                <input type="number" value="${days}" class="input-box s-days" oninput="calc()">
+            </div>
+            <div class="bg-gray-50 p-2 rounded">
+                <span class="label-text">本薪</span>
+                <p class="s-base-calc font-bold text-sm">0</p>
+            </div>
+            <div>
+                <span class="label-text">全勤</span>
+                <input type="number" value="${bonus}" class="input-box s-bonus" oninput="calc()">
+            </div>
+            <div class="bg-slate-50 p-2 rounded">
+                <span class="label-text text-teal-600">應發</span>
+                <p class="s-gross font-bold text-sm">0</p>
+            </div>
+            <div>
+                <span class="label-text">勞保</span>
+                <input type="number" value="${labor}" class="input-box s-labor text-rose-500" oninput="calc()">
+            </div>
+            <div>
+                <span class="label-text">健保</span>
+                <input type="number" value="${health}" class="input-box s-health text-rose-500" oninput="calc()">
+            </div>
+            <div class="bg-teal-50 p-2 rounded">
+                <span class="label-text text-teal-600">實發</span>
+                <p class="s-net font-black text-lg text-teal-700">0</p>
+            </div>
+            <div class="text-right">
+                <button onclick="this.closest('.staff-row').remove();calc()" class="text-slate-300 hover:text-rose-500 p-2"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        `;
+        container.appendChild(row);
+        calc();
+    }
+
+    function calc() {
+        let gTotal = 0, nTotal = 0;
+        document.querySelectorAll('.staff-row').forEach(row => {
+            const daily = parseFloat(row.querySelector('.s-daily').value) || 0;
+            const days = parseFloat(row.querySelector('.s-days').value) || 0;
+            const bonus = parseFloat(row.querySelector('.s-bonus').value) || 0;
+            const labor = parseFloat(row.querySelector('.s-labor').value) || 0;
+            const health = parseFloat(row.querySelector('.s-health').value) || 0;
+            
+            const base = daily * days;
+            const gross = base + bonus;
+            const net = gross - labor - health;
+            
+            row.querySelector('.s-base-calc').innerText = Math.round(base).toLocaleString();
+            row.querySelector('.s-gross').innerText = Math.round(gross).toLocaleString();
+            row.querySelector('.s-net').innerText = Math.round(net).toLocaleString();
+            
+            gTotal += gross;
+            nTotal += net;
+        });
+        document.getElementById('total-gross').innerText = Math.round(gTotal).toLocaleString();
+        document.getElementById('total-net').innerText = Math.round(nTotal).toLocaleString();
+    }
+
+    async function saveToSupabase() {
+        const btn = document.getElementById('save-btn');
+        const month = document.getElementById('current-month').value;
+        if (!confirm(`確定要儲存 ${month} 的資料嗎？`)) return;
+
+        btn.disabled = true;
+        const payrollData = [];
+        document.querySelectorAll('.staff-row').forEach(row => {
+            const daily = parseInt(row.querySelector('.s-daily').value);
+            const days = parseFloat(row.querySelector('.s-days').value);
+            payrollData.push({
+                payroll_month: month + "-01",
+                staff_no: row.querySelector('.s-id').value,
+                staff_name: row.querySelector('.s-name').value,
+                base_salary: Math.round(daily * days),
+                bonus_all: parseInt(row.querySelector('.s-bonus').value),
+                labor_insurance: parseInt(row.querySelector('.s-labor').value),
+                health_insurance: parseInt(row.querySelector('.s-health').value),
+                total_net: parseInt(row.querySelector('.s-net').innerText.replace(/,/g, '')),
+                daily_wage: daily,
+                work_days: days
+            });
+        });
+
+        try {
+            await _supabase.from('staff_payroll').delete().eq('payroll_month', month + "-01");
+            const { error } = await _supabase.from('staff_payroll').insert(payrollData);
+            if (error) throw error;
+            alert("✅ 儲存成功！");
+        } catch (err) {
+            alert("儲存失敗：" + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function fetchDataByMonth() {
+        const month = document.getElementById('current-month').value;
+        const container = document.getElementById('staff-container');
+        container.innerHTML = '<p class="text-center py-10 italic text-slate-400">正在讀取雲端資料...</p>';
+
+        try {
+            const { data, error } = await _supabase
+                .from('staff_payroll')
+                .select('*')
+                .eq('payroll_month', month + "-01")
+                .order('staff_no', { ascending: true });
+
+            if (error) throw error;
+            container.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(item => addRow(item));
+            } else {
+                // 若無資料則顯示空白列
+                addRow({staff_no: '91106'});
+            }
+        } catch (err) {
+            alert("讀取失敗：" + err.message);
+        }
+    }
+
+    function exportPDF() {
+        const month = document.getElementById('current-month').value;
+        document.getElementById('pdf-period-display').innerText = `發薪月份：${month}`;
+        const tbody = document.getElementById('pdf-tbody');
+        tbody.innerHTML = '';
+        
+        document.querySelectorAll('.staff-row').forEach(row => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.querySelector('.s-id').value}</td>
+                    <td>${row.querySelector('.s-name').value}</td>
+                    <td>${row.querySelector('.s-daily').value}</td>
+                    <td>${row.querySelector('.s-days').value}</td>
+                    <td>${row.querySelector('.s-base-calc').innerText}</td>
+                    <td>${row.querySelector('.s-bonus').value}</td>
+                    <td>${row.querySelector('.s-gross').innerText}</td>
+                    <td>${row.querySelector('.s-labor').value}</td>
+                    <td>${row.querySelector('.s-health').value}</td>
+                    <td style="font-weight:bold;">${row.querySelector('.s-net').innerText}</td>
+                </tr>
+            `;
+        });
+
+        const element = document.getElementById('pdf-content');
+        html2pdf().set({
+            margin: 10,
+            filename: `錦德薪資冊_${month}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).from(element).save();
+    }
+</script>
+
+</body>
+</html>
