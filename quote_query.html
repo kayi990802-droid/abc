@@ -27,7 +27,6 @@
         .top-bar { height: 64px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 24px; justify-content: space-between; }
         .content-scroll { padding: 24px; overflow-y: auto; flex-grow: 1; }
         .glass-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .status-badge { padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #64748b; }
     </style>
 </head>
 <body>
@@ -43,14 +42,11 @@
             </div>
         </div>
         <nav class="flex-grow mt-4">
-            <a href="index.html" class="nav-link"><i class="fas fa-home-alt w-5 text-lg"></i><span>控制台總覽</span></a>
-            <a href="quote.html" class="nav-link"><i class="fas fa-file-plus w-5 text-lg"></i><span>建立新報價</span></a>
-            <a href="quote_query.html" class="nav-link active"><i class="fas fa-layer-group w-5 text-lg"></i><span>歷史數據</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-user-shield w-5 text-lg"></i><span>權限管理</span></a>
+            <a href="index.html" class="nav-link"><i class="fas fa-home-alt w-5 text-lg"></i><span>首頁</span></a>
+            <a href="quote.html" class="nav-link"><i class="fas fa-file-plus w-5 text-lg"></i><span>新報價</span></a>
+            <a href="quote_query.html" class="nav-link active"><i class="fas fa-layer-group w-5 text-lg"></i><span>紀錄</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-user-shield w-5 text-lg"></i><span>人員</span></a>
         </nav>
-        <div class="p-6 user-profile border-t border-slate-800">
-            <p class="text-white font-bold text-xs text-center">Admin Mode Active</p>
-        </div>
     </aside>
 
     <div class="main-container">
@@ -59,22 +55,22 @@
                 <i class="fas fa-search text-slate-400 mr-2 text-sm"></i>
                 <input type="text" id="searchInput" oninput="handleSearch()" placeholder="搜尋客戶或單號..." class="bg-transparent border-none outline-none text-sm w-full">
             </div>
-            <button onclick="fetchQuotes()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500"><i class="fas fa-sync-alt" id="refresh-icon"></i></button>
+            <button id="refreshBtn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500"><i class="fas fa-sync-alt" id="refresh-icon"></i></button>
         </header>
 
         <div class="content-scroll">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="glass-card p-6 border-l-4 border-teal-500">
-                    <p class="text-slate-500 text-sm font-bold">累計金額</p>
+                    <p class="text-slate-500 text-sm font-bold">累計總額</p>
                     <p id="total_amount" class="text-3xl font-black text-slate-800 mt-1">NT$ 0</p>
                 </div>
                 <div class="glass-card p-6 border-l-4 border-blue-500">
-                    <p class="text-slate-500 text-sm font-bold">件數統計</p>
+                    <p class="text-slate-500 text-sm font-bold">總件數</p>
                     <p id="total_count" class="text-3xl font-black text-slate-800 mt-1">0 件</p>
                 </div>
             </div>
 
-            <div class="glass-card overflow-hidden">
+            <div class="glass-card overflow-hidden min-h-[400px]">
                 <div id="loader" class="hidden text-center py-20"><i class="fas fa-spinner fa-spin text-teal-500 text-3xl"></i></div>
                 <div id="mobile_list" class="md:hidden p-4 space-y-4"></div>
                 <div class="hidden md:block">
@@ -82,10 +78,10 @@
                         <thead class="bg-slate-50 border-b">
                             <tr>
                                 <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">日期</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">單號</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">客戶名稱</th>
+                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">報價單號</th>
+                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">客戶</th>
                                 <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase text-right">總計</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase text-center">功能</th>
+                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody id="quote_list_desktop" class="divide-y text-sm"></tbody>
@@ -105,21 +101,78 @@
         async function fetchQuotes() {
             const loader = document.getElementById('loader');
             const icon = document.getElementById('refresh-icon');
-            loader.classList.remove('hidden'); icon.classList.add('fa-spin');
+            const desktop = document.getElementById('quote_list_desktop');
+            const mobile = document.getElementById('mobile_list');
+            const empty = document.getElementById('empty-state');
+
+            loader.classList.remove('hidden'); 
+            icon.classList.add('fa-spin');
+            empty.classList.add('hidden');
             
             try {
-                // 注意這裡改成了 quotations
-                const { data, error } = await _supabase.from('quotations').select('*').order('created_at', { ascending: false });
+                // 根據截圖，資料表應為 quotations
+                const { data, error } = await _supabase
+                    .from('quotations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
                 if (error) throw error;
                 allQuotes = data;
-                renderList(allQuotes);
+                renderList(data);
                 updateStats(data);
             } catch (err) {
-                console.error(err);
-                alert('抓取失敗：' + err.message);
+                console.error("Fetch Error:", err);
+                alert('資料讀取失敗，請確認資料表名稱是否為 quotations');
             } finally {
-                loader.classList.add('hidden'); icon.classList.remove('fa-spin');
+                loader.classList.add('hidden'); 
+                icon.classList.remove('fa-spin');
             }
+        }
+
+        function renderList(data) {
+            const desktop = document.getElementById('quote_list_desktop');
+            const mobile = document.getElementById('mobile_list');
+            const empty = document.getElementById('empty-state');
+
+            if (!data || data.length === 0) {
+                desktop.innerHTML = ''; mobile.innerHTML = '';
+                empty.classList.remove('hidden'); 
+                return;
+            }
+            empty.classList.add('hidden');
+
+            // 根據截圖，欄位為 quote_id, client, total
+            desktop.innerHTML = data.map(q => `
+                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewDetail('${q.id}')">
+                    <td class="px-8 py-5 text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
+                    <td class="px-8 py-5 font-mono text-xs">${q.quote_id || '-'}</td>
+                    <td class="px-8 py-5 font-bold text-slate-800">${q.client || '未填寫'}</td>
+                    <td class="px-8 py-5 text-right font-black text-teal-600">NT$ ${Math.round(q.total || 0).toLocaleString()}</td>
+                    <td class="px-8 py-5 text-center" onclick="event.stopPropagation()">
+                        <button onclick="viewDetail('${q.id}')" class="text-teal-500 hover:text-teal-700 p-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteQuote('${q.id}')" class="text-rose-300 hover:text-rose-500 p-2 ml-2"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            mobile.innerHTML = data.map(q => `
+                <div class="glass-card p-5 mb-4" onclick="viewDetail('${q.id}')">
+                    <div class="flex justify-between mb-2"><span class="text-xs font-mono text-slate-400">${q.quote_id || '-'}</span><span class="text-xs text-slate-400">${new Date(q.created_at).toLocaleDateString()}</span></div>
+                    <div class="flex justify-between items-end">
+                        <div><h4 class="font-bold text-slate-800">${q.client || '未填寫'}</h4><p class="text-teal-600 font-black">NT$ ${Math.round(q.total || 0).toLocaleString()}</p></div>
+                        <div class="flex gap-2" onclick="event.stopPropagation()">
+                            <button onclick="viewDetail('${q.id}')" class="w-10 h-10 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteQuote('${q.id}')" class="w-10 h-10 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(data) {
+            const total = data.reduce((sum, q) => sum + (Number(q.total) || 0), 0);
+            document.getElementById('total_amount').innerText = `NT$ ${Math.round(total).toLocaleString()}`;
+            document.getElementById('total_count').innerText = `${data.length} 件`;
         }
 
         function handleSearch() {
@@ -131,29 +184,20 @@
             renderList(filtered);
         }
 
-        function renderList(data) {
-            const desktop = document.getElementById('quote_list_desktop');
-            const mobile = document.getElementById('mobile_list');
-            const empty = document.getElementById('empty-state');
-            if (!data || data.length === 0) { desktop.innerHTML = ''; mobile.innerHTML = ''; empty.classList.remove('hidden'); return; }
-            empty.classList.add('hidden');
+        async function deleteQuote(id) {
+            if (!confirm('確認刪除此筆報價？')) return;
+            const { error } = await _supabase.from('quotations').delete().eq('id', id);
+            if (error) alert('刪除失敗'); else fetchQuotes();
+        }
 
-            desktop.innerHTML = data.map(q => `
-                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewDetail('${q.id}')">
-                    <td class="px-8 py-5 text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
-                    <td class="px-8 py-5 font-mono text-xs">${q.quote_id || '-'}</td>
-                    <td class="px-8 py-5 font-bold text-slate-800">${q.client || '未填寫'}</td>
-                    <td class="px-8 py-5 text-right font-black text-teal-600">NT$ ${Math.round(q.total || 0).toLocaleString()}</td>
-                    <td class="px-8 py-5 text-center" onclick="event.stopPropagation()">
-                        <button onclick="viewDetail('${q.id}')" class="text-teal-500 p-2"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteQuote('${q.id}')" class="text-rose-300 p-2 ml-2"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+        function viewDetail(id) {
+            localStorage.setItem('edit_quote_id', id);
+            location.href = 'quote.html';
+        }
 
-            mobile.innerHTML = data.map(q => `
-                <div class="glass-card p-5" onclick="viewDetail('${q.id}')">
-                    <div class="flex justify-between mb-2"><span class="text-xs font-mono text-slate-400">${q.quote_id || '-'}</span><span class="text-xs text-slate-400">${new Date(q.created_at).toLocaleDateString()}</span></div>
-                    <div class="flex justify-between items-end">
-                        <div><h4 class="font-bold text-slate-800">${q.client || '未填寫'}</h4><p class="text-teal-600 font-black">NT$ ${Math.round(q.total || 0).toLocaleString()}</p></div>
-                        <div
+        // 綁定按鈕事件並初始化
+        document.getElementById('refreshBtn').addEventListener('click', fetchQuotes);
+        window.onload = fetchQuotes;
+    </script>
+</body>
+</html>
