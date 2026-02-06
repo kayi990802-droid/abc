@@ -10,109 +10,103 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         :root { --sidebar-width: 260px; --accent-color: #0d9488; }
-        body { background-color: #f1f5f9; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        .sidebar { width: var(--sidebar-width); background: #1e293b; color: #cbd5e1; display: flex; flex-direction: column; flex-shrink: 0; z-index: 100; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        
+        .sidebar { width: var(--sidebar-width); background: #1e293b; color: #cbd5e1; display: flex; flex-direction: column; flex-shrink: 0; }
+        
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; flex-direction: row; border-top: 1px solid rgba(255,255,255,0.1); }
-            .sidebar .logo-area, .sidebar .user-profile { display: none; }
-            .sidebar nav { display: flex; width: 100%; justify-content: space-around; }
-            .nav-link { flex-direction: column; gap: 4px !important; padding: 8px 0 !important; font-size: 10px !important; border-radius: 0 !important; margin: 0 !important; }
+            .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; flex-direction: row; z-index: 100; border-top: 1px solid rgba(255,255,255,0.1); }
+            .sidebar .logo-area { display: none; }
+            .sidebar nav { display: flex; width: 100%; justify-content: space-around; align-items: center; }
+            .nav-link { flex-direction: column; gap: 4px !important; padding: 10px 0 !important; font-size: 10px !important; margin: 0 !important; }
             .main-container { margin-bottom: 65px; }
         }
-        .nav-link { margin: 4px 16px; padding: 12px 16px; border-radius: 12px; transition: 0.2s; display: flex; align-items: center; gap: 12px; font-weight: 500; }
-        .nav-link:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-link.active { background: var(--accent-color); color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+
+        .nav-link { margin: 4px 16px; padding: 12px 16px; border-radius: 12px; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
+        .nav-link.active { background: var(--accent-color); color: white; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2); }
+        
         .main-container { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .top-bar { height: 64px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 24px; justify-content: space-between; }
         .content-scroll { padding: 24px; overflow-y: auto; flex-grow: 1; }
-        .glass-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .glass-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
     <aside class="sidebar">
         <div class="p-8 logo-area">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fas fa-bolt text-xl"></i></div>
-                <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">JINDE</h1>
-                    <p class="text-[10px] text-slate-500 uppercase font-black">Backend System</p>
-                </div>
-            </div>
+            <h1 class="text-xl font-black text-white italic">JINDE<span class="text-teal-400">.</span></h1>
         </div>
-        <nav class="flex-grow mt-4">
-            <a href="index.html" class="nav-link"><i class="fas fa-home-alt w-5 text-lg"></i><span>首頁</span></a>
-            <a href="quote.html" class="nav-link"><i class="fas fa-file-plus w-5 text-lg"></i><span>新報價</span></a>
-            <a href="quote_query.html" class="nav-link active"><i class="fas fa-layer-group w-5 text-lg"></i><span>紀錄</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-user-shield w-5 text-lg"></i><span>人員</span></a>
+        <nav class="flex-grow">
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>首頁</span></a>
+            <a href="quote.html" class="nav-link"><i class="fas fa-plus"></i><span>新報價</span></a>
+            <a href="quote_query.html" class="nav-link active"><i class="fas fa-history"></i><span>紀錄</span></a>
         </nav>
     </aside>
 
     <div class="main-container">
-        <header class="top-bar">
-            <div class="flex items-center bg-slate-100 px-4 py-2 rounded-lg w-full max-w-md">
+        <header class="h-16 bg-white border-b px-6 flex items-center justify-between">
+            <div class="flex-1 max-w-md bg-slate-100 rounded-full px-4 py-2 flex items-center">
                 <i class="fas fa-search text-slate-400 mr-2 text-sm"></i>
-                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="搜尋客戶或單號..." class="bg-transparent border-none outline-none text-sm w-full">
+                <input type="text" id="searchInput" placeholder="搜尋客戶或單號..." class="bg-transparent border-none outline-none text-sm w-full">
             </div>
-            <button id="refreshBtn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500"><i class="fas fa-sync-alt" id="refresh-icon"></i></button>
+            <button id="refreshBtn" class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition">
+                <i class="fas fa-sync-alt" id="refresh-icon"></i>
+            </button>
         </header>
 
         <div class="content-scroll">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="glass-card p-6 border-l-4 border-teal-500">
-                    <p class="text-slate-500 text-sm font-bold">累計總額</p>
-                    <p id="total_amount" class="text-3xl font-black text-slate-800 mt-1">NT$ 0</p>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">累計金額</p>
+                    <p id="total_amount" class="text-2xl font-black text-slate-800">NT$ 0</p>
                 </div>
-                <div class="glass-card p-6 border-l-4 border-blue-500">
-                    <p class="text-slate-500 text-sm font-bold">總件數</p>
-                    <p id="total_count" class="text-3xl font-black text-slate-800 mt-1">0 件</p>
+                <div class="glass-card p-5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">件數統計</p>
+                    <p id="total_count" class="text-2xl font-black text-slate-800">0 件</p>
                 </div>
             </div>
 
-            <div class="glass-card overflow-hidden min-h-[400px]">
-                <div id="loader" class="hidden text-center py-20"><i class="fas fa-spinner fa-spin text-teal-500 text-3xl"></i></div>
+            <div class="glass-card overflow-hidden">
+                <div id="loader" class="hidden py-20 text-center"><i class="fas fa-circle-notch fa-spin text-teal-500 text-3xl"></i></div>
                 <div id="mobile_list" class="md:hidden p-4 space-y-4"></div>
                 <div class="hidden md:block">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 border-b">
                             <tr>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">日期</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">報價單號</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase">客戶</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase text-right">總計</th>
-                                <th class="px-8 py-4 text-[11px] font-black text-slate-400 uppercase text-center">操作</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400">日期</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400">單號</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400">客戶</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 text-right">總計</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody id="quote_list_desktop" class="divide-y text-sm"></tbody>
                     </table>
                 </div>
-                <div id="empty-state" class="hidden py-24 text-center"><i class="fas fa-inbox text-slate-200 text-6xl mb-4"></i><p class="text-slate-400">目前無數據</p></div>
+                <div id="empty-state" class="hidden py-20 text-center text-slate-300 font-bold">目前無報價紀錄</div>
             </div>
         </div>
     </div>
 
     <script>
+        // 初始化 Supabase
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
         let allQuotes = [];
 
+        // 定義抓取函式
         async function fetchQuotes() {
             const loader = document.getElementById('loader');
             const icon = document.getElementById('refresh-icon');
-            const desktop = document.getElementById('quote_list_desktop');
-            const mobile = document.getElementById('mobile_list');
-            const empty = document.getElementById('empty-state');
-
-            loader.classList.remove('hidden'); 
+            loader.classList.remove('hidden');
             icon.classList.add('fa-spin');
-            empty.classList.add('hidden');
-            
+
             try {
-                // 根據截圖，資料表應為 quotations
+                // 指向正確的 quotations 表格
                 const { data, error } = await _supabase
-                    .from('quotations')
+                    .from('quotations') 
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -121,10 +115,10 @@
                 renderList(data);
                 updateStats(data);
             } catch (err) {
-                console.error("Fetch Error:", err);
-                alert('資料讀取失敗，請確認資料表名稱是否為 quotations');
+                console.error("抓取失敗:", err);
+                alert('連線失敗: ' + err.message);
             } finally {
-                loader.classList.add('hidden'); 
+                loader.classList.add('hidden');
                 icon.classList.remove('fa-spin');
             }
         }
@@ -136,34 +130,28 @@
 
             if (!data || data.length === 0) {
                 desktop.innerHTML = ''; mobile.innerHTML = '';
-                empty.classList.remove('hidden'); 
-                return;
+                empty.classList.remove('hidden'); return;
             }
             empty.classList.add('hidden');
 
-            // 根據截圖，欄位為 quote_id, client, total
             desktop.innerHTML = data.map(q => `
                 <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewDetail('${q.id}')">
-                    <td class="px-8 py-5 text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
-                    <td class="px-8 py-5 font-mono text-xs">${q.quote_id || '-'}</td>
-                    <td class="px-8 py-5 font-bold text-slate-800">${q.client || '未填寫'}</td>
-                    <td class="px-8 py-5 text-right font-black text-teal-600">NT$ ${Math.round(q.total || 0).toLocaleString()}</td>
-                    <td class="px-8 py-5 text-center" onclick="event.stopPropagation()">
-                        <button onclick="viewDetail('${q.id}')" class="text-teal-500 hover:text-teal-700 p-2"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteQuote('${q.id}')" class="text-rose-300 hover:text-rose-500 p-2 ml-2"><i class="fas fa-trash-alt"></i></button>
+                    <td class="px-6 py-4 text-slate-500">${new Date(q.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-mono text-xs">${q.quote_id || '-'}</td>
+                    <td class="px-6 py-4 font-bold text-slate-800">${q.client || '未填寫'}</td>
+                    <td class="px-6 py-4 text-right font-black text-teal-600">NT$ ${Math.round(q.total || 0).toLocaleString()}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="event.stopPropagation(); deleteQuote('${q.id}')" class="text-rose-300 hover:text-rose-500 p-2"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
 
             mobile.innerHTML = data.map(q => `
-                <div class="glass-card p-5 mb-4" onclick="viewDetail('${q.id}')">
-                    <div class="flex justify-between mb-2"><span class="text-xs font-mono text-slate-400">${q.quote_id || '-'}</span><span class="text-xs text-slate-400">${new Date(q.created_at).toLocaleDateString()}</span></div>
+                <div class="glass-card p-4" onclick="viewDetail('${q.id}')">
+                    <div class="flex justify-between mb-2"><span class="text-[10px] font-mono text-slate-400">${q.quote_id || '-'}</span><span class="text-[10px] text-slate-400">${new Date(q.created_at).toLocaleDateString()}</span></div>
                     <div class="flex justify-between items-end">
                         <div><h4 class="font-bold text-slate-800">${q.client || '未填寫'}</h4><p class="text-teal-600 font-black">NT$ ${Math.round(q.total || 0).toLocaleString()}</p></div>
-                        <div class="flex gap-2" onclick="event.stopPropagation()">
-                            <button onclick="viewDetail('${q.id}')" class="w-10 h-10 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteQuote('${q.id}')" class="w-10 h-10 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
-                        </div>
+                        <button onclick="event.stopPropagation(); deleteQuote('${q.id}')" class="w-8 h-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -175,13 +163,9 @@
             document.getElementById('total_count').innerText = `${data.length} 件`;
         }
 
-        function handleSearch() {
-            const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            const filtered = allQuotes.filter(q => 
-                (q.client && q.client.toLowerCase().includes(term)) || 
-                (q.quote_id && q.quote_id.toLowerCase().includes(term))
-            );
-            renderList(filtered);
+        function viewDetail(id) {
+            localStorage.setItem('edit_quote_id', id);
+            location.href = 'quote.html';
         }
 
         async function deleteQuote(id) {
@@ -190,14 +174,19 @@
             if (error) alert('刪除失敗'); else fetchQuotes();
         }
 
-        function viewDetail(id) {
-            localStorage.setItem('edit_quote_id', id);
-            location.href = 'quote.html';
-        }
-
-        // 綁定按鈕事件並初始化
-        document.getElementById('refreshBtn').addEventListener('click', fetchQuotes);
-        window.onload = fetchQuotes;
+        // 頁面加載完成後執行
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchQuotes();
+            document.getElementById('refreshBtn').onclick = fetchQuotes;
+            document.getElementById('searchInput').oninput = (e) => {
+                const term = e.target.value.toLowerCase();
+                const filtered = allQuotes.filter(q => 
+                    (q.client && q.client.toLowerCase().includes(term)) || 
+                    (q.quote_id && q.quote_id.toLowerCase().includes(term))
+                );
+                renderList(filtered);
+            };
+        });
     </script>
 </body>
 </html>
