@@ -2,146 +2,154 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>JINDE 財務結算 - 專業管理版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE ERP | 專業月結系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; display: flex; margin: 0; min-height: 100vh; }
+        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* 側欄控制 */
+        #sidebar { 
+            width: 260px; background: #1e293b; color: #94a3b8; height: 100vh; 
+            position: fixed; transition: transform 0.3s ease; z-index: 2000; 
+        }
+        #main-content { margin-left: 260px; min-height: 100vh; transition: margin 0.3s ease; }
 
-        /* 側欄樣式：參考圖片設計 */
-        #sidebar {
-            width: 240px;
-            background-color: #1e293b; /* 深藍色背景 */
-            color: #cbd5e1;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
-            transition: all 0.3s;
-            z-index: 1000;
+        /* 手機模式自動隱藏側欄 */
+        @media (max-width: 1024px) {
+            #sidebar { transform: translateX(-100%); }
+            #sidebar.active { transform: translateX(0); }
+            #main-content { margin-left: 0; }
         }
 
-        .nav-item {
-            padding: 14px 24px;
-            display: flex;
-            items-center: center;
-            gap: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-            cursor: pointer;
-            border-left: 4px solid transparent;
+        /* PDF A4 專業格式 */
+        #pdf-report {
+            background: white; width: 210mm; min-height: 297mm;
+            margin: 20px auto; padding: 15mm 20mm; position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); color: #000;
+        }
+        .acc-table { width: 100%; border-collapse: collapse; border: 2pt solid #000; table-layout: fixed; }
+        .acc-table th { border: 1pt solid #000; padding: 10px; background: #f2f2f2; font-weight: 900; }
+        .acc-table td { border: 0.5pt solid #000; padding: 8px 10px; font-size: 13px; word-wrap: break-word; }
+        .num-val { font-family: 'Consolas', monospace; text-align: right; font-weight: bold; }
+
+        /* 浮水印與簽核 */
+        .seal {
+            position: absolute; right: 40mm; bottom: 60mm;
+            width: 40mm; height: 40mm; border: 3px solid rgba(220, 38, 38, 0.2);
+            border-radius: 50%; color: rgba(220, 38, 38, 0.2);
+            display: flex; align-items: center; justify-content: center;
+            transform: rotate(-15deg); font-weight: 900; font-size: 20px; pointer-events: none;
         }
 
-        .nav-item:hover { background-color: #334155; color: white; }
-        .nav-item.active { background-color: #0f172a; color: #2dd4bf; border-left: 4px solid #2dd4bf; }
-
-        /* 主內容區位移以預留側欄空間 */
-        #main-wrapper { margin-left: 240px; flex: 1; display: flex; flex-direction: column; }
-
-        /* 報表模擬 A4 */
-        #report-paper {
-            background: white;
-            width: 210mm;
-            min-height: 297mm;
-            margin: 40px auto;
-            padding: 20mm;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            position: relative;
-        }
-
-        .formal-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-        .formal-table th { background-color: #f1f5f9; border: 1px solid #000; padding: 12px; font-weight: 900; font-size: 13px; }
-        .formal-table td { border: 1px solid #000; padding: 10px; font-size: 13px; }
-
-        @media print {
-            #sidebar, .no-print { display: none !important; }
-            #main-wrapper { margin-left: 0; background: white; }
-            #report-paper { margin: 0; box-shadow: none; width: 100%; }
-            .check-col { display: none !important; }
-        }
+        @media print { .no-print { display: none !important; } #pdf-report { box-shadow: none; margin: 0; width: 100%; } }
     </style>
 </head>
-<body>
+<body class="flex">
 
-    <aside id="sidebar" class="no-print">
-        <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter text-white">JINDE</h1>
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">系統管理工具</p>
+    <aside id="sidebar">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-white text-2xl font-black">JINDE</h1>
+            <p class="text-teal-400 text-[10px] font-bold tracking-widest uppercase">Management Hub</p>
         </div>
-
-        <nav class="mt-4 flex-1">
-            <div class="nav-item"><i class="fas fa-th-large w-5"></i> 中台總覽</div>
-            <div class="nav-item"><i class="fas fa-users w-5"></i> 客戶管理</div>
-            <div class="nav-item"><i class="fas fa-hard-hat w-5"></i> 案場進度</div>
-            <div class="nav-item"><i class="fas fa-calculator w-5"></i> 人員核算</div>
-            <div class="nav-item"><i class="fas fa-file-invoice-dollar w-5"></i> 報價系統</div>
-            <div class="nav-item active"><i class="fas fa-chart-line w-5"></i> 財務中心</div>
-            <div class="nav-item"><i class="fas fa-cog w-5"></i> 系統設定</div>
-        </nav>
-
-        <div class="p-6 border-t border-slate-700">
-            <div class="flex items-center gap-3 text-xs">
-                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                <span>CLOUD SYNC ON</span>
+        <nav class="mt-4">
+            <a href="index.html" class="flex items-center p-4 text-white hover:bg-slate-800 transition">
+                <i class="fas fa-chevron-left mr-3"></i> 返回中台總覽
+            </a>
+            <div class="p-4 bg-teal-600/10 text-teal-400 border-l-4 border-teal-400">
+                <i class="fas fa-file-invoice-dollar mr-3"></i> 財務結算中心
             </div>
-        </div>
+        </nav>
     </aside>
 
-    <div id="main-wrapper">
-        <header class="no-print bg-white border-b p-4 flex justify-between items-center sticky top-0 z-40">
-            <div class="text-sm font-bold text-slate-600">財務中心 / 結算明細</div>
-            <div class="flex gap-3">
-                <button onclick="openModal()" class="bg-slate-900 text-white px-4 py-2 rounded text-sm font-bold hover:bg-slate-700 transition">新增單據</button>
-                <button onclick="batchDelete()" class="bg-rose-100 text-rose-600 px-4 py-2 rounded text-sm font-bold hover:bg-rose-200 transition">批次刪除</button>
-                <button onclick="generatePDF()" class="bg-teal-500 text-white px-5 py-2 rounded text-sm font-bold hover:bg-teal-600 shadow-lg transition">
-                    <i class="fas fa-print mr-2"></i>生成正式 PDF
+    <div id="main-content" class="w-full">
+        <header class="no-print bg-white border-b p-4 flex justify-between items-center sticky top-0 z-[1500]">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden text-2xl p-2 text-slate-600">
+                    <i class="fas fa-bars"></i>
                 </button>
+                <h2 class="font-bold text-slate-800">月度收支明細</h2>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openModal()" class="bg-teal-600 text-white px-4 py-2 rounded-lg font-bold text-sm">＋錄入項目</button>
+                <button onclick="exportPDF()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm">下載 PDF</button>
             </div>
         </header>
 
-        <div id="report-paper">
-            <div class="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
-                <div>
-                    <h1 class="text-3xl font-black">錦德防水工程行</h1>
-                    <p class="text-[10px] tracking-[0.4em] font-bold text-slate-400 mt-1 uppercase">Financial Settlement Report</p>
+        <div class="p-4 overflow-x-auto" onclick="closeSidebarIfOpen()">
+            <div id="pdf-report">
+                <div class="flex justify-between items-end border-b-4 border-black pb-4 mb-4">
+                    <div>
+                        <h1 class="font-black text-4xl" style="font-family:'Noto Serif TC'">錦德防水工程行</h1>
+                        <p class="text-[10px] font-bold text-slate-400 tracking-[5px] uppercase mt-2">Financial Settlement Statement</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-black text-white px-3 py-1 text-xs font-bold">正式公文</span>
+                        <p class="text-xs font-bold mt-2" id="report-date">製表日期：2026/02/23</p>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-lg font-bold">財務收支明細表</p>
-                    <p class="text-[10px] font-mono">ID: <span id="serial-num">2026-0223</span></p>
+
+                <div class="flex justify-between mb-4 text-xs font-bold">
+                    <span>類別：月度收支明細表</span>
+                    <span id="ref-no">REF: JD-2026-0000</span>
                 </div>
+
+                <table class="acc-table">
+                    <thead>
+                        <tr>
+                            <th width="100">日期</th>
+                            <th>摘要項目</th>
+                            <th width="80">類別</th>
+                            <th width="110">收入</th>
+                            <th width="110">支出</th>
+                            <th width="45" class="no-print">刪</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                    <tfoot>
+                        <tr class="bg-slate-50 font-black">
+                            <td colspan="3" class="text-center py-4 text-lg">本期合計結餘</td>
+                            <td colspan="2" id="net-total" class="num-val text-2xl pr-4">0</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="grid grid-cols-3 gap-10 mt-20 text-center font-bold text-sm">
+                    <div class="border-t-2 border-black pt-2">製表人</div>
+                    <div class="border-t-2 border-black pt-2">財務主管</div>
+                    <div class="border-t-2 border-black pt-2">負責人簽章</div>
+                </div>
+
+                <div class="seal">錦德防水工程<br>財務專用章</div>
             </div>
+        </div>
+    </div>
 
-            <table class="formal-table">
-                <thead>
-                    <tr>
-                        <th class="check-col no-print" width="40"><input type="checkbox" id="select-all" onclick="toggleAll(this)"></th>
-                        <th width="100">日期</th>
-                        <th>摘要</th>
-                        <th width="80">類別</th>
-                        <th width="100">收入</th>
-                        <th width="100">支出</th>
-                    </tr>
-                </thead>
-                <tbody id="table-content"></tbody>
-                <tfoot>
-                    <tr class="bg-slate-50 font-bold">
-                        <td colspan="4" class="text-center">本期結餘</td>
-                        <td colspan="2" id="net-profit" class="text-right text-lg pr-4">$0</td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="mt-24 grid grid-cols-3 gap-12 text-center">
-                <div><div class="border-b border-black h-8"></div><p class="text-xs mt-2 font-bold">經辦人</p></div>
-                <div><div class="border-b border-black h-8"></div><p class="text-xs mt-2 font-bold">財務主管</p></div>
-                <div><div class="border-b border-black h-8"></div><p class="text-xs mt-2 font-bold">負責人</p></div>
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-8">
+            <h3 class="text-2xl font-black mb-6">錄入新項目</h3>
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <input type="date" id="f_date" class="flex-1 border-2 p-3 rounded-xl">
+                    <select id="f_cat" class="w-24 border-2 p-3 rounded-xl font-bold bg-slate-50">
+                        <option>材料</option><option>雜支</option><option>機具</option><option>工資</option>
+                    </select>
+                </div>
+                <input type="text" id="f_title" class="w-full border-2 p-3 rounded-xl font-bold" placeholder="項目摘要 (如: 年終獎金)" required>
+                <div class="flex gap-2">
+                    <input type="number" id="f_amt" class="flex-1 border-2 p-3 rounded-xl font-black text-teal-600" placeholder="金額" required>
+                    <select id="f_type" class="border-2 p-3 rounded-xl font-bold">
+                        <option value="expense">支出</option><option value="income">收入</option>
+                    </select>
+                </div>
+                <button onclick="saveRecord()" class="w-full bg-teal-600 text-white py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-teal-500 transition">儲存項目 (Enter)</button>
+                <button onclick="closeModal()" class="w-full text-slate-400 font-bold py-2">取消</button>
             </div>
         </div>
     </div>
@@ -151,49 +159,69 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _sb = supabase.createClient(S_URL, S_KEY);
 
-        async function loadReport() {
-            const { data, error } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
-            if (error) return;
+        // 側欄開關
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function closeSidebarIfOpen() { document.getElementById('sidebar').classList.remove('active'); }
 
+        async function loadData() {
+            document.getElementById('report-date').innerText = `製表日期：${new Date().toLocaleDateString('zh-TW')}`;
+            document.getElementById('f_date').valueAsDate = new Date();
+            const { data } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
+            
             let inc = 0, exp = 0, html = '';
             data.forEach(r => {
                 const isInc = r.type === 'income';
                 isInc ? inc += r.amount : exp += r.amount;
-                html += `
-                    <tr>
-                        <td class="check-col no-print text-center"><input type="checkbox" class="row-cb" data-id="${r.id}"></td>
-                        <td class="text-center font-mono">${r.record_date}</td>
-                        <td class="font-bold">${r.title}</td>
-                        <td class="text-center text-slate-500">${r.category}</td>
-                        <td class="text-right">${isInc ? r.amount.toLocaleString() : '-'}</td>
-                        <td class="text-right">${!isInc ? r.amount.toLocaleString() : '-'}</td>
-                    </tr>`;
+                html += `<tr>
+                    <td class="text-center font-mono text-xs">${r.record_date}</td>
+                    <td class="font-bold text-slate-800">${r.title}</td>
+                    <td class="text-center text-slate-500 font-bold text-xs">${r.category || '一般'}</td>
+                    <td class="num-val text-emerald-600">${isInc ? r.amount.toLocaleString() : '-'}</td>
+                    <td class="num-val text-rose-600">${!isInc ? r.amount.toLocaleString() : '-'}</td>
+                    <td class="no-print text-center">
+                        <button onclick="delRecord('${r.id}')" class="text-rose-400 hover:text-rose-600 p-2"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>`;
             });
-            document.getElementById('table-content').innerHTML = html;
-            document.getElementById('net-profit').innerText = "$" + (inc - exp).toLocaleString();
+            document.getElementById('table-body').innerHTML = html;
+            const net = inc - exp;
+            document.getElementById('net-total').innerText = `TWD ${net.toLocaleString()}`;
+            document.getElementById('net-total').style.color = net < 0 ? "#be1212" : "#059669";
         }
 
-        function generatePDF() {
-            const element = document.getElementById('report-paper');
-            const opt = {
+        async function saveRecord() {
+            const title = document.getElementById('f_title').value;
+            const amount = Number(document.getElementById('f_amt').value);
+            if(!title || !amount) return;
+            await _sb.from('finance_records').insert([{
+                record_date: document.getElementById('f_date').value,
+                title: title,
+                amount: amount,
+                type: document.getElementById('f_type').value,
+                category: document.getElementById('f_cat').value
+            }]);
+            document.getElementById('f_title').value = '';
+            document.getElementById('f_amt').value = '';
+            document.getElementById('f_title').focus();
+            loadData();
+        }
+
+        async function delRecord(id) { if(confirm('確定刪除此項？')) { await _sb.from('finance_records').delete().eq('id', id); loadData(); } }
+
+        function exportPDF() {
+            const element = document.getElementById('pdf-report');
+            html2pdf().set({
                 margin: 0,
-                filename: `錦德報表.pdf`,
+                filename: `錦德正式報表_${new Date().toISOString().slice(0,10)}.pdf`,
                 image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 3, useCORS: true },
+                html2canvas: { scale: 4, useCORS: true, letterRendering: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save();
+            }).from(element).save();
         }
 
-        function toggleAll(src) { document.querySelectorAll('.row-cb').forEach(cb => cb.checked = src.checked); }
-        async function batchDelete() {
-            const ids = Array.from(document.querySelectorAll('.row-cb:checked')).map(cb => cb.dataset.id);
-            if (!ids.length || !confirm(`確定刪除？`)) return;
-            await _sb.from('finance_records').delete().in('id', ids);
-            loadReport();
-        }
-
-        window.onload = loadReport;
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('f_title').focus(); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+        window.onload = loadData;
     </script>
 </body>
 </html>
