@@ -2,138 +2,164 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JINDE | 保固書封面生產</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 錦德防水雲端保固系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        :root { --primary: #0d9488; --slate-dark: #1a222d; }
-        body { background-color: #0f172a; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; flex-direction: column; overflow-x: hidden; margin: 0; }
-        @media (min-width: 1024px) { body { flex-direction: row; overflow: hidden; height: 100vh; } }
+        :root { --primary: #0d9488; }
+        body { background-color: #0f172a; margin: 0; display: flex; flex-direction: column; height: 100vh; font-family: 'Noto Sans TC', sans-serif; }
+        @media (min-width: 1024px) { body { flex-direction: row; } }
+
+        /* 控制面板 */
+        .admin-panel { width: 100%; background: #1a222d; padding: 24px; color: white; flex-shrink: 0; overflow-y: auto; }
+        @media (min-width: 1024px) { .admin-panel { width: 360px; height: 100vh; border-right: 1px solid rgba(255,255,255,0.1); } }
+        .glass-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; padding: 10px; width: 100%; outline: none; margin-bottom: 12px; }
+
+        /* 預覽區 */
+        .preview-area { flex-grow: 1; overflow-y: auto; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; background: #334155; gap: 40px; }
         
-        @page { size: A4; margin: 0; }
-
-        /* 左側控制面板 */
-        .admin-panel {
-            width: 100%; background: var(--slate-dark); padding: 24px; z-index: 1000;
-            border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
-            display: flex; flex-direction: column;
-        }
-        @media (min-width: 1024px) { 
-            .admin-panel { width: 380px; height: 100vh; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.1); border-bottom: none; padding: 40px; } 
-        }
-
-        /* 工具箱快捷入口樣式 */
-        .toolbox-entry {
-            background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(26, 34, 45, 1) 100%);
-            border: 1px dashed rgba(13, 148, 136, 0.3); border-radius: 16px;
-            padding: 20px; margin-top: 30px; transition: 0.3s; cursor: pointer;
-        }
-        .toolbox-entry:hover { border-color: var(--primary); background: rgba(13, 148, 136, 0.15); }
-
-        .glass-input {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-            color: white; border-radius: 12px; padding: 12px 16px; width: 100%;
-            transition: all 0.3s; outline: none;
-        }
-        .glass-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.06); box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1); }
-
-        /* 預覽區域 */
-        .preview-area { 
-            flex-grow: 1; padding: 20px; display: flex; justify-content: center; 
-            background: radial-gradient(circle at center, #334155 0%, #0f172a 100%); overflow: hidden;
-        }
-        @media (min-width: 1024px) { .preview-area { height: 100vh; overflow-y: auto; padding: 60px; } }
-
-        .a4-page {
-            width: 210mm; height: 297mm; background: white; position: relative; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.6); flex-shrink: 0; transform-origin: top center;
+        /* A4 紙張基礎設定 */
+        .a4-page { 
+            width: 210mm; 
+            height: 297mm; 
+            background: white; 
+            color: #000; 
+            position: relative; 
+            box-sizing: border-box; 
+            padding: 20mm; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5); 
+            flex-shrink: 0;
+            overflow: hidden;
         }
 
-        @media (max-width: 1023px) { .a4-page { transform: scale(0.38); margin-bottom: -180mm; } }
-        @media (max-width: 480px) { .a4-page { transform: scale(0.32); margin-bottom: -200mm; } }
+        /* 封面專屬樣式 */
+        .cover-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+        .logo-img { width: 90mm; height: 90mm; object-fit: contain; margin-bottom: 20mm; }
+        .cover-title { font-size: 36pt; font-weight: 900; line-height: 1.5; white-space: pre-wrap; }
 
-        .cover-logo { width: 90mm; max-height: 90mm; object-fit: contain; margin-bottom: 20mm; }
-        .cover-title { font-size: 34pt; font-weight: 900; letter-spacing: 0.3em; margin-bottom: 45mm; color: #1a222d; text-align: center; padding: 0 25mm; line-height: 1.6; }
-        .cover-footer { position: absolute; bottom: 35mm; text-align: center; color: #64748b; width: 100%; border-top: 1px solid #f1f5f9; padding-top: 10mm; }
+        /* 正文專屬樣式 */
+        .main-title { font-size: 28pt; font-weight: 900; text-align: center; margin: 10mm 0; letter-spacing: 0.3em; border-bottom: 3px solid #000; padding-bottom: 5px; }
+        .content-text { font-size: 14.5pt; line-height: 2.1; text-align: justify; margin-bottom: 20px; font-family: 'Noto Serif TC', serif; }
+        .underline-box { border-bottom: 2pt solid #000; font-weight: 900; padding: 0 8px; }
+        .clause-box { font-size: 10.5pt; line-height: 1.6; background: #f8fafc; border: 1pt solid #cbd5e1; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        td { border: 1.2pt solid #000; padding: 10pt; font-size: 12pt; }
+        .bg-gray { background-color: #f2f2f2; font-weight: 700; width: 110px; text-align: center; }
+        .seal-display { position: absolute; bottom: 45mm; right: 35mm; width: 150px; height: 150px; mix-blend-mode: multiply; opacity: 0.95; transform: rotate(-5deg); display: none; }
 
-        input, textarea, select { font-size: 16px !important; }
-
+        /* 列印強制指令 */
         @media print {
-            body { background: none; display: block; overflow: visible; }
+            @page { size: A4; margin: 0; }
             .no-print { display: none !important; }
-            .preview-area { padding: 0; overflow: visible; display: block; background: white; }
-            .a4-page { transform: scale(1) !important; margin: 0 !important; box-shadow: none; width: 210mm; height: 297mm; }
+            body { background: white !important; }
+            .preview-area { display: block !important; padding: 0 !important; margin: 0 !important; overflow: visible !important; }
+            
+            .a4-page { 
+                width: 210mm !important; 
+                height: 297mm !important; 
+                margin: 0 !important; 
+                box-shadow: none !important; 
+                display: block !important;
+                transform: none !important;
+                page-break-after: always !important; /* 強制每一頁結束後換頁 */
+                break-after: page !important;      /* 現代瀏覽器換頁指令 */
+            }
         }
+
+        /* 畫面預覽縮放 */
+        @media (max-width: 1023px) { .a4-page { transform: scale(0.35); margin-bottom: -190mm; } }
     </style>
 </head>
 <body>
-    <div class="no-print admin-panel text-white">
-        <div class="flex justify-between items-center mb-8">
-            <a href="warranty.html" class="text-slate-500 hover:text-teal-400 transition-all text-xs font-black uppercase tracking-widest">
-                <i class="fas fa-arrow-left mr-2"></i> Back
-            </a>
-            <span id="logout-timer" class="text-[10px] font-black font-mono text-rose-400 bg-rose-400/10 px-3 py-1 rounded-full">30:00</span>
-        </div>
 
-        <div class="mb-8">
-            <h2 class="text-2xl font-black text-white tracking-tighter italic">COVER<span class="text-teal-500">.</span></h2>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">保固封面生產器</p>
-        </div>
-
-        <div class="space-y-6 flex-grow">
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-teal-500 uppercase tracking-widest ml-1">案場選擇</label>
-                <select id="projectSelect" onchange="applyProjectTitle()" class="glass-input appearance-none cursor-pointer">
-                    <option value="">-- 手動輸入模式 --</option>
-                </select>
+    <div class="no-print admin-panel">
+        <h2 class="text-xl font-black mb-6 text-teal-400 italic">JINDE SYSTEM</h2>
+        
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-[10px] text-slate-400 font-bold">Logo</label><input type="file" class="text-[10px] w-full mt-1" onchange="loadFile(event, 'logo_display')"></div>
+                <div><label class="text-[10px] text-rose-400 font-bold">公司章</label><input type="file" class="text-[10px] w-full mt-1" onchange="loadFile(event, 'seal_display')"></div>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">1. 上傳 LOGO</label>
-                <input type="file" id="logo_input" class="text-[10px] file:bg-teal-600 file:text-white file:border-0 file:rounded-lg file:px-4 file:py-2 file:mr-4 file:font-black cursor-pointer w-full" onchange="loadCover(event)">
+            <hr class="border-slate-700">
+
+            <div>
+                <label class="text-xs font-bold text-slate-400">案場名稱</label>
+                <textarea id="in_name" class="glass-input h-20" placeholder="輸入案場全銜" oninput="sync()"></textarea>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">2. 封面文字</label>
-                <textarea id="in_title" class="glass-input h-24 leading-relaxed" oninput="sync()">工程保固證明書</textarea>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-xs font-bold text-slate-400">完工日期</label><input type="date" id="in_date" class="glass-input" oninput="sync()"></div>
+                <div><label class="text-xs font-bold text-slate-400">保固年限</label><input type="number" id="in_years" value="3" class="glass-input" oninput="sync()"></div>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">3. 底部資訊</label>
-                <textarea id="in_info" class="glass-input h-20 text-[11px]" oninput="sync()">地址：台中市北屯區山西路二段 250 號&#10;專業 · 智能 · 細心 · 責任</textarea>
+            <div class="flex items-center gap-2 py-2">
+                <input type="checkbox" id="toggle_qr" checked onchange="sync()" class="w-4 h-4 accent-teal-500">
+                <label for="toggle_qr" class="text-sm font-bold text-teal-400 cursor-pointer">顯示數位防偽 QR</label>
             </div>
 
-            <button onclick="doPrint()" class="w-full bg-teal-600 py-4 rounded-2xl font-black text-lg shadow-2xl hover:bg-teal-500 active:scale-95 transition-all flex items-center justify-center gap-3">
-                <i class="fas fa-print"></i> 生成並列印
+            <button id="save_btn" onclick="saveAndPrint()" class="w-full bg-teal-600 hover:bg-teal-500 py-4 rounded-xl font-black shadow-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i> 儲存並列印保固書
             </button>
-        </div>
-
-        <div class="toolbox-entry group" onclick="location.href='toolbox.html'">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-500 group-hover:bg-teal-500 group-hover:text-white transition-all">
-                    <i class="fas fa-tools"></i>
-                </div>
-                <div>
-                    <h4 class="text-xs font-black text-white">錦德 PDF 工具箱</h4>
-                    <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-tighter">合併 / 壓縮 / 浮水印</p>
-                </div>
-                <i class="fas fa-chevron-right ml-auto text-slate-700 text-xs"></i>
-            </div>
+            <p id="status_msg" class="text-[10px] text-center mt-2"></p>
         </div>
     </div>
 
     <div class="preview-area">
-        <div class="a4-page" id="capture-area">
-            <img id="cover_img" src="" class="cover-logo" style="display:none;">
-            <h2 id="out_title" class="cover-title whitespace-pre-line italic">工程保固證明書</h2>
-            <div id="out_info" class="cover-footer whitespace-pre-line text-[11pt] leading-[2.5] tracking-[0.4em] font-medium">
-                地址：台中市北屯區山西路二段 250 號
-                專業 · 智能 · 細心 · 責任
+        <div class="a4-page">
+            <div class="cover-container">
+                <img id="logo_display" src="" class="logo-img" style="display:none;">
+                <h1 class="cover-title italic" id="out_cover_title">工程保固證明書</h1>
+                <div class="absolute bottom-[30mm] text-gray-400 tracking-[0.5em] text-[15pt] font-bold">專業防水 · 結構修復 · 品質保證</div>
+            </div>
+        </div>
+
+        <div class="a4-page">
+            <div class="content-container relative h-full">
+                <div class="flex justify-between items-end border-b-2 border-black pb-1">
+                    <span class="font-bold text-[16pt] tracking-widest">錦德工程行</span>
+                    <span class="text-[10pt] italic text-gray-400">Quality Waterproofing Guarantee</span>
+                </div>
+
+                <h1 class="main-title">防水工程服務保固書</h1>
+
+                <div class="content-text">
+                    茲承攬 <span id="out_name" class="underline-box">____________________</span> 之防水工程。本公司承諾對其所施作之工程範圍負品質保證責任，若於保固期內發生施工瑕疵導致滲漏，本公司將負責無償修繕完成。
+                </div>
+
+                <div class="clause-box">
+                    <strong class="block border-b mb-1">【保固條約與例外聲明】</strong>
+                    1. 本保固僅限本公司實際施工之防水層區域。若因**地震、地基位移導致結構龜裂**或人為破壞引發漏水，不在保固範圍內。<br>
+                    2. 若滲漏源經查為**老舊管線破裂**或非本公司施工區域之水源，修繕費用需由客戶負擔。<br>
+                    3. 本證明書自完工日起生效，並經本公司蓋章與數位編號備份後始具效力。
+                </div>
+
+                <table class="mb-6">
+                    <tr><td class="bg-gray">保固起訖</td><td colspan="3" class="font-bold italic">自民國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日起，共計 <span id="out_years">3</span> 年。</td></tr>
+                    <tr><td class="bg-gray">施工廠商</td><td class="font-bold">錦德工程行</td><td class="bg-gray">統一編號</td><td>80081612</td></tr>
+                    <tr><td class="bg-gray">負責人</td><td>王震昱</td><td class="bg-gray">聯絡電話</td><td>0963-696-032</td></tr>
+                    <tr><td class="bg-gray">通訊地址</td><td colspan="3">401 臺中市東區建德街 346 巷 7 號</td></tr>
+                </table>
+
+                <img id="seal_display" src="" class="seal-display">
+
+                <div id="qr_area" class="mt-8 flex items-center gap-5">
+                    <div class="border-2 border-black p-1 bg-white"><img id="qr_img" src="" class="w-18 h-18"></div>
+                    <div>
+                        <span class="font-black text-teal-800 text-[10pt]">數位驗證碼</span><br>
+                        <span id="doc_id" class="font-mono font-bold text-[12pt]"></span><br>
+                        <span class="text-gray-400 text-[8pt]">掃描此碼可線上核對保固資料</span>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-[20mm] right-[20mm] text-right font-bold text-[20pt]">
+                    中 華 民 國 <span class="d_y"></span> 年 <span class="d_m"></span> 月 <span class="d_d"></span> 日
+                </div>
             </div>
         </div>
     </div>
@@ -142,63 +168,97 @@
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
-        let timeLeft = 30 * 60;
 
-        async function init() {
-            startTimer();
-            const { data } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
-            if (data) {
-                const select = document.getElementById('projectSelect');
-                data.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.name;
-                    opt.text = p.name;
-                    select.add(opt);
-                });
-            }
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('in_date').value = today;
+            generateNewID();
+            sync();
+        };
+
+        function generateNewID() {
+            const timestamp = Date.now().toString().slice(-6);
+            const randomStr = Math.random().toString(36).substr(2, 3).toUpperCase();
+            window.generatedId = `JDW-${timestamp}${randomStr}`;
         }
 
-        function applyProjectTitle() {
-            const val = document.getElementById('projectSelect').value;
-            if(val) {
-                document.getElementById('in_title').value = val + "\n工程保固證明書";
-                sync();
-            }
-        }
-
-        function loadCover(e) {
-            const out = document.getElementById('cover_img');
-            if(e.target.files[0]) {
-                out.src = URL.createObjectURL(e.target.files[0]);
-                out.style.display = 'block';
+        function loadFile(event, imgId) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                const target = document.getElementById(imgId);
+                target.src = url;
+                target.style.display = 'block';
             }
         }
 
         function sync() {
-            document.getElementById('out_title').innerText = document.getElementById('in_title').value;
-            document.getElementById('out_info').innerText = document.getElementById('in_info').value;
+            const name = document.getElementById('in_name').value;
+            const years = document.getElementById('in_years').value;
+            const showQR = document.getElementById('toggle_qr').checked;
+            
+            document.getElementById('out_cover_title').innerText = name ? `${name}\n工程保固證明書` : "工程保固證明書";
+            document.getElementById('out_name').innerText = name || "____________________";
+            document.getElementById('out_years').innerText = years;
+            document.getElementById('doc_id').innerText = window.generatedId;
+
+            const qrArea = document.getElementById('qr_area');
+            qrArea.style.display = showQR ? 'flex' : 'none';
+            if (showQR) {
+                const verifyUrl = `https://jinde-verify.netlify.app/?id=${window.generatedId}`;
+                document.getElementById('qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
+            }
+
+            const dVal = document.getElementById('in_date').value;
+            if (dVal) {
+                const d = new Date(dVal);
+                document.querySelectorAll('.d_y').forEach(el => el.innerText = d.getFullYear() - 1911);
+                document.querySelectorAll('.d_m').forEach(el => el.innerText = d.getMonth() + 1);
+                document.querySelectorAll('.d_d').forEach(el => el.innerText = d.getDate());
+            }
         }
 
-        function doPrint() {
-            const title = document.getElementById('projectSelect').value || "自定義";
-            const date = new Date().toISOString().slice(0,10);
-            document.title = `保固書封面_${title}_${date}`;
-            window.print();
-        }
+        async function saveAndPrint() {
+            const btn = document.getElementById('save_btn');
+            const msg = document.getElementById('status_msg');
+            if (btn.disabled) return;
 
-        function startTimer() {
-            const timerObj = document.getElementById('logout-timer');
-            setInterval(() => {
-                let m = Math.floor(timeLeft / 60);
-                let s = timeLeft % 60;
-                timerObj.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-                if (timeLeft <= 0) location.href = 'index.html';
-                timeLeft--;
-            }, 1000);
-            ['mousedown', 'touchstart'].forEach(e => document.addEventListener(e, () => timeLeft = 30 * 60));
-        }
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步雲端...';
+                
+                const { error } = await _supabase.from('warranty_records').insert([{
+                    doc_id: window.generatedId,
+                    client_name: document.getElementById('in_name').value || "未命名案場",
+                    start_date: document.getElementById('in_date').value,
+                    years: parseInt(document.getElementById('in_years').value),
+                    created_at: new Date()
+                }]);
 
-        window.onload = init;
+                if (error && error.code === '23505') {
+                    generateNewID();
+                    return saveAndPrint();
+                } else if (error) throw error;
+
+                msg.style.color = "#4fd1c5";
+                msg.innerText = "✓ 雲端資料已 Save";
+
+                setTimeout(() => {
+                    window.print();
+                    generateNewID();
+                    sync();
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> 儲存並列印保固書';
+                }, 500);
+
+            } catch (err) {
+                msg.style.color = "#f87171";
+                msg.innerText = "❌ 失敗：" + err.message;
+                if(confirm("儲存失敗，是否仍要列印？")) window.print();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> 重試儲存並列印';
+            }
+        }
     </script>
 </body>
 </html>
