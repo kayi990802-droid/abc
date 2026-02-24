@@ -11,19 +11,27 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         :root { --primary-teal: #0d9488; --slate-dark: #1a222d; }
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
+        
+        /* 側邊欄 */
         .sidebar { width: 260px; background: var(--slate-dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
         .nav-link { padding: 16px 28px; font-size: 14px; color: #94a3b8; transition: 0.3s; border-left: 4px solid transparent; display: flex; align-items: center; text-decoration: none; }
         .nav-link.active { background: #242e3d; color: white; border-left-color: var(--primary-teal); }
         .nav-link:hover { background: #1e293b; color: white; }
+        
+        /* 主舞台 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 40; }
-        .function-card { background: white; border-radius: 32px; padding: 40px; border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
-        .function-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08); border-color: var(--primary-teal); }
-        .icon-box { width: 80px; height: 80px; border-radius: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; font-size: 32px; transition: 0.4s; }
+        
+        /* 功能卡片 */
+        .function-card { background: white; border-radius: 32px; padding: 40px; border: 1px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; height: 100%; }
+        .function-card:hover { transform: translateY(-8px); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.08); border-color: var(--primary-teal); }
+        .icon-box { width: 70px; height: 70px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 28px; transition: 0.4s; }
+        
+        /* 捲軸與紀錄列 */
         .content-scroll::-webkit-scrollbar { width: 6px; }
         .content-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .record-row { background: white; transition: 0.3s; border-radius: 16px; margin-bottom: 8px; border: 1px solid #f1f5f9; }
-        .record-row:hover { background: #f8fafc; border-color: var(--primary-teal); }
+        .record-row:hover { background: #f8fafc; border-color: var(--primary-teal); transform: scale(1.01); }
     </style>
 </head>
 <body>
@@ -33,9 +41,9 @@
             <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2 sub-text">Engineering</p>
         </div>
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i> <span class="nav-text">總覽面板</span></a>
-            <a href="warranty_hub.html" class="nav-link active"><i class="fas fa-file-contract"></i> <span class="nav-text">保固書生產</span></a>
-            <a href="toolbox.html" class="nav-link"><i class="fas fa-toolbox"></i> <span class="nav-text">工具箱</span></a>
+            <a href="index.html" class="nav-link"><i class="fas fa-th-large mr-3"></i> <span class="nav-text">總覽面板</span></a>
+            <a href="warranty_hub.html" class="nav-link active"><i class="fas fa-file-contract mr-3"></i> <span class="nav-text">保固管理中心</span></a>
+            <a href="toolbox.html" class="nav-link"><i class="fas fa-toolbox mr-3"></i> <span class="nav-text">工具箱</span></a>
         </nav>
         <div class="p-6 border-t border-slate-800 bg-[#151b23]">
             <div class="flex items-center gap-2 text-rose-500 font-mono text-xs">
@@ -47,73 +55,109 @@
     <main class="main-stage">
         <header class="top-nav">
             <h2 class="text-xl font-black text-slate-800 tracking-tight">保固管理中心</h2>
-            <div id="sync-status" class="text-[10px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase">DB Connected</div>
+            <div id="sync-status" class="text-[10px] font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase">Cloud Sync Active</div>
         </header>
 
         <div class="content-scroll overflow-y-auto px-8 py-12 lg:px-20">
             <div class="max-w-5xl mx-auto">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                     <a href="warranty_cover.html" class="function-card group">
-                        <div class="icon-box bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-6">
-                            <i class="fas fa-layer-group"></i>
+                        <div class="icon-box bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white group-hover:rotate-6">
+                            <i class="fas fa-plus-circle"></i>
                         </div>
-                        <h4 class="text-2xl font-black text-slate-800 mb-2">PAGE 01</h4>
-                        <p class="text-lg font-bold text-slate-700 mb-3">保固書產出</p>
-                        <p class="text-slate-400 text-sm mb-8">產出具備公司 LOGO 的專業 A4 封面圖檔。</p>
-                        <div class="mt-auto text-blue-600 font-black text-xs uppercase">Go to Cover <i class="fas fa-arrow-right ml-1"></i></div>
+                        <h4 class="text-xl font-black text-slate-800 mb-1">核發新保固</h4>
+                        <p class="text-slate-500 text-sm mb-6">填寫資料並產出專業 A4 保固證明書</p>
+                        <div class="mt-auto text-teal-600 font-black text-xs uppercase tracking-widest">
+                            Create New <i class="fas fa-arrow-right ml-1"></i>
+                        </div>
                     </a>
-
-                
+                    
+                    <div class="function-card opacity-50 cursor-not-allowed">
+                        <div class="icon-box bg-slate-100 text-slate-400">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4 class="text-xl font-black text-slate-800 mb-1">統計數據</h4>
+                        <p class="text-slate-500 text-sm mb-6">分析案場分布與保固到期追蹤 (即將推出)</p>
+                    </div>
                 </div>
 
                 <hr class="border-slate-100 mb-12">
 
                 <div class="mb-8 flex justify-between items-end">
                     <div>
-                        <h3 class="text-2xl font-black text-slate-900 italic tracking-tighter uppercase">Recent Records</h3>
-                        <p class="text-slate-400 text-xs font-medium">最近核發的 10 筆保固書資料</p>
+                        <h3 class="text-2xl font-black text-slate-900 italic tracking-tighter uppercase">History Records</h3>
+                        <p class="text-slate-400 text-xs font-medium">最近核發的保固書資料庫</p>
                     </div>
                     <div class="relative w-64">
                         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
-                        <input type="text" id="searchInput" placeholder="搜尋客戶或案場..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-teal-500 transition-all">
+                        <input type="text" id="searchInput" placeholder="搜尋客戶或案場編號..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-teal-500 transition-all">
                     </div>
                 </div>
 
                 <div class="space-y-3" id="record-list">
-                    <div class="text-center py-20 text-slate-300 font-bold animate-pulse">資料同步中...</div>
+                    <div class="flex justify-center items-center py-20">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                        <span class="ml-3 text-slate-400 font-bold">資料同步中...</span>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
+        // 配置 Supabase
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         async function fetchHistory() {
-            const { data, error } = await _supabase.from('warranties').select('*').order('created_at', { ascending: false }).limit(10);
-            if (error) return console.error(error);
-            
+            // 注意：這裡改成您保固書頁面使用的 'warranty_records'
+            const { data, error } = await _supabase
+                .from('warranty_records')
+                .select('*')
+                .order('created_at', { ascending: false });
+
             const listContainer = document.getElementById('record-list');
-            listContainer.innerHTML = data.map(item => `
+            
+            if (error) {
+                listContainer.innerHTML = `<div class="text-center py-10 text-rose-500 font-bold">讀取失敗：${error.message}</div>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-10 text-slate-400 font-bold">目前尚無保固紀錄</div>`;
+                return;
+            }
+
+            listContainer.innerHTML = data.map(item => {
+                const date = new Date(item.created_at).toLocaleDateString('zh-TW');
+                return `
                 <div class="record-row p-5 flex items-center justify-between shadow-sm">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-mono font-bold text-teal-600 uppercase mb-1">${item.doc_id}</span>
-                        <h5 class="font-bold text-slate-800">${item.client_name}</h5>
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center font-bold text-xs">
+                            ${item.years || 3}Y
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-mono font-bold text-teal-600 uppercase mb-0.5">${item.doc_id}</span>
+                            <h5 class="font-bold text-slate-800">${item.client_name}</h5>
+                        </div>
                     </div>
-                    <div class="text-sm text-slate-500 font-medium hidden md:block">${item.project_name || '未標註案場'}</div>
-                    <div class="flex items-center gap-6">
-                        <span class="text-xs text-slate-400 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
-                        <a href="verify.html?id=${item.doc_id}" target="_blank" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-teal-500 hover:text-white transition-all">
-                            <i class="fas fa-eye text-xs"></i>
+                    <div class="flex items-center gap-8">
+                        <div class="text-right hidden md:block">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">核發日期</p>
+                            <p class="text-xs text-slate-600 font-mono">${date}</p>
+                        </div>
+                        <a href="https://jinde-verify.netlify.app/?id=${item.doc_id}" target="_blank" 
+                           class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-teal-500 hover:text-white transition-all shadow-inner">
+                            <i class="fas fa-external-link-alt text-[10px]"></i>
                         </a>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // 搜尋過濾
+        // 搜尋過濾功能
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             document.querySelectorAll('.record-row').forEach(row => {
@@ -123,11 +167,12 @@
 
         window.onload = fetchHistory;
 
-        // 倒數計時與原有邏輯
+        // 登出計時器邏輯
         let timeLeft = 30 * 60;
         setInterval(() => {
             let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            const timerEl = document.getElementById('logout-timer');
+            if(timerEl) timerEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
             if (timeLeft-- <= 0) location.href = 'index.html';
         }, 1000);
     </script>
