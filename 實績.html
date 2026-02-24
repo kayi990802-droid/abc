@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JINDE | 實績管理系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --jd-navy: #0f172a; --jd-active: #1e293b; --jd-gold: #b45309; --sidebar-w: 260px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; display: flex; height: 100vh; background: #f8fafc; overflow: hidden; }
+
+        /* 側邊欄樣式 - 參考 JINDE MANAGEMENT HUB */
+        .sidebar { width: var(--sidebar-w); background: var(--jd-navy); color: white; flex-shrink: 0; display: flex; flex-direction: column; transition: 0.3s; }
+        .sidebar-brand { padding: 30px 20px; font-size: 22px; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #334155; }
+        .menu { flex-grow: 1; padding: 15px 0; }
+        .menu-item { padding: 15px 25px; display: flex; align-items: center; color: #94a3b8; text-decoration: none; cursor: pointer; }
+        .menu-item:hover, .menu-item.active { background: var(--jd-active); color: white; border-left: 5px solid var(--jd-gold); }
+        .menu-icon { margin-right: 15px; width: 20px; text-align: center; }
+
+        /* 主內容區 */
+        .main { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .top-bar { background: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .container { padding: 25px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+        /* 卡片與表單 */
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .card-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid var(--jd-gold); padding-left: 12px; color: var(--jd-navy); }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+        input, select { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
+        
+        .btn { padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-gold { background: var(--jd-gold); color: white; }
+        .btn-navy { background: var(--jd-navy); color: white; }
+
+        /* 報表表格區域 */
+        .table-area { background: white; padding: 20px; }
+        #pdfHeader { display: none; text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 13px; color: #475569; border: 1px solid #cbd5e1; }
+        td { padding: 12px; border: 1px solid #e2e8f0; font-size: 14px; }
+        .tag-roc { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+        /* 手機適配 */
+        @media (max-width: 768px) {
+            .sidebar { width: 0; position: absolute; height: 100%; z-index: 1000; overflow: hidden; }
+            .sidebar.open { width: 250px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">JINDE.</div>
+        <div class="menu">
+            <div class="menu-item"><span class="menu-icon">🏠</span>中台總覽</div>
+            <div class="menu-item active"><span class="menu-icon">📝</span>實績管理</div>
+            <div class="menu-item"><span class="menu-icon">👥</span>客戶管理</div>
+            <div class="menu-item"><span class="menu-icon">🏢</span>案場進度</div>
+        </div>
+        <div style="padding: 20px; font-size: 10px; color: #475569;">V4.6.2 - SECURE SQL</div>
+    </aside>
+
+    <main class="main">
+        <header class="top-bar">
+            <div style="display:flex; align-items:center;">
+                <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:none; font-size:24px; cursor:pointer; margin-right:15px;">☰</button>
+                <h2 style="margin:0; font-size:18px;">工程實績管理系統</h2>
+            </div>
+            <button class="btn btn-navy" onclick="exportPDF()">📥 匯出高品質 PDF</button>
+        </header>
+
+        <div class="container">
+            <div class="card no-print">
+                <div class="card-header">資料錄入與篩選</div>
+                <div class="form-row">
+                    <select id="ys" onchange="load()"></select>
+                    <select id="ms" onchange="load()"></select>
+                    <input type="text" id="inClient" placeholder="客戶名稱">
+                    <input type="text" id="inProject" placeholder="工程項目名稱">
+                    <input type="text" id="inLoc" placeholder="施工地點">
+                    <button class="btn btn-gold" onclick="save()">+ 確認新增</button>
+                </div>
+            </div>
+
+            <div class="card table-area" id="printArea">
+                <div id="pdfHeader">
+                    <h1 style="margin:0;">錦 德 工 程 有 限 公 司</h1>
+                    <p style="color: #64748b;">工程實績明細表 (民國 <span id="rocDisplay"></span> 年)</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40">序</th>
+                            <th width="180">客戶名稱</th>
+                            <th>工程項目名稱</th>
+                            <th width="100">完工日期</th>
+                            <th width="100">施工地點</th>
+                            <th class="no-print" width="60">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+                <div id="pdfFooter" style="display:none; margin-top:40px; justify-content:space-between;">
+                    <span>製表：________________</span>
+                    <span>核決：________________</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+    const _sb = supabase.createClient(S_URL, S_KEY);
+
+    function init() {
+        const ys = document.getElementById('ys');
+        const ms = document.getElementById('ms');
+        for(let i=2026; i>=2015; i--) ys.add(new Option(`${i} 年 (民國 ${i-1911} 年)`, i));
+        for(let i=1; i<=12; i++) ms.add(new Option(`${i} 月`, i));
+        ms.value = 2; // 預設顯示 2 月資料
+        load();
+    }
+
+    async function load() {
+        const y = parseInt(document.getElementById('ys').value);
+        const m = parseInt(document.getElementById('ms').value);
+        const { data } = await _sb.from('achievement_reports').select('*').eq('year', y).eq('month', m).order('created_at', {ascending: false});
+
+        const tb = document.getElementById('tbody');
+        tb.innerHTML = data && data.length ? data.map((i, idx) => `
+            <tr>
+                <td align="center">${idx + 1}</td>
+                <td><b>${i.client_name || i.note || '-'}</b></td>
+                <td>${i.project_name || '-'}</td>
+                <td align="center"><span class="tag-roc">${y-1911}.${String(m).padStart(2,'0')}</span></td>
+                <td align="center">${i.location || '新竹'}</td>
+                <td class="no-print"><button onclick="del('${i.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer;">刪除</button></td>
+            </tr>
+        `).join('') : '<tr><td colspan="6" align="center" style="padding:40px; color:#94a3b8;">暫無工程實績資料</td></tr>';
+    }
+
+    async function save() {
+        const payload = {
+            year: parseInt(document.getElementById('ys').value),
+            month: parseInt(document.getElementById('ms').value),
+            client_name: document.getElementById('inClient').value,
+            project_name: document.getElementById('inProject').value,
+            location: document.getElementById('inLoc').value || '新竹'
+        };
+        if(!payload.client_name || !payload.project_name) return alert("請完整填寫項目");
+        await _sb.from('achievement_reports').insert(payload);
+        document.getElementById('inClient').value = '';
+        document.getElementById('inProject').value = '';
+        load();
+    }
+
+    async function del(id) { if(confirm("確定刪除？")) { await _sb.from('achievement_reports').delete().eq('id',id); load(); } }
+
+    // --- 核心：高清 PDF 導出功能 (解決亂碼) ---
+    async function exportPDF() {
+        const area = document.getElementById('printArea');
+        const header = document.getElementById('pdfHeader');
+        const footer = document.getElementById('pdfFooter');
+        const noPrints = document.querySelectorAll('.no-print');
+
+        // 1. 預備渲染環境
+        header.style.display = 'block';
+        footer.style.display = 'flex';
+        document.getElementById('rocDisplay').innerText = document.getElementById('ys').value - 1911;
+        noPrints.forEach(el => el.style.display = 'none');
+
+        // 2. 截圖轉換 (Scale 3 確保清晰度)
+        const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        
+        // 3. 建立 PDF (A4 格式)
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfW = pdf.internal.pageSize.getWidth() - 20; // 左右留邊 10mm
+        const pdfH = (canvas.height * pdfW) / canvas.width;
+
+        pdf.addImage(imgData, 'JPEG', 10, 10, pdfW, pdfH);
+        pdf.save(`錦德實績_${document.getElementById('ys').value-1911}_${document.getElementById('ms').value}.pdf`);
+
+        // 4. 恢復介面顯示
+        header.style.display = 'none';
+        footer.style.display = 'none';
+        noPrints.forEach(el => el.style.display = '');
+    }
+
+    init();
+</script>
+</body>
+</html>
