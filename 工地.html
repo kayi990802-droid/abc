@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 雲端查詢 PDF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 90px; }
+        
+        .mobile-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        
+        /* 底部導覽列 */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 10px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 100; border-top: 1px solid #f1f5f9; }
+        .bottom-nav a, .bottom-nav button { text-align: center; color: #94a3b8; font-size: 11px; font-weight: bold; flex: 1; }
+        .bottom-nav .active { color: #2563eb; }
+
+        /* 重要：修正 PDF 沒顯示的問題 - 改用隱形而非消失 */
+        #pdf-render-box { 
+            position: absolute; 
+            left: -5000px; 
+            top: 0; 
+            width: 750px; /* 固定寬度確保 PDF 比例正確 */
+            background: white; 
+            padding: 50px; 
+            opacity: 1; 
+        }
+
+        .status-badge { font-size: 10px; padding: 2px 8px; rounded-full: 999px; background: #dcfce7; color: #166534; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="p-5">
+        <header class="mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 italic">JINDE.</h1>
+                <p class="text-[10px] text-blue-500 font-bold tracking-widest uppercase">Invoice Search</p>
+            </div>
+            <div class="status-badge">CLOUD SYNC ON</div>
+        </header>
+
+        <div class="relative mb-8">
+            <i class="fas fa-search absolute left-4 top-4 text-slate-400"></i>
+            <input type="text" id="searchKey" oninput="fetchInvoices()" placeholder="搜尋案場、客戶或單號..." 
+                   class="w-full pl-12 pr-4 py-4 rounded-2xl border-none shadow-lg focus:ring-2 focus:ring-blue-500 outline-none text-base">
+        </div>
+
+        <div id="invoiceList">
+            <div class="text-center py-20 text-slate-400 animate-pulse">連線至資料庫中...</div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="index.html"><i class="fas fa-th-large block text-2xl mb-1"></i>總覽</a>
+        <a href="billing.html"><i class="fas fa-plus-circle block text-2xl mb-1"></i>開單</a>
+        <button class="active"><i class="fas fa-file-invoice-dollar block text-2xl mb-1"></i>紀錄</button>
+        <a href="#"><i class="fas fa-cog block text-2xl mb-1"></i>設定</a>
+    </div>
+
+    <div id="pdf-render-box">
+        <div style="border-bottom: 5px solid #1e293b; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h1 style="font-size: 48px; font-weight: 900; margin: 0; color: #1e293b;">JINDE.</h1>
+                <p style="font-size: 14px; color: #2563eb; font-weight: bold; letter-spacing: 4px; margin: 5px 0 0 0;">錦德防水工程行 - 請款明細</p>
+            </div>
+            <div style="text-align: right;">
+                <p style="font-size: 14px; color: #64748b; margin: 0;">INVOICE NO.</p>
+                <p id="p-no" style="font-family: monospace; font-weight: 900; font-size: 24px; margin: 0; color: #1e293b;"></p>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+            <div id="p-info" style="font-size: 16px; line-height: 2;"></div>
+            <div id="p-date" style="text-align: right; font-size: 16px; color: #64748b;"></div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+            <thead>
+                <tr style="background: #1e293b; color: white;">
+                    <th style="padding: 15px; text-align: left; border: 1px solid #1e293b;">施工項目 Description</th>
+                    <th style="padding: 15px; text-align: right; border: 1px solid #1e293b; width: 100px;">數量</th>
+                    <th style="padding: 15px; text-align: right; border: 1px solid #1e293b; width: 100px;">單價</th>
+                    <th style="padding: 15px; text-align: right; border: 1px solid #1e293b; width: 150px;">小計</th>
+                </tr>
+            </thead>
+            <tbody id="p-table-body"></tbody>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-top: 2px solid #f1f5f9; padding-top: 20px;">
+            <div id="p-chinese" style="font-size: 16px; font-weight: bold; color: #64748b;"></div>
+            <div style="text-align: right;">
+                <p style="font-size: 12px; color: #94a3b8; font-weight: bold; margin: 0;">TOTAL AMOUNT DUE</p>
+                <p id="p-total" style="font-size: 42px; font-weight: 900; color: #1e293b; margin: 0;"></p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 80px; font-size: 12px; color: #cbd5e1; text-align: center;">
+            此單據由 JINDE CLOUD HUB 系統自動產生，具備雲端存證效力
+        </div>
+    </div>
+
+    <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        window.onload = fetchInvoices;
+
+        async function fetchInvoices() {
+            const key = document.getElementById('searchKey').value;
+            let query = _supabase.from('invoices').select('*').order('created_at', { ascending: false });
+            if (key) query = query.ilike('project_name', `%${key}%`);
+
+            const { data, error } = await query;
+            const container = document.getElementById('invoiceList');
+            
+            if (error) { container.innerHTML = "讀取失敗"; return; }
+            container.innerHTML = data.length ? "" : '<div class="text-center py-20 text-slate-400">無紀錄</div>';
+
+            data.forEach(inv => {
+                container.innerHTML += `
+                    <div class="mobile-card flex justify-between items-center animate-fade-in">
+                        <div class="flex-grow">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">${inv.bill_no}</span>
+                                <span class="text-[10px] text-slate-400">${inv.bill_date}</span>
+                            </div>
+                            <div class="font-black text-slate-800 text-lg mb-1">${inv.project_name}</div>
+                            <div class="text-xs text-slate-500"><i class="fas fa-user-circle mr-1"></i> ${inv.client_name || '無客戶資料'}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-blue-600 text-lg mb-2">NT$ ${inv.total_amount.toLocaleString()}</div>
+                            <button onclick="downloadPDF('${inv.id}', '${inv.bill_no}')" class="bg-blue-600 text-white w-10 h-10 rounded-full shadow-lg active:scale-90 transition">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function downloadPDF(invId, billNo) {
+            // 顯示載入中提示
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const { data: inv } = await _supabase.from('invoices').select('*').eq('id', invId).single();
+                const { data: items } = await _supabase.from('invoice_items').select('*').eq('invoice_id', invId);
+
+                // 填入資料到 PDF 模板
+                document.getElementById('p-no').innerText = billNo;
+                document.getElementById('p-date').innerText = `開單日期：${inv.bill_date}`;
+                document.getElementById('p-info').innerHTML = `
+                    <strong>客戶單位 Client:</strong> ${inv.client_name || '---'}<br>
+                    <strong>工程案場 Project:</strong> ${inv.project_name}<br>
+                    <strong>施工地點 Location:</strong> ${inv.location || '---'}
+                `;
+
+                let tableHtml = "";
+                items.forEach(it => {
+                    tableHtml += `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 15px; font-weight: bold;">${it.item_description}</td>
+                            <td style="padding: 15px; text-align: right; font-family: monospace;">${it.quantity}</td>
+                            <td style="padding: 15px; text-align: right; font-family: monospace;">${it.unit_price}</td>
+                            <td style="padding: 15px; text-align: right; font-weight: 900; font-family: monospace;">${it.subtotal.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('p-table-body').innerHTML = tableHtml;
+                document.getElementById('p-total').innerText = `NT$ ${inv.total_amount.toLocaleString()}`;
+                document.getElementById('p-chinese').innerText = `金額大寫：${numberToChinese(inv.total_amount)}`;
+
+                // 強制延遲 500ms 確保內容被瀏覽器渲染完成
+                setTimeout(() => {
+                    const opt = {
+                        margin: 0,
+                        filename: `錦德防水_${inv.project_name}_${billNo}.pdf`,
+                        image: { type: 'jpeg', quality: 1 },
+                        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+                    
+                    html2pdf().from(document.getElementById('pdf-render-box')).set(opt).save()
+                    .then(() => {
+                        btn.innerHTML = originalHTML;
+                    });
+                }, 500);
+
+            } catch (e) {
+                alert("生成失敗: " + e.message);
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        function numberToChinese(n) {
+            if (n === 0) return "零元整";
+            const digit = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
+            const unit = [['元', '萬', '億'], ['', '拾', '佰', '仟']];
+            let s = '整'; n = Math.floor(n);
+            for (let i = 0; i < unit[0].length && n > 0; i++) {
+                let p = '';
+                for (let j = 0; j < unit[1].length && n > 0; j++) {
+                    p = digit[n % 10] + (n % 10 !== 0 ? unit[1][j] : '') + p;
+                    n = Math.floor(n / 10);
+                }
+                s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
+            }
+            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
+        }
+    </script>
+</body>
+</html>
