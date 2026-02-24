@@ -2,207 +2,261 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JINDE | 現代化請款系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JINDE | 智能請款系統 (自動過濾版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { 
-            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
-            background-color: #fcfcfc; 
-            color: #1a1a1a; 
-            -webkit-font-smoothing: antialiased;
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f4f7fa; margin: 0; display: flex; overflow-x: hidden; }
+        
+        .sidebar { width: 260px; height: 100vh; background: #1e293b; color: white; flex-shrink: 0; z-index: 50; }
+        .main-content { flex-grow: 1; height: 100vh; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+        
+        /* A4 紙張樣式 */
+        .page-sheet { 
+            width: 210mm; min-height: 297mm; padding: 15mm 20mm; 
+            margin: 0 auto 40px auto; background: white; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative;
         }
 
-        .print-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            background: white;
-            padding: 30mm 20mm;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
+        input, textarea { border-bottom: 1px solid #e2e8f0 !important; outline: none; background: transparent; width: 100%; font-size: 16px; transition: 0.2s; }
+        input:focus { border-bottom: 2px solid #2563eb !important; background: #f8fafc; }
+        
+        .compact-table th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 5px; text-align: left; font-size: 11px; color: #64748b; }
+        .compact-table td { border: 1px solid #f1f5f9; padding: 8px 5px; font-size: 14px; }
+        
+        .formula-input { font-family: monospace; color: #2563eb; height: 32px; border: 1px solid #e2e8f0 !important; border-radius: 6px; padding: 0 10px !important; }
 
+        /* --- 列印隱藏邏輯 --- */
         @media print {
-            @page { size: A4; margin: 0; }
-            body { background: white; }
-            .no-print { display: none !important; }
-            .print-container {
-                width: 210mm !important;
-                height: 297mm !important;
-                padding: 20mm 20mm !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-            }
+            .sidebar, .no-print-nav, .no-print { display: none !important; }
+            body { background: white; overflow: visible; }
+            .main-content { padding: 0; height: auto; overflow: visible; }
+            .page-sheet { box-shadow: none; margin: 0; width: 100%; page-break-after: always; }
+            
+            /* 當項目空白時，隱藏該整行 */
+            .empty-row { display: none !important; }
+            input { border: none !important; }
         }
 
-        /* 移除所有傳統框線，改用極細線條或間距 */
-        input, textarea {
-            border: none !important;
-            outline: none !important;
-            background: transparent !important;
-            padding: 0 !important;
-            width: 100%;
-        }
-
-        .label-caps {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: #a0a0a0;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        /* 現代感表格：無直向邊框 */
-        .modern-table th {
-            text-align: left;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #1a1a1a;
-            border-bottom: 1px solid #1a1a1a;
-            padding: 15px 0;
-        }
-
-        .modern-table td {
-            padding: 25px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .total-section {
-            background-color: #f9f9f9;
-            padding: 40px;
-            border-radius: 4px;
+        /* 手機版適應 */
+        @media screen and (max-width: 1024px) {
+            .sidebar { display: none; }
+            .page-sheet { width: 100%; padding: 20px 15px; margin-bottom: 80px; }
+            .no-print-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px; display: flex; justify-content: space-around; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 100; }
+            .no-print-nav button { flex: 1; margin: 0 5px; height: 50px; border-radius: 12px; font-weight: bold; }
         }
     </style>
 </head>
 <body>
 
-    <div class="print-container">
-        <div class="flex justify-between items-baseline mb-24">
-            <div>
-                <h1 class="text-4xl font-black tracking-tighter mb-2">JINDE.</h1>
-                <p class="text-xs font-light tracking-[0.4em] text-slate-400">錦德防水工程行</p>
-            </div>
-            <div class="text-right">
-                <h2 class="text-6xl font-black opacity-5 tracking-tighter absolute right-20 top-20">INVOICE</h2>
-                <div class="space-y-1 relative z-10">
-                    <p class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Serial</p>
-                    <p id="billId" class="text-sm font-medium italic"></p>
-                </div>
-            </div>
+    <aside class="sidebar flex flex-col no-print">
+        <div class="p-8">
+            <div class="text-3xl font-black italic tracking-tighter">JINDE.</div>
+            <p class="text-[10px] text-blue-400 font-bold tracking-[0.4em] mt-1 uppercase">Cloud Management</p>
         </div>
+        <nav class="flex-grow px-4 space-y-2">
+            <div class="px-4 py-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Menu</div>
+            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg"><i class="fas fa-file-invoice-dollar w-5"></i> 智能請款</a>
+            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-800 transition text-slate-400"><i class="fas fa-history w-5"></i> 歷史記錄</a>
+        </nav>
+    </aside>
 
-        <div class="grid grid-cols-12 gap-4 mb-20">
-            <div class="col-span-7">
-                <div class="label-caps text-blue-600">Billed To 客戶</div>
-                <input type="text" id="custName" placeholder="Recipient Name" class="text-3xl font-bold placeholder:text-slate-100">
-                <div class="mt-4">
-                    <input type="text" id="projName" placeholder="Project Description" class="text-slate-500 font-light">
+    <main class="main-content">
+        <div class="page-sheet" id="p1">
+            <div class="flex justify-between items-start mb-10">
+                <div>
+                    <div class="text-3xl font-black text-slate-900 tracking-tighter">JINDE.</div>
+                    <p class="text-blue-600 font-bold tracking-[0.3em] text-[10px] mt-1 uppercase">錦德防水工程行</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-xl font-bold text-slate-200 uppercase tracking-widest">Invoice</h2>
+                    <div class="text-xs text-slate-900 font-mono font-bold" id="billSerial">INV-260000</div>
                 </div>
             </div>
-            <div class="col-span-5 border-l border-slate-100 pl-10">
-                <div class="label-caps">Date 發行日期</div>
-                <p id="currentDate" class="text-lg font-medium mb-6"></p>
-                
-                <div class="label-caps">Payment 匯款帳資</div>
-                <div class="text-sm space-y-1 font-light text-slate-600 italic">
-                    <p>Bank: <input type="text" value="您的銀行代碼" class="inline w-auto"></p>
-                    <p>Acc: <input type="text" value="0000-0000-0000" class="inline w-auto font-bold text-black"></p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div class="space-y-4">
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase">案場名稱 Project</label><input type="text" id="projName" placeholder="輸入案場..." class="text-lg font-bold"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase">客戶名稱 Client</label><input type="text" id="cliName" placeholder="客戶單位..."></div>
+                </div>
+                <div class="flex flex-col justify-end md:text-right text-xs text-slate-500 space-y-1">
+                    <p>日期：<input type="text" id="billDate" class="md:w-24 md:text-right border-none font-mono text-slate-900"></p>
+                    <p>地點：<input type="text" id="locName" placeholder="施工地址..." class="md:w-48 md:text-right border-slate-100"></p>
                 </div>
             </div>
-        </div>
 
-        <div class="flex-grow">
-            <table class="w-full modern-table">
+            <table class="compact-table w-full mb-8">
                 <thead>
                     <tr>
-                        <th class="w-8">#</th>
-                        <th>Description 項目</th>
-                        <th class="text-right">Amount 金額</th>
-                        <th class="no-print w-10"></th>
+                        <th class="w-1/3">施工項目說明</th>
+                        <th class="text-center">單位</th>
+                        <th class="text-right">數量</th>
+                        <th class="text-right">單價</th>
+                        <th class="text-right">小計</th>
                     </tr>
                 </thead>
-                <tbody id="billTable">
-                    </tbody>
+                <tbody id="invoiceBody">
+                    <script>
+                        for(let i=1; i<=10; i++) {
+                            document.write(`
+                                <tr id="row_${i}" class="empty-row">
+                                    <td><input type="text" id="item_${i}" placeholder="項目 ${i}" oninput="checkRow(${i})"></td>
+                                    <td><input type="text" value="M2" class="text-center text-[10px] text-slate-300"></td>
+                                    <td><input type="number" id="qty_${i}" class="text-right font-mono" oninput="updateTotal()"></td>
+                                    <td><input type="number" id="price_${i}" class="text-right font-mono" oninput="updateTotal()"></td>
+                                    <td class="text-right font-mono font-bold text-slate-700" id="subtotal_${i}">0</td>
+                                </tr>
+                            `);
+                        }
+                    </script>
+                </tbody>
             </table>
-            
-            <button onclick="addBillRow()" class="no-print mt-8 text-[10px] font-bold tracking-[0.2em] uppercase text-slate-300 hover:text-blue-600 transition">
-                + Add line item
-            </button>
-        </div>
 
-        <div class="mt-20">
-            <div class="grid grid-cols-12 gap-0 items-start">
-                <div class="col-span-7 pr-20">
-                    <div class="label-caps">Notes 備註</div>
-                    <textarea id="billNote" class="text-sm text-slate-400 font-light leading-relaxed h-32" placeholder="在此輸入條款或注意事項..."></textarea>
+            <div class="mt-8 flex flex-col md:flex-row justify-between items-end gap-6">
+                <div class="w-full md:w-1/2">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase block">金額大寫 Total Words</label>
+                    <div id="chineseAmt" class="border-b-2 border-slate-900 pb-1 text-base font-bold text-slate-800">零元整</div>
                 </div>
-                <div class="col-span-5 total-section">
-                    <div class="label-caps">Total Due 應付總額</div>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-sm font-light uppercase tracking-widest text-slate-400">TWD</span>
-                        <span id="billFinal" class="text-5xl font-black tracking-tighter">0</span>
-                    </div>
-                    <div class="mt-6 pt-6 border-t border-slate-200">
-                        <div class="label-caps">In Words 中文大寫</div>
-                        <p id="chineseAmount" class="text-sm font-bold italic"></p>
-                    </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-400 block uppercase">Total Due</span>
+                    <span id="totalDisplay" class="text-4xl font-black text-slate-900 font-mono tracking-tighter">0</span>
                 </div>
             </div>
         </div>
 
-        <div class="mt-24 grid grid-cols-2 gap-20">
-            <div class="border-t border-slate-900 pt-4">
-                <p class="text-[9px] font-bold tracking-widest uppercase mb-1">Authorized</p>
-                <p class="text-xs font-light text-slate-400 tracking-wider italic">錦德防水工程行 簽署</p>
+        <div class="page-sheet">
+            <div class="flex justify-between items-center border-b-2 border-slate-900 pb-2 mb-8">
+                <h2 class="text-lg font-black italic text-slate-800">CALCULATION DETAILS</h2>
+                <span class="text-[9px] text-blue-500 font-bold uppercase">P.02</span>
             </div>
-            <div class="border-t border-slate-100 pt-4 text-right">
-                <p class="text-[9px] font-bold tracking-widest uppercase mb-1 text-slate-300">Client Acceptance</p>
-                <p class="text-xs font-light text-slate-200 italic">業主簽收確認</p>
+            <div id="formulaContainer" class="space-y-3">
+                <script>
+                    for(let i=1; i<=10; i++) {
+                        document.write(`
+                            <div class="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-50 empty-row" id="formRow_${i}">
+                                <div class="w-8 text-[10px] font-black text-slate-200">#${i}</div>
+                                <div class="flex-grow">
+                                    <input type="text" id="calc_${i}" placeholder="輸入公式 (例如 3.2*5.5)" class="formula-input w-full" oninput="autoCalc(${i})">
+                                </div>
+                                <div class="w-20 text-right">
+                                    <span id="res_${i}" class="font-mono font-bold text-blue-600 text-sm">0.00</span>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
             </div>
         </div>
+    </main>
 
-        <div class="no-print mt-12 flex justify-center gap-8 border-t border-slate-50 pt-10">
-            <button onclick="window.print()" class="text-xs font-black tracking-[0.3em] uppercase border-b-2 border-black pb-1 hover:text-blue-600 hover:border-blue-600 transition">
-                Print Invoice
-            </button>
-            <button onclick="saveToSupabase()" class="text-xs font-black tracking-[0.3em] uppercase border-b-2 border-slate-200 pb-1 text-slate-300 hover:text-black hover:border-black transition">
-                Sync Cloud
-            </button>
-        </div>
+    <div class="no-print-nav no-print">
+        <button onclick="loadPdfHistory()" class="bg-orange-500 text-white shadow-lg"><i class="fas fa-copy block text-lg mb-1"></i>載入範本</button>
+        <button onclick="handleUpload()" id="syncBtn" class="bg-slate-900 text-white shadow-lg"><i class="fas fa-cloud-upload-alt block text-lg mb-1"></i>同步資料</button>
+        <button onclick="window.print()" class="bg-blue-600 text-white shadow-lg"><i class="fas fa-print block text-lg mb-1"></i>列印 PDF</button>
     </div>
 
     <script>
+        const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
         window.onload = () => {
-            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-CA');
-            document.getElementById('billId').innerText = "INV-" + Date.now().toString().slice(-6);
-            addBillRow("工程進度款 / 第一期"); 
+            const today = new Date();
+            document.getElementById('billDate').value = today.toLocaleDateString();
+            document.getElementById('billSerial').innerText = `INV-26${Math.floor(1000 + Math.random() * 9000)}`;
         };
 
-        function addBillRow(text = "") {
-            const tbody = document.getElementById('billTable');
-            const count = tbody.children.length + 1;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-xs font-mono text-slate-300">${count.toString().padStart(2, '0')}</td>
-                <td><input type="text" value="${text}" class="text-lg font-medium text-slate-800 placeholder:text-slate-100"></td>
-                <td><input type="number" value="0" class="bill-amount text-right text-2xl font-bold tracking-tighter" oninput="calcBilling()" onfocus="this.select()"></td>
-                <td class="no-print text-right"><button onclick="this.parentElement.parentElement.remove();calcBilling()" class="text-slate-100 hover:text-red-500 transition px-2"><i class="fas fa-times"></i></button></td>`;
-            tbody.appendChild(tr);
+        // --- 核心：檢查行是否有內容 ---
+        function checkRow(i) {
+            const val = document.getElementById(`item_${i}`).value.trim();
+            const row = document.getElementById(`row_${i}`);
+            const formRow = document.getElementById(`formRow_${i}`);
+            
+            if (val === "") {
+                row.classList.add('empty-row');
+                formRow.classList.add('empty-row');
+            } else {
+                row.classList.remove('empty-row');
+                formRow.classList.remove('empty-row');
+            }
+            updateTotal();
         }
 
-        function calcBilling() {
-            let total = 0;
-            document.querySelectorAll('.bill-amount').forEach(i => total += parseFloat(i.value) || 0);
-            document.getElementById('billFinal').innerText = total.toLocaleString();
-            document.getElementById('chineseAmount').innerText = numberToChinese(total);
+        function autoCalc(i) {
+            const input = document.getElementById(`calc_${i}`);
+            const resDisp = document.getElementById(`res_${i}`);
+            const qtyInp = document.getElementById(`qty_${i}`);
+            try {
+                let formula = input.value.replace(/x/gi, '*');
+                let res = new Function('return ' + formula.replace(/[^0-9\+\-\*\/\(\)\. ]/g, ''))() || 0;
+                let final = Math.round(res * 100) / 100;
+                resDisp.innerText = final.toFixed(2);
+                qtyInp.value = final; 
+                updateTotal();
+            } catch(e) {}
+        }
+
+        function updateTotal() {
+            let grand = 0;
+            for(let i=1; i<=10; i++) {
+                const qty = parseFloat(document.getElementById(`qty_${i}`).value) || 0;
+                const price = parseFloat(document.getElementById(`price_${i}`).value) || 0;
+                const sub = Math.round(qty * price);
+                document.getElementById(`subtotal_${i}`).innerText = sub.toLocaleString();
+                grand += sub;
+            }
+            document.getElementById('totalDisplay').innerText = grand.toLocaleString();
+            document.getElementById('chineseAmt').innerText = numberToChinese(grand);
+        }
+
+        async function handleUpload() {
+            const btn = document.getElementById('syncBtn');
+            const icon = btn.querySelector('i');
+            const projName = document.getElementById('projName').value.trim();
+            if (!projName) { alert("請輸入案場名稱！"); return; }
+            icon.className = 'fas fa-spinner fa-spin block text-lg mb-1';
+            try {
+                const { data: invData, error: invErr } = await _supabase.from('invoices').insert([{
+                    bill_no: document.getElementById('billSerial').innerText,
+                    project_name: projName,
+                    client_name: document.getElementById('cliName').value,
+                    location: document.getElementById('locName').value,
+                    bill_date: document.getElementById('billDate').value,
+                    total_amount: parseInt(document.getElementById('totalDisplay').innerText.replace(/,/g, ''))
+                }]).select();
+                if (invErr) throw invErr;
+                
+                const items = [];
+                for (let i = 1; i <= 10; i++) {
+                    const name = document.getElementById(`item_${i}`).value.trim();
+                    if (name) {
+                        items.push({
+                            invoice_id: invData[0].id,
+                            item_description: name,
+                            formula: document.getElementById(`calc_${i}`).value,
+                            quantity: parseFloat(document.getElementById(`qty_${i}`).value) || 0,
+                            unit_price: parseFloat(document.getElementById(`price_${i}`).value) || 0,
+                            subtotal: parseFloat(document.getElementById(`subtotal_${i}`).innerText.replace(/,/g, ''))
+                        });
+                    }
+                }
+                if (items.length > 0) await _supabase.from('invoice_items').insert(items);
+                alert("✅ 同步完成！");
+            } catch (err) { alert("同步失敗：" + err.message); }
+            finally { icon.className = 'fas fa-cloud-upload-alt block text-lg mb-1'; }
+        }
+
+        function loadPdfHistory() {
+            document.getElementById('projName').value = "範例案場：風頭壁";
+            document.getElementById('item_1').value = "一樓牆面防水";
+            document.getElementById('calc_1').value = "3.2*5.5 + 1.8*2.1";
+            document.getElementById('price_1').value = 75;
+            checkRow(1); autoCalc(1);
+            alert("範本已帶入");
         }
 
         function numberToChinese(n) {
@@ -220,8 +274,6 @@
             }
             return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
         }
-        
-        async function saveToSupabase() { alert("Cloud Data Synced."); }
     </script>
 </body>
 </html>
