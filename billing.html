@@ -3,51 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 智能請款系統 (自動過濾版)</title>
+    <title>JINDE | 智能請款系統 (30項擴展版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f4f7fa; margin: 0; display: flex; overflow-x: hidden; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f4f7fa; margin: 0; display: flex; }
         
-        .sidebar { width: 260px; height: 100vh; background: #1e293b; color: white; flex-shrink: 0; z-index: 50; }
-        .main-content { flex-grow: 1; height: 100vh; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+        .sidebar { width: 260px; height: 100vh; background: #1e293b; color: white; flex-shrink: 0; position: sticky; top: 0; }
+        .main-content { flex-grow: 1; padding: 20px; }
         
         /* A4 紙張樣式 */
         .page-sheet { 
             width: 210mm; min-height: 297mm; padding: 15mm 20mm; 
             margin: 0 auto 40px auto; background: white; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
 
-        input, textarea { border-bottom: 1px solid #e2e8f0 !important; outline: none; background: transparent; width: 100%; font-size: 16px; transition: 0.2s; }
+        input { border-bottom: 1px solid #e2e8f0 !important; outline: none; background: transparent; width: 100%; transition: 0.2s; }
         input:focus { border-bottom: 2px solid #2563eb !important; background: #f8fafc; }
         
-        .compact-table th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 5px; text-align: left; font-size: 11px; color: #64748b; }
-        .compact-table td { border: 1px solid #f1f5f9; padding: 8px 5px; font-size: 14px; }
+        .compact-table th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 4px; font-size: 11px; color: #64748b; }
+        .compact-table td { border: 1px solid #f1f5f9; padding: 4px; font-size: 13px; }
         
-        .formula-input { font-family: monospace; color: #2563eb; height: 32px; border: 1px solid #e2e8f0 !important; border-radius: 6px; padding: 0 10px !important; }
+        .formula-input { font-family: monospace; color: #2563eb; height: 28px; border: 1px solid #e2e8f0 !important; border-radius: 4px; padding: 0 8px !important; font-size: 12px; }
+
+        /* 算法區雙欄佈局 */
+        .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         /* --- 列印隱藏邏輯 --- */
         @media print {
+            body { background: white; }
             .sidebar, .no-print-nav, .no-print { display: none !important; }
-            body { background: white; overflow: visible; }
-            .main-content { padding: 0; height: auto; overflow: visible; }
-            .page-sheet { box-shadow: none; margin: 0; width: 100%; page-break-after: always; }
-            
-            /* 當項目空白時，隱藏該整行 */
+            .main-content { padding: 0; }
+            .page-sheet { box-shadow: none; margin: 0; width: 100%; height: auto; min-height: auto; page-break-after: auto; }
             .empty-row { display: none !important; }
-            input { border: none !important; }
+            .page-break { page-break-before: always; margin-top: 20mm; }
+            tr { page-break-inside: avoid; }
         }
 
         /* 手機版適應 */
         @media screen and (max-width: 1024px) {
             .sidebar { display: none; }
-            .page-sheet { width: 100%; padding: 20px 15px; margin-bottom: 80px; }
-            .no-print-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px; display: flex; justify-content: space-around; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 100; }
-            .no-print-nav button { flex: 1; margin: 0 5px; height: 50px; border-radius: 12px; font-weight: bold; }
+            .formula-grid { grid-template-columns: 1fr; }
+            .page-sheet { width: 100%; padding: 15px 10px; }
+            .no-print-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px; display: flex; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 100; }
+            .no-print-nav button { flex: 1; margin: 0 4px; font-size: 12px; height: 45px; border-radius: 10px; }
         }
     </style>
 </head>
@@ -55,44 +58,44 @@
 
     <aside class="sidebar flex flex-col no-print">
         <div class="p-8">
-            <div class="text-3xl font-black italic tracking-tighter">JINDE.</div>
-            <p class="text-[10px] text-blue-400 font-bold tracking-[0.4em] mt-1 uppercase">Cloud Management</p>
+            <div class="text-3xl font-black italic tracking-tighter text-white">JINDE.</div>
+            <p class="text-[10px] text-blue-400 font-bold tracking-[0.4em] mt-1">MANAGEMENT</p>
         </div>
-        <nav class="flex-grow px-4 space-y-2">
-            <div class="px-4 py-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Menu</div>
-            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg"><i class="fas fa-file-invoice-dollar w-5"></i> 智能請款</a>
-            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-800 transition text-slate-400"><i class="fas fa-history w-5"></i> 歷史記錄</a>
+        <nav class="flex-grow px-4 space-y-2 text-sm">
+            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg"><i class="fas fa-file-invoice-dollar"></i> 智能請款 (30項)</a>
+            <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-800 transition text-slate-400"><i class="fas fa-history"></i> 歷史記錄</a>
         </nav>
     </aside>
 
     <main class="main-content">
         <div class="page-sheet" id="p1">
-            <div class="flex justify-between items-start mb-10">
+            <div class="flex justify-between items-start mb-8">
                 <div>
                     <div class="text-3xl font-black text-slate-900 tracking-tighter">JINDE.</div>
                     <p class="text-blue-600 font-bold tracking-[0.3em] text-[10px] mt-1 uppercase">錦德防水工程行</p>
                 </div>
                 <div class="text-right">
-                    <h2 class="text-xl font-bold text-slate-200 uppercase tracking-widest">Invoice</h2>
-                    <div class="text-xs text-slate-900 font-mono font-bold" id="billSerial">INV-260000</div>
+                    <h2 class="text-xl font-bold text-slate-200 uppercase tracking-widest leading-none">Invoice</h2>
+                    <div class="text-xs text-slate-900 font-mono font-bold" id="billSerial">INV-載入中...</div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                <div class="space-y-4">
-                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase">案場名稱 Project</label><input type="text" id="projName" placeholder="輸入案場..." class="text-lg font-bold"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="space-y-3">
+                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase">案場名稱 Project</label><input type="text" id="projName" placeholder="輸入案場名稱..." class="text-base font-bold"></div>
                     <div><label class="block text-[10px] font-bold text-slate-400 uppercase">客戶名稱 Client</label><input type="text" id="cliName" placeholder="客戶單位..."></div>
                 </div>
-                <div class="flex flex-col justify-end md:text-right text-xs text-slate-500 space-y-1">
-                    <p>日期：<input type="text" id="billDate" class="md:w-24 md:text-right border-none font-mono text-slate-900"></p>
-                    <p>地點：<input type="text" id="locName" placeholder="施工地址..." class="md:w-48 md:text-right border-slate-100"></p>
+                <div class="flex flex-col justify-end md:text-right text-[11px] text-slate-500 space-y-1">
+                    <p>日期 Date：<input type="text" id="billDate" class="md:w-24 md:text-right border-none font-mono text-slate-900"></p>
+                    <p>地點 Loc：<input type="text" id="locName" placeholder="施工地址..." class="md:w-48 md:text-right border-slate-100"></p>
                 </div>
             </div>
 
-            <table class="compact-table w-full mb-8">
+            <table class="compact-table w-full mb-6">
                 <thead>
                     <tr>
-                        <th class="w-1/3">施工項目說明</th>
+                        <th class="w-8 text-center">#</th>
+                        <th class="w-2/5">施工項目說明 Description</th>
                         <th class="text-center">單位</th>
                         <th class="text-right">數量</th>
                         <th class="text-right">單價</th>
@@ -101,11 +104,12 @@
                 </thead>
                 <tbody id="invoiceBody">
                     <script>
-                        for(let i=1; i<=10; i++) {
+                        for(let i=1; i<=30; i++) {
                             document.write(`
                                 <tr id="row_${i}" class="empty-row">
-                                    <td><input type="text" id="item_${i}" placeholder="項目 ${i}" oninput="checkRow(${i})"></td>
-                                    <td><input type="text" value="M2" class="text-center text-[10px] text-slate-300"></td>
+                                    <td class="text-center text-[10px] text-slate-300 font-mono">${i}</td>
+                                    <td><input type="text" id="item_${i}" placeholder="項目說明..." oninput="checkRow(${i})"></td>
+                                    <td><input type="text" value="M2" class="text-center text-[10px]"></td>
                                     <td><input type="number" id="qty_${i}" class="text-right font-mono" oninput="updateTotal()"></td>
                                     <td><input type="number" id="price_${i}" class="text-right font-mono" oninput="updateTotal()"></td>
                                     <td class="text-right font-mono font-bold text-slate-700" id="subtotal_${i}">0</td>
@@ -116,47 +120,49 @@
                 </tbody>
             </table>
 
-            <div class="mt-8 flex flex-col md:flex-row justify-between items-end gap-6">
+            <div class="mt-4 flex flex-col md:flex-row justify-between items-end gap-6">
                 <div class="w-full md:w-1/2">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase block">金額大寫 Total Words</label>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase block">金額大寫 Total in Words</label>
                     <div id="chineseAmt" class="border-b-2 border-slate-900 pb-1 text-base font-bold text-slate-800">零元整</div>
                 </div>
                 <div class="text-right">
-                    <span class="text-[10px] font-bold text-slate-400 block uppercase">Total Due</span>
+                    <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-widest">Grand Total</span>
                     <span id="totalDisplay" class="text-4xl font-black text-slate-900 font-mono tracking-tighter">0</span>
                 </div>
             </div>
         </div>
 
-        <div class="page-sheet">
-            <div class="flex justify-between items-center border-b-2 border-slate-900 pb-2 mb-8">
-                <h2 class="text-lg font-black italic text-slate-800">CALCULATION DETAILS</h2>
-                <span class="text-[9px] text-blue-500 font-bold uppercase">P.02</span>
+        <div class="page-sheet page-break">
+            <div class="flex justify-between items-center border-b-2 border-slate-900 pb-2 mb-6">
+                <h2 class="text-lg font-black italic text-slate-800 tracking-tighter">CALCULATION DETAILS <span class="text-sm font-normal text-slate-400 ml-2">算法附件</span></h2>
+                <span class="text-[9px] text-blue-500 font-bold border border-blue-500 px-2 py-0.5 rounded uppercase">Page 02</span>
             </div>
-            <div id="formulaContainer" class="space-y-3">
+            
+            <div id="formulaContainer" class="formula-grid">
                 <script>
-                    for(let i=1; i<=10; i++) {
+                    for(let i=1; i<=30; i++) {
                         document.write(`
-                            <div class="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-50 empty-row" id="formRow_${i}">
-                                <div class="w-8 text-[10px] font-black text-slate-200">#${i}</div>
+                            <div class="flex items-center gap-2 p-1.5 border border-slate-50 rounded-lg empty-row" id="formRow_${i}">
+                                <div class="w-6 text-[10px] font-black text-slate-300 font-mono">${i}</div>
                                 <div class="flex-grow">
-                                    <input type="text" id="calc_${i}" placeholder="輸入公式 (例如 3.2*5.5)" class="formula-input w-full" oninput="autoCalc(${i})">
+                                    <input type="text" id="calc_${i}" placeholder="公式: 長*寬+長*寬" class="formula-input w-full" oninput="autoCalc(${i})">
                                 </div>
-                                <div class="w-20 text-right">
-                                    <span id="res_${i}" class="font-mono font-bold text-blue-600 text-sm">0.00</span>
+                                <div class="w-16 text-right">
+                                    <span id="res_${i}" class="font-mono font-bold text-blue-600 text-[11px]">0.0</span>
                                 </div>
                             </div>
                         `);
                     }
                 </script>
             </div>
+            <div class="mt-10 text-[10px] text-slate-300 text-center italic">--- 此頁面僅供算式查核之附件使用 ---</div>
         </div>
     </main>
 
     <div class="no-print-nav no-print">
-        <button onclick="loadPdfHistory()" class="bg-orange-500 text-white shadow-lg"><i class="fas fa-copy block text-lg mb-1"></i>載入範本</button>
-        <button onclick="handleUpload()" id="syncBtn" class="bg-slate-900 text-white shadow-lg"><i class="fas fa-cloud-upload-alt block text-lg mb-1"></i>同步資料</button>
-        <button onclick="window.print()" class="bg-blue-600 text-white shadow-lg"><i class="fas fa-print block text-lg mb-1"></i>列印 PDF</button>
+        <button onclick="loadPdfHistory()" class="bg-orange-500 text-white shadow-lg"><i class="fas fa-magic block mb-1"></i>範本</button>
+        <button onclick="handleUpload()" id="syncBtn" class="bg-slate-900 text-white shadow-lg"><i class="fas fa-cloud-upload-alt block mb-1"></i>同步雲端</button>
+        <button onclick="window.print()" class="bg-blue-600 text-white shadow-lg"><i class="fas fa-print block mb-1"></i>列印請款單</button>
     </div>
 
     <script>
@@ -170,7 +176,6 @@
             document.getElementById('billSerial').innerText = `INV-26${Math.floor(1000 + Math.random() * 9000)}`;
         };
 
-        // --- 核心：檢查行是否有內容 ---
         function checkRow(i) {
             const val = document.getElementById(`item_${i}`).value.trim();
             const row = document.getElementById(`row_${i}`);
@@ -191,18 +196,19 @@
             const resDisp = document.getElementById(`res_${i}`);
             const qtyInp = document.getElementById(`qty_${i}`);
             try {
-                let formula = input.value.replace(/x/gi, '*');
+                let formula = input.value.replace(/x/gi, '*').replace(/ /g, '');
+                if(formula === "") { resDisp.innerText = "0.0"; return; }
                 let res = new Function('return ' + formula.replace(/[^0-9\+\-\*\/\(\)\. ]/g, ''))() || 0;
                 let final = Math.round(res * 100) / 100;
-                resDisp.innerText = final.toFixed(2);
+                resDisp.innerText = final.toFixed(1);
                 qtyInp.value = final; 
                 updateTotal();
-            } catch(e) {}
+            } catch(e) { resDisp.innerText = "Error"; }
         }
 
         function updateTotal() {
             let grand = 0;
-            for(let i=1; i<=10; i++) {
+            for(let i=1; i<=30; i++) {
                 const qty = parseFloat(document.getElementById(`qty_${i}`).value) || 0;
                 const price = parseFloat(document.getElementById(`price_${i}`).value) || 0;
                 const sub = Math.round(qty * price);
@@ -218,7 +224,8 @@
             const icon = btn.querySelector('i');
             const projName = document.getElementById('projName').value.trim();
             if (!projName) { alert("請輸入案場名稱！"); return; }
-            icon.className = 'fas fa-spinner fa-spin block text-lg mb-1';
+            
+            icon.className = 'fas fa-spinner fa-spin block mb-1';
             try {
                 const { data: invData, error: invErr } = await _supabase.from('invoices').insert([{
                     bill_no: document.getElementById('billSerial').innerText,
@@ -229,9 +236,9 @@
                     total_amount: parseInt(document.getElementById('totalDisplay').innerText.replace(/,/g, ''))
                 }]).select();
                 if (invErr) throw invErr;
-                
+
                 const items = [];
-                for (let i = 1; i <= 10; i++) {
+                for (let i = 1; i <= 30; i++) {
                     const name = document.getElementById(`item_${i}`).value.trim();
                     if (name) {
                         items.push({
@@ -245,18 +252,23 @@
                     }
                 }
                 if (items.length > 0) await _supabase.from('invoice_items').insert(items);
-                alert("✅ 同步完成！");
+                alert("✅ 雲端同步成功！共 " + items.length + " 筆項目。");
             } catch (err) { alert("同步失敗：" + err.message); }
-            finally { icon.className = 'fas fa-cloud-upload-alt block text-lg mb-1'; }
+            finally { icon.className = 'fas fa-cloud-upload-alt block mb-1'; }
         }
 
         function loadPdfHistory() {
-            document.getElementById('projName').value = "範例案場：風頭壁";
-            document.getElementById('item_1').value = "一樓牆面防水";
-            document.getElementById('calc_1').value = "3.2*5.5 + 1.8*2.1";
-            document.getElementById('price_1').value = 75;
-            checkRow(1); autoCalc(1);
-            alert("範本已帶入");
+            document.getElementById('projName').value = "範例案場：大型防水工程";
+            const demoItems = ["屋頂防水", "外牆拉皮", "浴室滲漏修繕", "地下室高壓灌注", "窗框補強"];
+            demoItems.forEach((text, i) => {
+                const idx = i + 1;
+                document.getElementById(`item_${idx}`).value = text;
+                document.getElementById(`calc_${idx}`).value = "10*20 + 5*2.5";
+                document.getElementById(`price_${idx}`).value = 850;
+                checkRow(idx);
+                autoCalc(idx);
+            });
+            alert("已帶入範例數據");
         }
 
         function numberToChinese(n) {
