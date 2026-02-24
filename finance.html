@@ -103,7 +103,7 @@
                     <thead>
                         <tr>
                             <th width="100">日期</th>
-                            <th>摘要項目</th>
+                            <th>摘要項目 (車號)</th>
                             <th width="80">類別</th>
                             <th width="110">收入</th>
                             <th width="110">支出</th>
@@ -138,10 +138,14 @@
                 <div class="flex gap-2">
                     <input type="date" id="f_date" class="flex-1 border-2 p-3 rounded-xl">
                     <select id="f_cat" class="w-24 border-2 p-3 rounded-xl font-bold bg-slate-50">
-                        <option>材料</option><option>雜支</option><option>機具</option><option>工資</option>
+                        <option>雜支</option><option>材料</option><option>機具</option><option>工資</option><option>油資</option>
                     </select>
                 </div>
-                <input type="text" id="f_title" class="w-full border-2 p-3 rounded-xl font-bold" placeholder="項目摘要 (如: 年終獎金)" required>
+                <div class="space-y-2">
+                    <input type="text" id="f_title" class="w-full border-2 p-3 rounded-xl font-bold" placeholder="項目摘要 (如: 加油)" required>
+                    <input type="text" id="f_v_no" class="w-full border-2 p-3 rounded-xl font-bold bg-slate-50" placeholder="車牌號碼 (選填)">
+                </div>
+                
                 <div class="flex gap-2">
                     <input type="number" id="f_amt" class="flex-1 border-2 p-3 rounded-xl font-black text-teal-600" placeholder="金額" required>
                     <select id="f_type" class="border-2 p-3 rounded-xl font-bold">
@@ -159,7 +163,6 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _sb = supabase.createClient(S_URL, S_KEY);
 
-        // 側欄開關
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
         function closeSidebarIfOpen() { document.getElementById('sidebar').classList.remove('active'); }
 
@@ -167,7 +170,7 @@
             document.getElementById('report-date').innerText = `製表日期：${new Date().toLocaleDateString('zh-TW')}`;
             document.getElementById('f_date').valueAsDate = new Date();
             const { data } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
-            
+                        
             let inc = 0, exp = 0, html = '';
             data.forEach(r => {
                 const isInc = r.type === 'income';
@@ -191,16 +194,25 @@
 
         async function saveRecord() {
             const title = document.getElementById('f_title').value;
+            const v_no = document.getElementById('f_v_no').value; // 獲取車號
             const amount = Number(document.getElementById('f_amt').value);
+            
             if(!title || !amount) return;
+
+            // 格式化摘要，如果有輸入車號，則加上 [車號] 前綴
+            const finalTitle = v_no ? `[${v_no.toUpperCase()}] ${title}` : title;
+
             await _sb.from('finance_records').insert([{
                 record_date: document.getElementById('f_date').value,
-                title: title,
+                title: finalTitle,
                 amount: amount,
                 type: document.getElementById('f_type').value,
                 category: document.getElementById('f_cat').value
             }]);
+
+            // 清空欄位
             document.getElementById('f_title').value = '';
+            document.getElementById('f_v_no').value = ''; 
             document.getElementById('f_amt').value = '';
             document.getElementById('f_title').focus();
             loadData();
