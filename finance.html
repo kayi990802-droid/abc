@@ -3,184 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>錦德財務 | 專業終極版</title>
+    <title>錦德財務 | 雲端連線穩定版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Roboto+Mono:wght@400;700&display=swap');
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: #1e293b; }
         
-        body { background-color: #f1f5f9; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; }
-        
-        /* A4 專業報表設定 */
-        #pdf-report { 
-            width: 210mm; min-height: 297mm; background: white; margin: 20px auto; 
-            padding: 15mm; position: relative; box-sizing: border-box; color: #1e293b;
-        }
-        .report-table th { font-size: 11px; padding: 10px 4px; border-bottom: 2px solid #0f172a; text-align: left; color: #64748b; }
+        /* 報表 A4 排版 (11px) */
+        #pdf-report { width: 210mm; min-height: 297mm; background: white; margin: 20px auto; padding: 15mm; position: relative; box-sizing: border-box; }
+        .report-table th { font-size: 11px; padding: 10px 4px; border-bottom: 2px solid #000; text-align: left; }
         .report-table td { font-size: 11px; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; }
         .num-font { font-family: 'Roboto Mono', monospace; }
 
-        /* 分頁邏輯 */
         .page-content { display: none; }
         .page-content.active { display: block; }
-
-        /* 彈窗樣式 */
         #entry-modal { display: none; }
         #entry-modal.active { display: flex; }
-
-        @media print { .no-print { display: none !important; } #pdf-report { margin: 0; width: 100%; box-shadow: none; } }
-        @media (max-width: 1024px) { #pdf-report { width: 98vw; padding: 10px; margin: 10px auto; } }
     </style>
 </head>
 <body class="flex flex-col lg:flex-row min-h-screen">
 
     <aside class="no-print w-full lg:w-72 bg-slate-900 text-white p-6 sticky top-0 lg:h-screen flex flex-col z-50">
-        <div id="back-nav" class="mb-6 invisible">
-            <button onclick="switchPage('dashboard')" class="text-slate-500 hover:text-teal-400 text-[10px] font-black uppercase tracking-[2px] transition">
-                <i class="fas fa-arrow-left mr-1"></i> 返回主儀表板
+        <div class="mb-8">
+            <button onclick="location.reload()" class="flex items-center gap-2 text-slate-500 hover:text-teal-400 transition group">
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-teal-900">
+                    <i class="fas fa-home text-xs"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-[2px]">返回系統主頁</span>
             </button>
         </div>
-        
-        <div class="mb-10">
+
+        <div class="mb-10 px-2">
             <h1 class="text-xl font-black text-teal-400 italic">JINDE FINANCE</h1>
-            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">智慧財務決策系統</p>
+            <p class="text-[9px] text-slate-500 font-bold tracking-[2px] mt-1 uppercase">錦德防水財務管理</p>
         </div>
-        
-        <nav class="space-y-4 flex-grow font-bold text-sm">
-            <button onclick="switchPage('dashboard')" class="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-800 transition">
-                <i class="fas fa-th-large mr-2"></i> 數據統計首頁
+
+        <nav class="space-y-3 flex-grow">
+            <button onclick="switchPage('dashboard')" id="btn-dash" class="w-full text-left px-4 py-3 rounded-xl transition font-bold text-sm flex items-center gap-3 bg-slate-800 text-teal-400">
+                <i class="fas fa-th-large"></i> 數據統計首頁
             </button>
-            <button onclick="switchPage('report')" class="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-800 transition">
-                <i class="fas fa-file-alt mr-2"></i> 專業報表預覽
+            <button onclick="switchPage('report')" id="btn-rep" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 transition font-bold text-sm flex items-center gap-3 text-slate-400">
+                <i class="fas fa-file-invoice"></i> 專業報表預覽
             </button>
             <div class="h-px bg-slate-800 my-4"></div>
-            <button onclick="openModal()" class="w-full bg-teal-600 hover:bg-teal-500 py-3 rounded-2xl font-black shadow-lg transition active:scale-95">
-                ＋ 錄入新帳目
-            </button>
-            <button onclick="exportPDF()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-2xl border border-slate-700 mt-2">
-                <i class="fas fa-print mr-2"></i> 匯出 PDF 報表
+            <button onclick="openModal()" class="w-full bg-teal-600 hover:bg-teal-500 py-4 rounded-2xl font-black shadow-lg transition active:scale-95 text-sm">
+                錄入新帳目
             </button>
         </nav>
 
         <div class="pt-6 border-t border-slate-800 mt-auto">
-            <div class="flex gap-2">
-                <button onclick="setFilter('1935')" class="flex-1 text-[10px] py-2 bg-slate-800 rounded-lg hover:text-teal-400">1935</button>
-                <button onclick="setFilter('6533')" class="flex-1 text-[10px] py-2 bg-slate-800 rounded-lg hover:text-teal-400">6533</button>
-                <button onclick="setFilter('all')" class="flex-1 text-[10px] py-2 bg-slate-800 rounded-lg hover:text-teal-400">全部</button>
+            <p class="text-[10px] text-slate-500 mb-3 font-black uppercase text-center tracking-widest">快捷過濾</p>
+            <div class="grid grid-cols-2 gap-2 text-[10px] mb-4">
+                <button onclick="setFilter('1935')" class="py-2 bg-slate-800 rounded-lg hover:text-teal-400 font-bold">1935</button>
+                <button onclick="setFilter('6533')" class="py-2 bg-slate-800 rounded-lg hover:text-teal-400 font-bold">6533</button>
             </div>
+            <div class="grid grid-cols-3 gap-1 text-[9px] mb-4 text-center">
+                <button onclick="setFilter('油資')" class="py-2 bg-slate-800 rounded hover:bg-teal-600">油資</button>
+                <button onclick="setFilter('工資')" class="py-2 bg-slate-800 rounded hover:bg-teal-600">工資</button>
+                <button onclick="setFilter('材料費')" class="py-2 bg-slate-800 rounded hover:bg-teal-600">材料</button>
+            </div>
+            <button onclick="setFilter('all')" class="w-full py-2 bg-slate-700 rounded-lg text-[10px] font-black italic">顯示全部資料</button>
         </div>
     </aside>
 
     <main class="flex-1 p-4 lg:p-8">
+        <div class="no-print bg-white p-5 rounded-[2rem] shadow-sm mb-6 flex flex-wrap items-center gap-4">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">日期範圍</span>
+            <input type="date" id="filter-start" class="bg-slate-100 p-2 rounded-xl text-xs font-bold outline-none">
+            <span class="text-slate-300">~</span>
+            <input type="date" id="filter-end" class="bg-slate-100 p-2 rounded-xl text-xs font-bold outline-none">
+            <button onclick="loadData()" class="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-teal-600 transition">執行查詢</button>
+        </div>
         
         <div id="dashboard-page" class="page-content active">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-emerald-500">
-                    <p class="text-[10px] font-black text-slate-400 uppercase">Total Income</p>
-                    <h3 id="dash-inc" class="text-2xl font-black text-slate-800 num-font mt-1">0</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-emerald-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">總收入</p>
+                    <h3 id="dash-inc" class="text-2xl font-black num-font mt-1">0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-rose-500">
-                    <p class="text-[10px] font-black text-slate-400 uppercase">Total Expense</p>
-                    <h3 id="dash-exp" class="text-2xl font-black text-slate-800 num-font mt-1">0</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-rose-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">總支出</p>
+                    <h3 id="dash-exp" class="text-2xl font-black text-rose-500 num-font mt-1">0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-slate-900">
-                    <p class="text-[10px] font-black text-slate-400 uppercase">Net Balance</p>
-                    <h3 id="dash-net" class="text-2xl font-black text-slate-800 num-font mt-1">0</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-slate-900 text-teal-600">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">淨利結餘</p>
+                    <h3 id="dash-net" class="text-2xl font-black num-font mt-1">0</h3>
                 </div>
             </div>
-            <div class="bg-white p-10 rounded-[2rem] shadow-sm flex flex-col items-center min-h-[450px]">
-                <canvas id="mainChart" style="max-width: 350px;"></canvas>
-                <div id="dash-cat-list" class="grid grid-cols-2 gap-x-12 gap-y-2 mt-10 w-full max-w-md border-t pt-6"></div>
+            <div class="bg-white p-10 rounded-[2.5rem] shadow-sm flex flex-col items-center">
+                <div class="w-full max-w-md h-[300px] flex items-center justify-center relative">
+                    <canvas id="mainChart"></canvas>
+                    <div id="no-data-msg" class="absolute inset-0 flex items-center justify-center text-slate-300 font-black hidden">暫無支出數據</div>
+                </div>
+                <div id="dash-cat-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 w-full max-w-xl"></div>
             </div>
         </div>
 
         <div id="report-page" class="page-content">
+            <div class="no-print mb-4 flex justify-between items-center px-4">
+                <button onclick="switchPage('dashboard')" class="text-slate-400 hover:text-slate-900 text-xs font-black"><i class="fas fa-chevron-left mr-1"></i> 返回儀表板</button>
+                <button onclick="exportPDF()" class="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-xs shadow-xl transition active:scale-95"><i class="fas fa-download mr-2"></i> 匯出 PDF</button>
+            </div>
             <div id="pdf-report">
                 <div class="flex justify-between items-end border-b-2 border-slate-900 pb-6 mb-8">
-                    <div>
-                        <h2 class="text-3xl font-black tracking-tighter" style="font-family:'Noto Serif TC', serif">錦德防水工程行</h2>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[5px] mt-2">Monthly Financial Detail Report</p>
-                    </div>
-                    <div class="text-right text-[10px] font-bold">
-                        <p id="ref-no" class="text-slate-300 font-mono"></p>
-                        <p id="print-time" class="mt-1 bg-slate-900 text-white px-2 py-1 italic"></p>
-                    </div>
+                    <div><h2 class="text-2xl font-black">錦德防水工程行</h2><p class="text-[9px] text-slate-400 font-bold uppercase tracking-[4px] mt-1">Financial Detail</p></div>
+                    <div class="text-right text-[10px] font-bold"><p id="ref-no" class="text-slate-300 italic"></p><p id="print-time" class="mt-1 font-black"></p></div>
                 </div>
-
-                <table class="report-table w-full mb-10">
-                    <thead>
-                        <tr>
-                            <th width="15%">日期 (Date)</th>
-                            <th width="12%">類別</th>
-                            <th width="43%">摘要項目 (Description)</th>
-                            <th class="text-right" width="15%">收入 (+)</th>
-                            <th class="text-right" width="15%">支出 (-)</th>
-                        </tr>
-                    </thead>
+                <table class="report-table w-full mb-12">
+                    <thead><tr><th width="15%">日期</th><th width="15%">類別</th><th width="40%">摘要項目</th><th class="text-right" width="15%">收入 (+)</th><th class="text-right" width="15%">支出 (-)</th></tr></thead>
                     <tbody id="table-body"></tbody>
                 </table>
-
-                <div class="flex justify-end">
-                    <div class="w-64 border-t-4 border-double border-slate-900 pt-3 flex justify-between font-black">
-                        <span class="text-xs uppercase">Ending Balance</span>
-                        <span id="final-total" class="num-font text-lg underline">0</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-12 absolute bottom-[20mm] left-[15mm] right-[15mm]">
-                    <div class="border-t border-slate-300 pt-2 text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">Prepared By</div>
-                    <div class="border-t border-slate-300 pt-2 text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">Audited By</div>
-                    <div class="border-t border-slate-300 pt-2 text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">Authorized By</div>
+                <div class="flex justify-end mb-24">
+                    <div class="w-64 border-t-2 border-slate-900 pt-3 flex justify-between font-black"><span class="text-xs text-slate-400 uppercase">結餘總計</span><span id="final-total" class="num-font text-lg underline decoration-teal-500">0</span></div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="entry-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[2000] items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div class="bg-slate-50 px-8 py-4 border-b flex justify-between items-center">
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-[10px] font-black uppercase tracking-widest transition">
-                    <i class="fas fa-chevron-left mr-1"></i> 返回主頁
-                </button>
-                <span class="text-[10px] font-black text-slate-300 uppercase tracking-[3px]">New Entry</span>
-                <div class="w-10"></div>
+    <div id="entry-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[2000] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-[10px] font-black uppercase"><i class="fas fa-chevron-left"></i> 返回</button>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">新增資料</span>
+                <div class="w-8"></div>
             </div>
-
-            <div class="p-8">
-                <h3 class="text-xl font-black mb-6 text-slate-800">錄入明細資料</h3>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase">日期</label>
-                            <input type="date" id="m-date" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase">收支類型</label>
-                            <select id="m-type" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1">
-                                <option value="expense">支出 (-)</option>
-                                <option value="income">收入 (+)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase">摘要項目 (如: 油資 [1935])</label>
-                        <input type="text" id="m-title" placeholder="請輸入項目說明" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase">類別標籤</label>
-                        <input type="text" id="m-cat" placeholder="如: 工資, 油資, 維修" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase">金額 (TWD)</label>
-                        <input type="number" id="m-amount" class="w-full bg-slate-100 p-4 rounded-2xl font-black text-lg mt-1">
-                    </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-black text-slate-400">日期</label><input type="date" id="m-date" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1"></div>
+                    <div><label class="text-[10px] font-black text-slate-400">類型</label><select id="m-type" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1"><option value="expense">支出 (-)</option><option value="income">收入 (+)</option></select></div>
                 </div>
-                <button onclick="saveRecord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-xl mt-8 hover:bg-slate-800 transition active:scale-95">
-                    確認儲存提交
-                </button>
+                <div><label class="text-[10px] font-black text-slate-400">摘要</label><input type="text" id="m-title" placeholder="項目說明" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1"></div>
+                <div><label class="text-[10px] font-black text-slate-400">類別</label><input list="cat-options" id="m-cat" placeholder="選擇或手打" class="w-full bg-slate-100 p-4 rounded-2xl font-bold mt-1"><datalist id="cat-options"><option value="油資"><option value="工資"><option value="材料費"><option value="餐費"></datalist></div>
+                <div><label class="text-[10px] font-black text-slate-400">金額</label><input type="number" id="m-amount" placeholder="0" class="w-full bg-slate-100 p-4 rounded-2xl font-black text-xl mt-1"></div>
+                <button onclick="saveRecord()" class="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black shadow-xl mt-6">儲存至雲端</button>
             </div>
         </div>
     </div>
@@ -190,13 +150,21 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _sb = supabase.createClient(S_URL, S_KEY);
 
-        let myChart = null;
-        let currentFilter = 'all';
+        let myChart = null, currentFilter = 'all';
 
         function switchPage(p) {
             document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
             document.getElementById(p + '-page').classList.add('active');
-            document.getElementById('back-nav').style.visibility = (p === 'report') ? 'visible' : 'hidden';
+            
+            const btnDash = document.getElementById('btn-dash');
+            const btnRep = document.getElementById('btn-rep');
+            if(p === 'dashboard') {
+                btnDash.classList.add('bg-slate-800', 'text-teal-400');
+                btnRep.classList.remove('bg-slate-800', 'text-teal-400');
+            } else {
+                btnRep.classList.add('bg-slate-800', 'text-teal-400');
+                btnDash.classList.remove('bg-slate-800', 'text-teal-400');
+            }
             loadData();
         }
 
@@ -204,83 +172,82 @@
         function closeModal() { document.getElementById('entry-modal').classList.remove('active'); }
 
         async function saveRecord() {
-            const row = {
-                record_date: document.getElementById('m-date').value,
-                type: document.getElementById('m-type').value,
-                title: document.getElementById('m-title').value,
-                category: document.getElementById('m-cat').value,
-                amount: parseInt(document.getElementById('m-amount').value)
-            };
-            if(!row.record_date || !row.amount) return alert('必填欄位不可為空');
-            const { error } = await _sb.from('finance_records').insert([row]);
-            if(!error) { closeModal(); loadData(); }
+            const title = document.getElementById('m-title').value;
+            const cat = document.getElementById('m-cat').value;
+            const date = document.getElementById('m-date').value;
+            const amount = document.getElementById('m-amount').value;
+            if(!date || !amount) return alert('日期與金額必填！');
+            let finalCat = cat || (title.match(/\[(.*?)\]/) ? title.match(/\[(.*?)\]/)[1] : '一般');
+            const { error } = await _sb.from('finance_records').insert([{ record_date: date, type: document.getElementById('m-type').value, title: title, category: finalCat, amount: parseInt(amount) }]);
+            if(!error) { closeModal(); loadData(); } else { alert('連線異常'); }
         }
 
         async function loadData() {
-            const { data } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
-            const filtered = currentFilter === 'all' ? data : data.filter(r => r.title.includes(`[${currentFilter}]`));
+            const { data, error } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
+            if(error) return console.error("抓取失敗");
+
+            const sDate = document.getElementById('filter-start').value;
+            const eDate = document.getElementById('filter-end').value;
+            let filtered = data || [];
+            
+            if(sDate) filtered = filtered.filter(r => r.record_date >= sDate);
+            if(eDate) filtered = filtered.filter(r => r.record_date <= eDate);
+            if(currentFilter !== 'all') filtered = filtered.filter(r => r.title.includes(`[${currentFilter}]`) || r.category === currentFilter);
             
             let tInc = 0, tExp = 0, html = '', stats = {};
             filtered.forEach(r => {
                 const isInc = r.type === 'income';
                 isInc ? tInc += r.amount : tExp += r.amount;
                 if(!isInc) stats[r.category] = (stats[r.category] || 0) + r.amount;
-
-                html += `<tr>
-                    <td class="num-font text-slate-400">${r.record_date}</td>
-                    <td><span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">${r.category}</span></td>
-                    <td class="font-bold text-slate-800">${r.title}</td>
-                    <td class="num-font text-emerald-600 font-bold text-right">${isInc ? r.amount.toLocaleString() : ''}</td>
-                    <td class="num-font text-slate-900 font-bold text-right">${!isInc ? r.amount.toLocaleString() : ''}</td>
-                </tr>`;
+                html += `<tr><td class="num-font text-slate-400">${r.record_date}</td><td><span class="text-[10px] font-black px-2 py-1 bg-slate-100 rounded text-slate-600 uppercase tracking-tighter">${r.category}</span></td><td class="font-bold text-slate-800">${r.title}</td><td class="num-font text-emerald-600 font-bold text-right">${isInc ? r.amount.toLocaleString() : ''}</td><td class="num-font text-slate-900 font-bold text-right">${!isInc ? r.amount.toLocaleString() : ''}</td></tr>`;
             });
 
-            document.getElementById('table-body').innerHTML = html;
+            document.getElementById('table-body').innerHTML = html || '<tr><td colspan="5" class="text-center py-10 text-slate-300">本區間無數據</td></tr>';
             document.getElementById('dash-inc').innerText = tInc.toLocaleString();
             document.getElementById('dash-exp').innerText = tExp.toLocaleString();
             document.getElementById('dash-net').innerText = (tInc - tExp).toLocaleString();
             document.getElementById('final-total').innerText = (tInc - tExp).toLocaleString();
             document.getElementById('print-time').innerText = `Date: ${new Date().toLocaleDateString()}`;
-            document.getElementById('ref-no').innerText = `JD-REF-${new Date().getTime().toString().slice(-5)}`;
-
+            document.getElementById('ref-no').innerText = `JD-REF-${new Date().getTime().toString().slice(-6)}`;
+            
             updateChart(stats);
         }
 
         function updateChart(stats) {
             const ctx = document.getElementById('mainChart').getContext('2d');
+            const noDataMsg = document.getElementById('no-data-msg');
+            
+            if (Object.keys(stats).length === 0) {
+                if(myChart) myChart.destroy();
+                noDataMsg.classList.remove('hidden');
+                document.getElementById('dash-cat-list').innerHTML = '';
+                return;
+            }
+            
+            noDataMsg.classList.add('hidden');
             if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(stats),
-                    datasets: [{ data: Object.values(stats), backgroundColor: ['#0f172a', '#0d9488', '#6366f1', '#f43f5e', '#f59e0b'], borderWidth: 8, hoverOffset: 20 }]
-                },
-                options: { cutout: '80%', plugins: { legend: { display: false } } }
+            myChart = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { labels: Object.keys(stats), datasets: [{ data: Object.values(stats), backgroundColor: ['#0f172a', '#0d9488', '#6366f1', '#f43f5e', '#f59e0b', '#cbd5e1'], borderWidth: 0 }] }, 
+                options: { cutout: '80%', plugins: { legend: { display: false } } } 
             });
 
             let listHtml = '';
             Object.keys(stats).forEach(k => {
-                listHtml += `<div class="flex justify-between text-xs font-bold border-b py-2"><span class="text-slate-400">${k}</span><span class="num-font">${stats[k].toLocaleString()}</span></div>`;
+                listHtml += `<div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${k}</span><span class="num-font font-black">${stats[k].toLocaleString()}</span></div>`;
             });
             document.getElementById('dash-cat-list').innerHTML = listHtml;
         }
 
         function setFilter(v) { currentFilter = v; loadData(); }
-
-        function exportPDF() {
-            switchPage('report');
-            setTimeout(() => {
-                const element = document.getElementById('pdf-report');
-                html2pdf().set({
-                    margin: 0,
-                    filename: `錦德財務_${new Date().toISOString().slice(0,10)}.pdf`,
-                    html2canvas: { scale: 3, useCORS: true },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                }).from(element).save();
-            }, 500);
-        }
-
-        window.onload = loadData;
+        function exportPDF() { html2pdf().set({ margin: 0, filename: '錦德報表.pdf', html2canvas: { scale: 3 }, jsPDF: { unit: 'mm', format: 'a4' } }).from(document.getElementById('pdf-report')).save(); }
+        
+        window.onload = () => {
+            const now = new Date();
+            document.getElementById('filter-start').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('filter-end').value = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+            loadData();
+        };
     </script>
 </body>
 </html>
