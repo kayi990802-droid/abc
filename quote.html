@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德報價系統 Pro (優化版)</title>
+    <title>JINDE | 錦德報價系統 Pro (固定章戳版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -17,7 +17,6 @@
             .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 40px; background: #334155; display: flex; justify-content: center; }
             .a4-preview { width: 210mm; min-height: 297mm; }
         }
-
         .a4-preview { background: white; color: #1a1a1a; padding: 15mm 20mm; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
         input, textarea, select { background: #0f172a; color: white; border: 1px solid #334155; border-radius: 12px; padding: 12px; width: 100%; margin-bottom: 12px; outline: none; }
         .preview-input { background: transparent !important; color: #000 !important; border: none !important; padding: 0 !important; font-weight: bold; outline: none !important; width: 100%; }
@@ -26,17 +25,15 @@
         .mode-btn { background: #0ea5e9; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 900; width: 100%; cursor: pointer; transition: 0.3s; margin-bottom: 8px; font-size: 14px; }
         .mode-btn-orange { background: #f59e0b; }
         
-        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-        .photo-item { position: relative; width: 100%; height: 160px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; page-break-inside: avoid; }
-        .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; width: 100%; }
+        .photo-item { position: relative; width: 100%; height: 180px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; break-inside: avoid; }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* 刪除圖片按鈕 */
         .del-photo { position: absolute; top: 5px; right: 5px; background: rgba(225, 29, 72, 0.9); color: white; width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; border: none; z-index: 10; }
-        .del-photo:hover { background: #be123c; }
-
+        
         .info-label { font-size: 10px; font-weight: 900; background: #000; color: #fff; padding: 2px 8px; display: inline-block; margin-bottom: 4px; border-radius: 4px; }
         .editable-area { border: 1px dashed #cbd5e1; padding: 10px; font-size: 11px; line-height: 1.5; margin-bottom: 15px; outline: none; color: #334155; border-radius: 8px; min-height: 50px; white-space: pre-wrap; text-align: justify; }
-
+        
         @media print {
             .no-print, .del-photo { display: none !important; }
             body, .main-content { background: white; height: auto !important; overflow: visible !important; display: block !important; }
@@ -47,19 +44,16 @@
     </style>
 </head>
 <body>
-
 <div class="admin-sidebar no-print">
     <div class="flex items-center gap-2 mb-6">
         <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center font-black text-slate-900 italic">J</div>
         <h2 class="text-xl font-black text-white italic tracking-tighter">錦德報價系統 Pro</h2>
     </div>
-
     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">法律條款模組</label>
     <div class="mb-6">
         <button class="mode-btn" onclick="applyTerms('indoor')">套用「室內版」條款</button>
         <button class="mode-btn mode-btn-orange" onclick="applyTerms('outdoor')">套用「外牆版」條款</button>
     </div>
-
     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">快捷工法項目</label>
     <div class="grid grid-cols-1 gap-2 mb-6">
         <button class="work-btn" onclick="addPU()"><i class="fas fa-layer-group mr-2"></i> 屋頂油性PU三層</button>
@@ -67,19 +61,16 @@
         <button class="work-btn" onclick="addRow('高壓灌注止漏工法')"><i class="fas fa-syringe mr-2"></i> 高壓灌注止漏</button>
         <button class="work-btn text-amber-400" onclick="addRow('')"><i class="fas fa-plus mr-2"></i> 新增自訂項目</button>
     </div>
-
-    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">文件配置</label>
+    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">現場施工圖上傳</label>
     <div class="space-y-2 mb-6">
         <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <p class="text-[9px] text-slate-500 mb-2 uppercase">上傳圖片/職章 (自動壓縮命名)</p>
-            <input type="file" class="text-xs mb-2" onchange="loadImage(event, 'logo_img')">
+            <p class="text-[9px] text-slate-500 mb-2 uppercase italic font-bold">上傳施工圖 (可多選)</p>
             <input type="file" id="multi_upload" class="text-xs mb-2" multiple onchange="processMultipleImages(event)">
-            <input type="file" class="text-xs" onchange="loadImage(event, 'seal_img')">
+            <p class="text-[8px] text-teal-400 mt-2">※ 公司 Logo 與印章已內建，不需上傳。</p>
         </div>
         <input type="text" id="in_name" placeholder="客戶姓名" oninput="syncData()">
         <input type="text" id="in_addr" placeholder="施工地址" oninput="syncData()">
     </div>
-
     <div class="bg-teal-900/20 p-4 rounded-2xl mb-6 border border-teal-500/30">
         <div class="flex items-center justify-between mb-4">
             <span class="text-xs font-bold text-teal-400">營業稅 (VAT 5%)</span>
@@ -87,7 +78,6 @@
         </div>
         <input type="number" id="in_discount" class="mb-0 text-center font-bold" placeholder="折扣金額" oninput="calculateFinal()">
     </div>
-
     <div class="grid grid-cols-1 gap-3">
         <button id="saveBtn" onclick="saveToSupabase()" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-900 py-4 rounded-2xl font-black text-sm transition-all shadow-lg">儲存至雲端</button>
         <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-white text-slate-900 py-4 rounded-2xl font-black text-sm transition-all">列印 PDF 報價單</button>
@@ -102,14 +92,13 @@
                 <p class="text-[10px] font-bold mt-1 text-slate-400 uppercase tracking-widest">Jinde Waterproofing Engineering & Design</p>
             </div>
             <div class="text-right">
-                <img id="logo_img" src="" class="max-h-16 mb-2 ml-auto" style="display:none;">
+                <img id="logo_img" src="https://image2url.com/r2/default/images/1772610478858-c207b86b-3d3c-4bd1-aac2-b9e9d5ce2adf.jpg" class="max-h-16 mb-2 ml-auto mix-blend-multiply">
                 <div class="text-[11px] font-black font-mono bg-slate-100 px-2 py-1 rounded">
                     NO: <span id="out_id"></span><br>
                     DATE: <span id="out_date"></span>
                 </div>
             </div>
         </div>
-
         <div class="grid grid-cols-2 gap-8 mb-8">
             <div class="border-l-4 border-black pl-4">
                 <p class="text-[9px] font-black text-slate-400 uppercase">Customer 客戶名稱</p>
@@ -120,7 +109,6 @@
                 <p id="out_addr" class="text-sm font-bold">未填寫地址</p>
             </div>
         </div>
-
         <div class="flex-grow">
             <table class="w-full mb-8">
                 <thead>
@@ -134,7 +122,6 @@
                 </thead>
                 <tbody id="out_tbody" class="text-sm font-bold divide-y divide-slate-100"></tbody>
             </table>
-
             <div class="flex justify-end mb-8">
                 <div class="w-72 space-y-1 text-sm font-bold">
                     <div class="flex justify-between px-3 text-xs text-slate-500"><span>小計 Subtotal</span><span id="res_sub">0</span></div>
@@ -146,25 +133,24 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-6">
-                <div>
-                    <span class="info-label italic">METHOD 工法標準說明</span>
-                    <div id="out_method" contenteditable="true" class="editable-area">請選擇快捷工法或在此輸入...</div>
-                </div>
-                <div>
-                    <span class="info-label italic">PHOTOS 現場勘查記錄</span>
-                    <div id="photo_grid" class="photo-grid"></div>
-                </div>
-                <div>
-                    <span class="info-label italic">REMARKS 備註與法律條款</span>
-                    <div id="out_terms" contenteditable="true" class="editable-area">請選擇上方條款模組...</div>
+            <div class="mb-8 p-4 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 text-sm">
+                <p class="font-black border-b border-slate-300 pb-1 mb-2 italic text-teal-700 uppercase text-[10px] tracking-widest">Bank Information 匯款帳號</p>
+                <div class="grid grid-cols-1 gap-1 font-bold text-slate-700">
+                    <div>銀行：合作金庫銀行 (006) 太平分行</div>
+                    <div>戶名：錦德工程行</div>
+                    <div class="text-lg tracking-wider font-mono mt-1">帳號：1128-717-728840</div>
                 </div>
             </div>
-        </div>
 
+            <div class="grid grid-cols-1 gap-6">
+                <div><span class="info-label italic">METHOD 工法標準說明</span><div id="out_method" contenteditable="true" class="editable-area"></div></div>
+                <div><span class="info-label italic">PHOTOS 現場勘查記錄</span><div id="photo_grid" class="photo-grid"></div></div>
+                <div><span class="info-label italic">REMARKS 備註與法律條款</span><div id="out_terms" contenteditable="true" class="editable-area"></div></div>
+            </div>
+        </div>
         <div class="sig-container mt-12 grid grid-cols-2 gap-12 text-center">
             <div class="relative border-t-2 border-black pt-2 font-black text-[10px]">
-                <img id="seal_img" src="" class="absolute bottom-6 left-1/2 -translate-x-1/2 w-28 mix-blend-multiply opacity-90" style="display:none;">
+                <img id="seal_img" src="https://image2url.com/r2/default/images/1772610504919-5717bf64-8142-4442-b71e-c88f87376213.png" class="absolute bottom-6 left-1/2 -translate-x-1/2 w-32 mix-blend-multiply opacity-90">
                 AUTHORIZED SIGNATURE (錦德防水)
             </div>
             <div class="border-t-2 border-black pt-2 font-black text-[10px]">CUSTOMER SIGNATURE (客戶簽章)</div>
@@ -177,180 +163,143 @@ const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
 const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
 const _supabase = supabase.createClient(S_URL, S_KEY);
 
-const indoorTerms = `第一條 工程範圍\n一、本工程僅限室內區域防水施作。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬局部防水補強工程，非整棟建築物結構性防水改善工程。\n\n第二條 外牆及公共區域排除\n一、本工程不包含建築物外牆防水、窗框外側填縫、屋頂防水、女兒牆防水、公共區域及管道間。\n二、若漏水來源涉及外牆滲水、樓上住戶、公共管線或建築結構體問題，應由相關權責單位負責處理。\n三、因外牆滲水導致之室內反潮、壁癌、油漆剝落或磁磚滲水，不屬本工程保固範圍。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {PRICE} 元整。\n二、訂金＿＿％，於簽約或進場時支付。\n三、中期款＿＿％，於防水層完成時支付。\n四、尾款＿＿％，於完工驗收當日付清。\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數＿＿天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 保固條款\n一、本工程保固期限為＿＿年，自完工日起算。\n二、保固範圍僅限本次實際施作之室內防水區域。\n三、下列情形不在保固範圍內：\n（一）外牆滲水。（二）建築結構裂縫。（三）樓上或他戶滲水。（四）公共管線問題。（五）天然災害。（六）第三人施工或破壞所致。\n\n第六條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方書面同意後始得施工。\n\n第七條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第八條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`;
+window.onload = () => { updateOrderInfo(); applyTerms('indoor'); };
 
+function updateOrderInfo() { 
+    document.getElementById('out_date').innerText = new Date().toLocaleDateString(); 
+    document.getElementById('out_id').innerText = 'JD' + Math.floor(Date.now()/1000).toString().slice(-6).toUpperCase(); 
+}
+
+const indoorTerms = `第一條 工程範圍\n一、本工程僅限室內區域防水施作。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬局部防水補強工程，非整棟建築物結構性防水改善工程。\n\n第二條 外牆及公共區域排除\n一、本工程不包含建築物外牆防水、窗框外側填縫、屋頂防水、女兒牆防水、公共區域及管道間。\n二、若漏水來源涉及外牆滲水、樓上住戶、公共管線或建築結構體問題，應由相關權責單位負責處理。\n三、因外牆滲水導致之室內反潮、壁癌、油漆剝落或磁磚滲水，不屬本工程保固範圍。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {PRICE} 元整。\n二、訂金＿＿％，於簽約或進場時支付。\n三、中期款＿＿％，於防水層完成時支付。\n四、尾款＿＿％，於完工驗收當日付清。\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數＿＿天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 保固條款\n一、本工程保固期限為＿＿年，自完工日起算。\n二、保固範圍僅限本次實際施作之室內防水區域。\n三、下列情形不在保固範圍內：\n（一）外牆滲水。（二）建築結構裂縫。（三）樓上或他戶滲水。（四）公共管線問題。（五）天然災害。（六）第三人施工或破壞所致。\n\n第六條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方書面同意後始得施工。\n\n第七條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第八條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`;
 const outdoorTerms = `第一條 工程範圍\n一、本工程為外牆防水及裂縫修補工程。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬外牆表層防水改善工程，非整棟建築物結構補強或全面防水改善工程。\n\n第二條 外牆滲水說明\n一、建築物滲水可能來自多處來源，如屋頂、窗框、採光罩接縫、樓上住戶或結構裂縫等。\n二、本工程僅針對本次施作區域進行防水改善。\n三、若未全面整修相關區域，仍可能發生滲水情形。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {PRICE} 元整。\n二、訂金＿＿％，於簽約或進場時支付。\n三、中期款＿＿％，於主要防水層完成時支付。\n四、尾款＿＿％，於完工驗收當日付清。\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數＿＿天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 裂縫責任說明\n一、外牆裂縫修補屬現況改善處理。\n二、因建築物結構位移、地震、熱脹冷縮 or 混凝土收縮所產生之新增裂縫，不在保固範圍內。\n三、原有裂縫若因結構持續變動再次開裂，非屬施工瑕疵。\n\n第六條 保固條款\n一、本工程防水項目保固＿＿年，自完工驗收日起算。\n二、保固範圍僅限本次施作之防水區域。\n三、下列情形不在保固範圍內：\n（一）建築結構位移。（二）新增裂縫。（三）天然災害。（四）第三人施工破壞。（五）非本工程施作區域滲水。\n\n第七條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方同意後始得施工。\n\n第八條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第九條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`;
 
-window.onload = () => {
-    updateOrderInfo();
-    applyTerms('indoor');
-};
-
-function updateOrderInfo() {
-    document.getElementById('out_date').innerText = new Date().toLocaleDateString();
-    document.getElementById('out_id').innerText = 'JD' + Math.floor(Date.now()/1000).toString().slice(-6).toUpperCase();
+function applyTerms(mode) { 
+    const price = document.getElementById('sum_final').innerText; 
+    const template = mode === 'indoor' ? indoorTerms : outdoorTerms; 
+    document.getElementById('out_terms').innerText = template.replace('{PRICE}', price); 
 }
 
-function applyTerms(mode) {
-    const price = document.getElementById('sum_final').innerText;
-    const template = mode === 'indoor' ? indoorTerms : outdoorTerms;
-    document.getElementById('out_terms').innerText = template.replace('{PRICE}', price);
+function addRow(name="") { 
+    const tbody = document.getElementById('out_tbody'); 
+    const tr = document.createElement('tr'); 
+    tr.innerHTML = ` 
+        <td class="py-4 pl-3"><input type="text" value="${name}" class="preview-input" placeholder="點擊輸入項目名稱..."></td> 
+        <td class="py-4 px-2 text-center"><input type="number" value="1" class="qty preview-input text-center" oninput="calculateFinal()"></td> 
+        <td class="py-4 px-2 text-center"><input type="text" value="式" class="preview-input text-center"></td> 
+        <td class="py-4 px-2 text-right"><input type="number" value="0" class="price preview-input text-right" oninput="calculateFinal()"></td> 
+        <td class="py-4 pr-3 text-right font-black subtotal">0</td> 
+        <td class="no-print text-center w-8"><button onclick="this.parentElement.parentElement.remove();calculateFinal()" class="text-rose-400 hover:text-rose-600">×</button></td> 
+    `; 
+    tbody.appendChild(tr); 
+    if(name === "") tr.querySelector('input').focus(); 
+    calculateFinal(); 
 }
 
-function addRow(name="") {
-    const tbody = document.getElementById('out_tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="py-4 pl-3"><input type="text" value="${name}" class="preview-input" placeholder="點擊輸入項目名稱..."></td>
-        <td class="py-4 px-2 text-center"><input type="number" value="1" class="qty preview-input text-center" oninput="calculateFinal()"></td>
-        <td class="py-4 px-2 text-center"><input type="text" value="式" class="preview-input text-center"></td>
-        <td class="py-4 px-2 text-right"><input type="number" value="0" class="price preview-input text-right" oninput="calculateFinal()"></td>
-        <td class="py-4 pr-3 text-right font-black subtotal">0</td>
-        <td class="no-print text-center w-8"><button onclick="this.parentElement.parentElement.remove();calculateFinal()" class="text-rose-400 hover:text-rose-600">×</button></td>
-    `;
-    tbody.appendChild(tr);
-    if(name === "") tr.querySelector('input').focus();
-    calculateFinal();
-}
-
-function calculateFinal() {
-    let subtotal = 0;
-    document.querySelectorAll('#out_tbody tr').forEach(row => {
-        const q = parseFloat(row.querySelector('.qty').value) || 0;
-        const p = parseFloat(row.querySelector('.price').value) || 0;
-        const sub = q * p;
-        row.querySelector('.subtotal').innerText = Math.round(sub).toLocaleString();
-        subtotal += sub;
-    });
-    const discount = parseFloat(document.getElementById('in_discount').value) || 0;
-    const tax = document.getElementById('tax_toggle').checked ? Math.round((subtotal - discount) * 0.05) : 0;
-    const final = subtotal - discount + tax;
+function calculateFinal() { 
+    let subtotal = 0; 
+    document.querySelectorAll('#out_tbody tr').forEach(row => { 
+        const q = parseFloat(row.querySelector('.qty').value) || 0; 
+        const p = parseFloat(row.querySelector('.price').value) || 0; 
+        const sub = q * p; 
+        row.querySelector('.subtotal').innerText = Math.round(sub).toLocaleString(); 
+        subtotal += sub; 
+    }); 
+    const discount = parseFloat(document.getElementById('in_discount').value) || 0; 
+    const tax = document.getElementById('tax_toggle').checked ? Math.round((subtotal - discount) * 0.05) : 0; 
+    const final = subtotal - discount + tax; 
     
-    document.getElementById('res_sub').innerText = subtotal.toLocaleString();
-    document.getElementById('res_tax').innerText = tax.toLocaleString();
-    document.getElementById('res_disc').innerText = '-' + discount.toLocaleString();
-    document.getElementById('tax_row').classList.toggle('hidden', tax === 0);
-    document.getElementById('disc_row').classList.toggle('hidden', discount === 0);
-    document.getElementById('sum_final').innerText = final.toLocaleString();
-
-    const termsEl = document.getElementById('out_terms');
-    const currentText = termsEl.innerText;
-    const regex = /工程總價為新台幣 .* 元整。/;
-    if (regex.test(currentText)) {
-        termsEl.innerText = currentText.replace(regex, `工程總價為新台幣 ${final.toLocaleString()} 元整。`);
-    }
+    document.getElementById('res_sub').innerText = subtotal.toLocaleString(); 
+    document.getElementById('res_tax').innerText = tax.toLocaleString(); 
+    document.getElementById('res_disc').innerText = '-' + discount.toLocaleString(); 
+    document.getElementById('tax_row').classList.toggle('hidden', tax === 0); 
+    document.getElementById('disc_row').classList.toggle('hidden', discount === 0); 
+    document.getElementById('sum_final').innerText = final.toLocaleString(); 
+    
+    const termsEl = document.getElementById('out_terms'); 
+    const currentText = termsEl.innerText; 
+    const regex = /工程總價為新台幣 .* 元整。/; 
+    if (regex.test(currentText)) { 
+        termsEl.innerText = currentText.replace(regex, `工程總價為新台幣 ${final.toLocaleString()} 元整。`); 
+    } 
 }
 
-function syncData() {
-    document.getElementById('out_name').innerText = document.getElementById('in_name').value || "未填寫";
-    document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "未填寫地址";
+function syncData() { 
+    document.getElementById('out_name').innerText = document.getElementById('in_name').value || "未填寫"; 
+    document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "未填寫地址"; 
 }
 
-function addPU() { addRow('屋頂油性PU三層防水工程'); document.getElementById('out_method').innerText = `【屋頂地面油性PU三層工法】\n1. 素地整理、2. 第一層底漆、3. 第二層中塗(2mm)、4. 第三層耐候面漆。`; }
-function addWaterWall() { addRow('外牆水性防水漆五層工程'); document.getElementById('out_method').innerText = `【牆面水性防水漆五層工法】\n1. 基面清理、2. 第一層底漆、3. 第二/三層中塗、4. 第五層耐候面漆。`; }
-
-// 單張載入（Logo/職章）
-function loadImage(e, id) {
-    const file = e.target.files[0];
-    if (file) {
-        const url = URL.createObjectURL(file);
-        const el = document.getElementById(id);
-        el.src = url; el.style.display = 'block';
-    }
+function addPU() { 
+    addRow('屋頂油性PU三層防水工程'); 
+    document.getElementById('out_method').innerText = `【屋頂地面油性PU三層工法】\n1. 素地整理、2. 第一層底漆、3. 第二層中塗(2mm)、4. 第三層耐候面漆。`; 
 }
 
-// 多張圖片：壓縮 + 改名 + 渲染
-async function processMultipleImages(event) {
-    const files = Array.from(event.target.files);
-    const grid = document.getElementById('photo_grid');
-    const quoteId = document.getElementById('out_id').innerText;
-    const datePrefix = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        // 壓縮至 800px 寬，品質 0.7
-        const compressedBase64 = await compressImage(file, 800, 0.7);
-        // 自動命名
-        const newFileName = `${datePrefix}_${quoteId}_${Date.now()}_${i+1}.jpg`;
-
-        const container = document.createElement('div');
-        container.className = 'photo-item shadow-sm';
-        container.dataset.filename = newFileName;
-        container.innerHTML = `
-            <img src="${compressedBase64}">
-            <button class="del-photo no-print" onclick="this.parentElement.remove()">×</button>
-        `;
-        grid.appendChild(container);
-    }
+function addWaterWall() { 
+    addRow('外牆水性防水漆五層工程'); 
+    document.getElementById('out_method').innerText = `【外牆水性防水漆五層工法】\n1. 基面清理、2. 第一層底漆、3. 第二/三層中塗、4. 第五層耐候面漆。`; 
 }
 
-// 圖片壓縮輔助函數
-function compressImage(file, maxWidth, quality) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                if (width > maxWidth) {
-                    height = (maxWidth / width) * height;
-                    width = maxWidth;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-        };
-    });
+async function processMultipleImages(event) { 
+    const files = Array.from(event.target.files); 
+    const grid = document.getElementById('photo_grid'); 
+    const quoteId = document.getElementById('out_id').innerText; 
+    const datePrefix = new Date().toISOString().slice(0, 10).replace(/-/g, ''); 
+    
+    for (let i = 0; i < files.length; i++) { 
+        const file = files[i]; 
+        const compressedBase64 = await compressImage(file, 800, 0.5); 
+        const newFileName = `${datePrefix}_${quoteId}_${Date.now()}_${i+1}.jpg`; 
+        
+        const container = document.createElement('div'); 
+        container.className = 'photo-item shadow-sm'; 
+        container.dataset.filename = newFileName; 
+        container.innerHTML = `<img src="${compressedBase64}"><button class="del-photo no-print" onclick="this.parentElement.remove()">×</button>`; 
+        grid.appendChild(container); 
+    } 
 }
 
-async function saveToSupabase() {
-    const btn = document.getElementById('saveBtn');
-    btn.disabled = true; btn.innerText = "正在壓縮並儲存...";
+function compressImage(file, maxWidth, quality) { 
+    return new Promise((resolve) => { 
+        const reader = new FileReader(); 
+        reader.readAsDataURL(file); 
+        reader.onload = (event) => { 
+            const img = new Image(); 
+            img.src = event.target.result; 
+            img.onload = () => { 
+                const canvas = document.createElement('canvas'); 
+                let width = img.width, height = img.height; 
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; } 
+                canvas.width = width; canvas.height = height; 
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height); 
+                resolve(canvas.toDataURL('image/jpeg', quality)); 
+            }; 
+        }; 
+    }); 
+}
 
-    const items = [];
-    document.querySelectorAll('#out_tbody tr').forEach(row => {
-        items.push({ 
-            desc: row.cells[0].querySelector('input').value, 
-            qty: row.querySelector('.qty').value, 
-            price: row.querySelector('.price').value 
-        });
-    });
-
-    const photoElements = document.querySelectorAll('.photo-item');
-    const photoData = [];
-    photoElements.forEach(el => {
-        photoData.push({
-            name: el.dataset.filename,
-            data: el.querySelector('img').src
-        });
-    });
-
-    try {
-        const { error } = await _supabase.from('quotations').insert([{
-            quote_id: document.getElementById('out_id').innerText,
-            client: document.getElementById('in_name').value || "未填寫",
-            address: document.getElementById('in_addr').value || "未填寫",
-            total: parseFloat(document.getElementById('sum_final').innerText.replace(/,/g, '')),
-            items: items, 
-            photos: photoData,
-            method: document.getElementById('out_method').innerText,
-            terms: document.getElementById('out_terms').innerText,
-            created_at: new Date().toISOString()
-        }]);
-        if (error) throw error;
-        alert("✅ 檔案已壓縮並儲存至雲端！");
-    } catch (err) { 
-        alert("儲存失敗: " + err.message); 
-    } finally { 
-        btn.disabled = false; btn.innerText = "儲存至雲端"; 
-    }
+async function saveToSupabase() { 
+    const btn = document.getElementById('saveBtn'); 
+    btn.disabled = true; btn.innerText = "正在壓縮並儲存..."; 
+    const items = []; 
+    document.querySelectorAll('#out_tbody tr').forEach(row => { 
+        items.push({ desc: row.cells[0].querySelector('input').value, qty: row.querySelector('.qty').value, price: row.querySelector('.price').value }); 
+    }); 
+    const photoData = []; 
+    document.querySelectorAll('.photo-item').forEach(el => { 
+        photoData.push({ name: el.dataset.filename, data: el.querySelector('img').src }); 
+    }); 
+    try { 
+        const { error } = await _supabase.from('quotations').insert([{ 
+            quote_id: document.getElementById('out_id').innerText, 
+            client: document.getElementById('in_name').value || "未填寫", 
+            address: document.getElementById('in_addr').value || "未填寫", 
+            total: parseFloat(document.getElementById('sum_final').innerText.replace(/,/g, '')), 
+            items: items, photos: photoData, method: document.getElementById('out_method').innerText, terms: document.getElementById('out_terms').innerText, 
+            created_at: new Date().toISOString() 
+        }]); 
+        if (error) throw error; 
+        alert("✅ 檔案已壓縮並儲存至雲端！"); 
+    } catch (err) { alert("儲存失敗: " + err.message); } 
+    finally { btn.disabled = false; btn.innerText = "儲存至雲端"; } 
 }
 </script>
 </body>
