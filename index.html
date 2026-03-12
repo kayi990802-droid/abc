@@ -1,222 +1,321 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德工程管理中台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錦德報價系統 - 材料獨立版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; }
         
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        
-        /* 側邊欄：深色經典風格 */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
-        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: flex; align-items: center; white-space: nowrap; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
-        /* 主舞台區 */
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
-        .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
-
-        /* 核心 11 卡片樣式優化 */
-        .action-card { background: white; border: 1px solid #f1f5f9; padding: 24px; border-radius: 28px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; gap: 14px; position: relative; }
-        .action-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border-color: #0d9488; }
-        .action-card:active { scale: 0.97; }
-        
-        .icon-circle { width: 52px; height: 52px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-
-        /* 響應式：手機版側邊欄收合 */
-        @media (max-width: 1024px) {
-            .sidebar { width: 70px; }
-            .sidebar .nav-text, .sidebar h1, .sidebar p { display: none; }
-            .nav-link { justify-content: center; padding: 20px 0; }
-            .nav-link i { margin: 0 !important; font-size: 18px; }
-            .top-header { padding: 0 20px; }
+        @media (min-width: 1024px) {
+            body { display: flex; height: 100vh; overflow: hidden; }
+            .admin-sidebar { width: 380px; height: 100vh; overflow-y: auto; background: #334155; padding: 24px; color: white; flex-shrink: 0; }
+            .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 30px; background: #cbd5e0; display: flex; flex-direction: column; align-items: center; }
         }
+
+        .a4-page { 
+            background: white; width: 210mm; min-height: 297mm; padding: 15mm 18mm; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.15); margin-bottom: 40px; position: relative;
+            display: flex; flex-direction: column; page-break-after: always;
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body, .main-content { background: white !important; height: auto !important; overflow: visible !important; display: block !important; padding: 0 !important; }
+            .a4-page { box-shadow: none !important; margin: 0 !important; width: 100% !important; border: none !important; }
+        }
+
+        .admin-sidebar input, .admin-sidebar textarea { background: #1e293b; color: white; border: 1px solid #475569; border-radius: 8px; padding: 10px; width: 100%; margin-bottom: 8px; outline: none; }
+        .mode-btn { background: #475569; color: white; padding: 8px; border-radius: 6px; font-weight: 700; width: 100%; cursor: pointer; border: none; margin-bottom: 4px; opacity: 0.6; font-size: 11px; }
+        .mode-btn.active { opacity: 1; background: #0284c7; ring: 2px solid white; }
+        
+        .preview-input { background: transparent !important; color: #000 !important; border: none !important; font-weight: bold; outline: none !important; }
+        .editable-area { border: 1px solid #e2e8f0; padding: 12px; font-size: 10px; line-height: 1.5; text-align: justify; white-space: pre-wrap; background: #fff; border-radius: 4px; outline: none; }
+        
+        .discount-row { color: #e11d48; font-weight: 900; }
+        .stamp-container { position: absolute; bottom: 40px; left: 18mm; display: flex; align-items: flex-end; gap: 15px; pointer-events: none; }
+        .company-seal { width: 42mm; mix-blend-multiply; opacity: 0.9; }
+        .boss-seal { width: 16mm; mix-blend-multiply; opacity: 0.9; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-display" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Administrator</p>
-        </div>
-        <nav class="flex-grow">
-            <a href="index.html" class="nav-link active"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
-            <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
-            <a href="project.html" class="nav-link"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場進度</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-users-cog mr-3 w-5"></i><span class="nav-text">人員核算</span></a>
-            <a href="quote.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3 w-5"></i><span class="nav-text">報價系統</span></a>
-            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
-        </nav>
-        <div class="p-6 border-t border-slate-800/50">
-            <div class="flex items-center gap-2 mb-1">
-                <span id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                <span id="status-text" class="text-[10px] font-bold text-slate-500 uppercase">Cloud Sync ON</span>
-            </div>
-            <div class="text-[9px] text-slate-600 font-mono tracking-tighter">REFRESH: <span id="logout-timer">30:00</span></div>
-        </div>
-    </aside>
+<div class="admin-sidebar no-print">
+    <div class="flex items-center gap-2 mb-6">
+        <div class="w-10 h-10 bg-teal-400 rounded-lg flex items-center justify-center font-black text-slate-900 italic text-xl">JD</div>
+        <h2 class="text-xl font-black text-white italic tracking-tighter">錦德工程行</h2>
+    </div>
 
-    <main class="main-stage">
-        <header class="top-header">
-            <div class="flex items-center gap-2">
-                <span class="w-1 h-4 bg-teal-500 rounded-full"></span>
-                <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase">Management Hub</h2>
+    <div class="space-y-4">
+        <div>
+            <label class="text-xs text-slate-400 font-bold mb-2 block uppercase underline">1. 基本資訊</label>
+            <input type="text" id="in_subject" placeholder="工程案名" oninput="syncData();">
+            <input type="text" id="in_name" placeholder="客戶姓名" oninput="syncData();">
+            <input type="text" id="in_addr" placeholder="施工地址" oninput="syncData();">
+            <div class="flex items-center gap-2 mb-2 bg-slate-700 p-2 rounded">
+                <input type="checkbox" id="in_tax_toggle" onchange="calculateFinal();" class="w-4 h-4">
+                <span class="text-sm">包含 5% 營業稅</span>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="text-right hidden md:block">
-                    <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase"></p>
-                    <p id="live-time" class="text-sm font-black text-slate-800 font-mono"></p>
-                </div>
-                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition shadow-sm border border-slate-100">
-                    <i class="fas fa-power-off"></i>
-                </button>
-            </div>
-        </header>
+            <input type="number" id="in_discount" placeholder="價格優惠折抵金額" oninput="calculateFinal();">
+        </div>
 
-        <div class="content-scroll">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div>
+            <label class="text-xs text-slate-400 font-bold mb-2 block uppercase underline">2. 上傳圖檔區</label>
+            <p class="text-[10px] text-slate-300 mb-1 italic">施工材料 (如包裝、檢驗圖)</p>
+            <input type="file" multiple onchange="handlePhotoUpload(event, '材料規格說明')" class="text-xs mb-3">
+            
+            <p class="text-[10px] text-slate-300 mb-1 italic">施工現場 (如現況照片)</p>
+            <input type="file" multiple onchange="handlePhotoUpload(event, '施工現場照片')" class="text-xs">
+        </div>
+
+        <div>
+            <label class="text-xs text-slate-400 font-bold mb-2 block uppercase underline">3. 合約比例與保固</label>
+            <div class="grid grid-cols-3 gap-2 mb-2">
+                <input type="number" id="pay_1" placeholder="訂金%" value="30" oninput="calculateFinal();">
+                <input type="number" id="pay_2" placeholder="中期%" value="40" oninput="calculateFinal();">
+                <input type="number" id="pay_3" placeholder="尾款%" value="30" oninput="calculateFinal();">
+            </div>
+            <div class="grid grid-cols-1 gap-1 mb-2">
+                <button id="btn_indoor" class="mode-btn active" onclick="applyTerms('indoor');">室內防水條款</button>
+                <button id="btn_outdoor" class="mode-btn" onclick="applyTerms('outdoor');">外牆防水條款</button>
+                <button id="btn_pu" class="mode-btn" onclick="applyTerms('pu');">外牆 PU 填縫條款</button>
+            </div>
+            <input type="number" id="in_warranty" placeholder="保固年限 (預設 2)" oninput="calculateFinal();">
+            <input type="number" id="in_days" placeholder="施工天數 (預設 7)" oninput="calculateFinal();">
+        </div>
                 
-                <div class="col-span-2 bg-slate-900 rounded-[32px] p-8 text-white flex justify-between items-center relative overflow-hidden group cursor-pointer" onclick="location.href='calendar.html'">
-                    <div class="relative z-10">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>
-                            <span class="text-teal-400 text-[10px] font-black uppercase tracking-widest">Live Schedule</span>
-                        </div>
-                        <h3 class="text-2xl font-black mb-1">今日派工排程</h3>
-                        <p class="text-slate-400 text-xs">即時查看各案場施工人力配置</p>
-                    </div>
-                    <i class="fas fa-calendar-check text-8xl text-white/5 absolute -right-4 -bottom-4 group-hover:scale-110 group-hover:text-teal-500/10 transition duration-700"></i>
-                </div>
-
-                <div class="action-card" onclick="location.href='customer.html'">
-                    <div class="icon-circle bg-blue-50 text-blue-600"><i class="far fa-address-book"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">客戶管理</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">業主、協力廠商<br>與架構通訊錄</p>
-                </div>
-
-                <div class="action-card" onclick="location.href='project.html'">
-                    <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-hard-hat"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">案場進度</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">工地進度監修<br>與階段性驗收</p>
-                </div>
-
-                <div class="action-card" onclick="location.href='staff.html'">
-                    <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">人員核算</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">師傅點工紀錄<br>與薪資成本統計</p>
-                </div>
-
-                <div class="action-card" onclick="location.href='quote.html'">
-                    <div class="icon-circle bg-emerald-50 text-emerald-600"><i class="fas fa-file-invoice-dollar"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">報價系統</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">工項快速報價<br>與 PDF 單據產出</p>
-                </div>
-
-                <div class="action-card" onclick="location.href='warranty.html'">
-                    <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-certificate"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">保固證明</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">自動化產出<br>工程完工保固書</p>
-                </div>
-
-                <div class="action-card" onclick="location.href='billing.html'">
-                    <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">請款核銷</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">應收帳款追蹤<br>與期數款項管理</p>
-                </div>
-
-                <div class="action-card border-slate-900 bg-slate-50" onclick="location.href='finance.html'">
-                    <div class="icon-circle bg-slate-900 text-white"><i class="fas fa-chart-line"></i></div>
-                    <h3 class="font-black text-sm text-slate-900">財務中心</h3>
-                    <p class="text-[10px] text-slate-500 leading-relaxed">各案場損益分析<br>與營收圖表統計</p>
-                </div>
-<div class="action-card" onclick="location.href='工地.html'">
-    <div class="icon-circle bg-orange-50 text-orange-600">
-        <i class="fas fa-search-dollar"></i>
+        <button onclick="window.print()" class="w-full bg-teal-400 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg">生成 PDF / 正式列印</button>
     </div>
-    <h3 class="font-black text-sm text-slate-800">請款紀錄查詢</h3>
-    <p class="text-[10px] text-slate-400 leading-relaxed">
-        檢索歷史案場資料<br>
-        即時生成與下載 PDF
-    </p>
 </div>
-                <div class="action-card" onclick="location.href='docs.html'">
-                    <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="far fa-copy"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">雲端文件</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">合約圖面、勞安<br>文件集中化儲存</p>
-                </div>
 
-                <div class="action-card" onclick="location.href='quote_query.html'">
-                    <div class="icon-circle bg-amber-50 text-amber-600"><i class="fas fa-search"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">歷史報價</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">過往案場工項<br>單價快速查詢參考</p>
-                </div>
-                <div class="action-card" onclick="location.href='實績.html'">
-    <div class="icon-circle bg-rose-50 text-rose-600">
-        <i class="fas fa-medal"></i>
-    </div>
-    <h3 class="font-black text-sm text-slate-800">實績管理</h3>
-    <p class="text-[10px] text-slate-400 leading-relaxed">
-        歷年工程案例紀錄<br>與專業報表產出
-    </p>
-</div>
-               <div class="action-card border-teal-200" onclick="location.href='staff_payroll.html'">
-                    <div class="icon-circle bg-teal-100 text-teal-600"><i class="fas fa-calculator"></i></div>
-                    <h3 class="font-black text-sm text-slate-700">薪資核算</h3>
-                    <p class="text-[10px] text-slate-400 leading-relaxed">日薪天數計算<br>勞健保與 PDF 產出</p>
-                </div>
-                <div class="action-card border-dashed border-slate-200 shadow-none hover:shadow-none" onclick="location.href='settings.html'">
-                    <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
-                    <h3 class="font-black text-sm text-slate-500">系統設定</h3>
-                    <p class="text-[10px] text-slate-300 leading-relaxed">帳號權限管理<br>與基礎參數定義</p>
-                </div>
+<div class="main-content">
+    <div class="a4-page">
+        <div class="flex justify-between items-end border-b-8 border-slate-900 pb-4 mb-6">
+            <div>
+                <h1 class="text-4xl font-black italic text-slate-900">錦德防水工程 <span class="text-teal-600">報價單</span></h1>
+                <p id="out_subject" class="text-xl font-black text-slate-500 mt-2 italic underline underline-offset-4">估價明細表</p>
+            </div>
+            <img src="https://image2url.com/r2/default/images/1772610478858-c207b86b-3d3c-4bd1-aac2-b9e9d5ce2adf.jpg" class="max-h-12 mix-blend-multiply">
+        </div>
+
+        <div class="grid grid-cols-2 gap-8 mb-4">
+            <div class="border-l-[12px] border-slate-900 pl-4 py-2 bg-slate-50">
+                <p id="out_name" class="font-black text-3xl text-slate-900">客戶名稱</p>
+            </div>
+            <div class="text-base font-bold text-slate-600 italic">
+                <p id="out_addr">施工地址</p>
             </div>
         </div>
 
-        <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
-            <span>JINDE ENGINEERING CLOUD Hub</span>
-            <span class="hidden sm:inline">V4.6.2 - Secure SQL Environment</span>
-        </footer>
-    </main>
+        <table class="w-full mb-4">
+            <thead>
+                <tr class="border-y-4 border-slate-900 font-black bg-slate-50 text-[11px]">
+                    <th class="py-3 text-left pl-2">施工項目 / 規格描述</th>
+                    <th class="py-3 text-center w-12">數量</th>
+                    <th class="py-3 text-center w-12">單位</th>
+                    <th class="py-3 text-right w-20">單價</th>
+                    <th class="py-3 text-right w-24">金額</th>
+                    <th class="py-3 text-left pl-4 w-32">單項備註</th>
+                </tr>
+            </thead>
+            <tbody id="out_tbody" class="divide-y divide-slate-100"></tbody>
+            <tbody class="no-print">
+                <tr><td colspan="6"><button onclick="addRow('', '', 1, '坪', 0, '');" class="text-xs text-teal-600 font-black py-2 w-full border-2 border-dashed border-teal-200 mt-2 rounded-lg">+ 增加項目</button></td></tr>
+            </tbody>
+        </table>
 
-    <script>
-        // --- 初始化與時鐘 ---
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
-            document.getElementById('live-time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false });
-        }
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-1/2"></div>
+            <div class="w-2/5 space-y-1">
+                <div class="flex justify-between text-xs text-slate-500 font-bold"><span>稅前小計</span><span>NT$ <span id="sum_before">0</span></span></div>
+                <div id="tax_row" class="flex justify-between text-xs text-slate-400 font-bold hidden"><span>營業稅 (5%)</span><span>NT$ <span id="out_tax">0</span></span></div>
+                <div id="discount_row" class="flex justify-between text-xs discount-row hidden"><span>專案價格優惠折抵</span><span>- NT$ <span id="out_discount">0</span></span></div>
+                <div class="flex justify-between bg-slate-900 text-white p-3 rounded-xl font-black italic shadow-lg"><span class="text-base">TOTAL</span><span class="text-xl" id="sum_final">0</span></div>
+            </div>
+        </div>
 
-        // --- 登出功能 ---
-        function logout() {
-            if(confirm('確定要登出錦德管理系統？')) {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            }
-        }
+        <div class="payment-box border-t-2 border-slate-900 pt-4 mt-4">
+            <div class="flex gap-8">
+                <div class="flex-1">
+                    <span class="text-[10px] font-black bg-slate-900 text-white px-2 py-0.5">PAYMENT 付款條件</span>
+                    <div id="out_payment_summary" class="text-[11px] mt-2 font-black text-teal-700 italic"></div>
+                </div>
+                <div class="w-1/2">
+                    <span class="text-[10px] font-black bg-teal-500 text-white px-2 py-0.5 uppercase">Bank 匯款資訊</span>
+                    <div class="text-[11px] mt-2 font-bold text-slate-700">銀行：合作金庫 (006) 錦德工程行<br>帳號：1128717728840</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // --- 30分鐘自動登出計時 ---
-        let timeLeft = 1800;
-        setInterval(() => {
-            if (timeLeft <= 0) logout();
-            timeLeft--;
-            let m = Math.floor(timeLeft / 60);
-            let s = timeLeft % 60;
-            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }, 1000);
+    <div class="a4-page">
+        <div class="border-b-2 border-slate-900 pb-2 mb-4 flex justify-between items-end">
+            <h2 class="text-xl font-black italic tracking-tighter uppercase">工程承攬契約書</h2>
+        </div>
+        <div id="out_terms" contenteditable="true" class="editable-area flex-1"></div>
+        <div class="grid grid-cols-2 gap-10 text-center pt-6 border-t-2 border-slate-100 font-black relative mt-4">
+            <div class="pt-4 border-t-2 border-slate-900 text-left text-[11px]">承攬人(乙方)：錦德工程行 (王震昱)<br>電話：09XX-XXX-XXX</div>
+            <div class="pt-4 border-t-2 border-slate-900 text-[11px]">定作人(甲方)：</div>
+            <div class="stamp-container">
+                <img src="https://cdn.phototourl.com/uploads/2026-03-04-2752ca54-35be-4f06-ac5f-f94e1efc2766.png" class="company-seal">
+                <img src="https://cdn.phototourl.com/uploads/2026-03-04-ed23b3f1-3f25-4af8-bd6b-8613ad62dafc.jpg" class="boss-seal">
+            </div>
+        </div>
+    </div>
 
-        window.onload = () => {
-            updateClock();
-            setInterval(updateClock, 1000);
-            const user = localStorage.getItem('user_name') || '錦德管理員';
-            document.getElementById('user-display').innerText = user;
-        };
-    </script>
+    <div id="dynamic_photo_container"></div>
+</div>
+
+<script>
+    const termsDB = {
+        indoor: `第一條 工程範圍\n一、本工程僅限室內區域防水施作。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬局部防水補強工程，非整棟建築物結構性防水改善工程。\n\n第二條 外牆及公共區域排除\n一、本工程不包含建築物外牆防水、窗框外側填縫、屋頂防水、女兒牆防水、公共區域及管道間。\n二、若漏水來源涉及外牆滲水、樓上住戶、公共管線或建築結構體問題，應由相關權責單位負責處理。\n三、因外牆滲水導致之室內反潮、壁癌、油漆剝落或磁磚滲水，不屬本工程保固範圍。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {TOTAL} 元整。\n{PAYMENT_DETAIL}\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數 {DAYS} 天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 保固條款\n一、本工程保固期限為 {YEAR} 年，自完工日起算。\n二、保固範圍僅限本次實際施作之室內防水區域。\n三、下列情形不在保固範圍內：\n（一）外牆滲水。（二）建築結構裂縫。（三）樓上或他戶滲水。（四）公共管線問題。（五）天然災害。（六）第三人施工或破壞所致。\n\n第六條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方書面同意後始得施工。\n\n第七條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第八條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`,
+        
+        outdoor: `第一條 工程範圍\n一、本工程為外牆防水及裂縫修補工程。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬外牆表層防水改善工程，非整棟建築物結構補強或全面防水改善工程。\n\n第二條 外牆滲水說明\n一、建築物滲水可能來自多處來源，如屋頂、窗框、採光罩接縫、樓上住戶或結構裂縫等。\n二、本工程僅針對本次施作區域進行防水改善。\n三、若未全面整修相關區域，仍可能發生滲水情形。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {TOTAL} 元整。\n{PAYMENT_DETAIL}\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數 {DAYS} 天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 裂縫責任說明\n一、外牆裂縫修補屬現況改善處理。\n二、因建築物結構位移、地震、熱脹冷縮或混凝土收縮所產生之新增裂縫，不在保固範圍內。\n三、原有裂縫若因結構持續變動再次開裂，非屬施工瑕疵。\n\n第六條 保固條款\n一、本工程防水項目保固 {YEAR} 年，自完工驗收日起算。\n二、保固範圍僅限本次施作之防水區域。\n三、下列情形不在保固範圍內：\n（一）建築結構位移。（二）新增裂縫。（三）天然災害。（四）第三人施工破壞。（五）非本工程施作區域滲水。\n\n第七條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方同意後始得施工。\n\n第八條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第九條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`,
+        
+        pu: `第一條 工程範圍\n一、本工程為外牆PU防水及接縫填補工程。\n二、施工項目依雙方確認之報價單內容為準。\n三、未列入報價單之項目，不屬本工程範圍。\n四、本工程屬外牆表層PU防水改善工程，非整棟建築物結構補強或全面防水改善工程。\n\n第二條 外牆滲水說明\n一、建築物滲水可能來自多處來源，如屋頂、窗框、採光罩接縫、樓上住戶或結構裂縫等。\n二、本工程僅針對本次施作區域進行PU防水改善。\n三、若未全面整修相關區域，仍可能發生滲水情形。\n\n第三條 工程金額與付款方式\n一、工程總價為新台幣 {TOTAL} 元整。\n{PAYMENT_DETAIL}\n五、甲方逾期未付款，乙方得暫停施工或停止保固服務。\n六、工程款未付清前，施工成果所有權仍屬乙方所有。\n\n第四條 工期\n預定施工天數 {DAYS} 天。如遇天候不佳、材料延遲、不可抗力因素或非乙方可歸責事由，工期順延。\n\n第五條 接縫與裂縫責任說明\n一、PU填縫及裂縫修補屬現況改善處理。\n二、因建築物結構位移、地震、熱脹冷縮或混凝土收縮所產生之新增裂縫，不在保固範圍內。\n三、原有裂縫若因結構持續變動再次開裂，非屬施工瑕疵。\n\n第六條 保固條款\n一、本工程PU防水項目保固 {YEAR} 年，自完工驗收日起算。\n二、保固範圍僅限本次施作之PU防水區域。\n三、下列情形不在保固範圍內：\n（一）建築結構位移。（二）新增裂縫。（三）天然災害。（四）第三人施工破壞。（五）非本工程施作區域滲水。\n\n第七條 追加工程\n施工期間如發現未預見之問題或甲方要求新增項目，須另行報價並經雙方同意後始得施工。\n\n第八條 驗收\n工程完成後由甲方現場驗收確認，並於驗收當日付清尾款。尾款支付完成後視為工程完成。\n\n第九條 爭議處理\n雙方如有爭議，應先協商處理；協商不成時，以工程所在地之地方法院為第一審管轄法院。`
+    };
+
+    let currentMode = 'indoor';
+
+    function syncData() {
+        document.getElementById('out_name').innerText = document.getElementById('in_name').value || "客戶名稱";
+        document.getElementById('out_subject').innerText = document.getElementById('in_subject').value || "工程案名";
+        document.getElementById('out_addr').innerText = document.getElementById('in_addr').value || "地址尚未填寫";
+        saveToLocal();
+    }
+
+    function addRow(n, r, q, u, p, note) {
+        const tr = document.createElement('tr');
+        tr.className = "group";
+        tr.innerHTML = `
+            <td class="py-2 pl-2"><input type="text" value="${n}" class="row-n preview-input block w-full text-[13px]" placeholder="項目"><input type="text" value="${r}" class="row-r preview-input text-[11px] text-slate-400 block w-full" placeholder="規格"></td>
+            <td><input type="number" value="${q}" class="qty preview-input text-center w-full text-xs" oninput="calculateFinal();"></td>
+            <td><input type="text" value="${u}" class="row-u preview-input text-center w-full text-xs"></td>
+            <td><input type="number" value="${p}" class="price preview-input text-right w-full text-xs" oninput="calculateFinal();"></td>
+            <td class="text-right subtotal font-black text-xs">0</td>
+            <td class="pl-4"><input type="text" value="${note}" class="row-note preview-input text-[10px] text-slate-500 w-full" placeholder="備註"></td>
+            <td class="no-print"><button onclick="this.parentElement.parentElement.remove(); calculateFinal();" class="text-rose-500 px-2 opacity-0 group-hover:opacity-100 transition">✕</button></td>
+        `;
+        document.getElementById('out_tbody').appendChild(tr);
+        calculateFinal();
+    }
+
+    function calculateFinal() {
+        let beforeTax = 0;
+        document.querySelectorAll('#out_tbody tr').forEach(r => {
+            const q = parseFloat(r.querySelector('.qty').value) || 0;
+            const p = parseFloat(r.querySelector('.price').value) || 0;
+            beforeTax += q * p;
+            r.querySelector('.subtotal').innerText = Math.round(q * p).toLocaleString();
+        });
+        document.getElementById('sum_before').innerText = Math.round(beforeTax).toLocaleString();
+        
+        let final = beforeTax;
+        if(document.getElementById('in_tax_toggle').checked) {
+            const tax = Math.round(beforeTax * 0.05);
+            document.getElementById('out_tax').innerText = tax.toLocaleString();
+            final += tax;
+            document.getElementById('tax_row').classList.remove('hidden');
+        } else { document.getElementById('tax_row').classList.add('hidden'); }
+
+        const disc = parseFloat(document.getElementById('in_discount').value) || 0;
+        if(disc > 0) {
+            document.getElementById('out_discount').innerText = disc.toLocaleString();
+            document.getElementById('discount_row').classList.remove('hidden');
+            final -= disc;
+        } else { document.getElementById('discount_row').classList.add('hidden'); }
+        
+        const finalPrice = Math.round(final);
+        document.getElementById('sum_final').innerText = finalPrice.toLocaleString();
+        
+        // 分期描述
+        const p1 = document.getElementById('pay_1').value || 30;
+        const p2 = document.getElementById('pay_2').value || 40;
+        const p3 = document.getElementById('pay_3').value || 30;
+        
+        const m1 = Math.round(finalPrice * (p1/100)).toLocaleString();
+        const m2 = Math.round(finalPrice * (p2/100)).toLocaleString();
+        const m3 = Math.round(finalPrice * (p3/100)).toLocaleString();
+        
+        const payDetail = `二、訂金 ${p1}％，於簽約或進場時支付 (NT$ ${m1})。\n三、中期款 ${p2}％，於主要防水層完成時支付 (NT$ ${m2})。\n四、尾款 ${p3}％，於完工驗收當日付清 (NT$ ${m3})。`;
+        document.getElementById('out_payment_summary').innerText = `分三期支付：${p1}% / ${p2}% / ${p3}%`;
+
+        const warranty = document.getElementById('in_warranty').value || "2";
+        const days = document.getElementById('in_days').value || "7";
+
+        document.getElementById('out_terms').innerText = termsDB[currentMode]
+            .replace('{TOTAL}', finalPrice.toLocaleString())
+            .replace('{PAYMENT_DETAIL}', payDetail)
+            .replace('{YEAR}', warranty)
+            .replace('{DAYS}', days);
+        
+        saveToLocal();
+    }
+
+    function applyTerms(mode) {
+        currentMode = mode;
+        ['btn_indoor', 'btn_outdoor', 'btn_pu'].forEach(id => document.getElementById(id).classList.toggle('active', id === 'btn_'+mode));
+        calculateFinal();
+    }
+
+    function handlePhotoUpload(event, title) {
+        Array.from(event.target.files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const page = document.createElement('div');
+                page.className = "a4-page";
+                page.innerHTML = `
+                    <div class="border-b-2 border-slate-200 pb-2 mb-4 flex justify-between">
+                        <h2 class="text-xl font-black italic text-slate-800">${title}</h2>
+                        <button class="no-print bg-rose-500 text-white px-2 py-1 rounded text-xs" onclick="this.closest('.a4-page').remove()">✕ 刪除本頁</button>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center justify-center">
+                        <img src="${e.target.result}" class="max-h-[230mm] object-contain">
+                        <div contenteditable="true" class="w-full mt-4 text-lg font-bold border-b border-slate-900 text-center italic">點擊輸入照片說明 (例如：${title==='材料規格說明'?'原廠型號標籤':'施工前現況'})</div>
+                    </div>
+                `;
+                document.getElementById('dynamic_photo_container').appendChild(page);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function saveToLocal() {
+        const table = [];
+        document.querySelectorAll('#out_tbody tr').forEach(r => {
+            table.push({ n: r.querySelector('.row-n').value, r: r.querySelector('.row-r').value, q: r.querySelector('.qty').value, u: r.querySelector('.row-u').value, p: r.querySelector('.price').value, note: r.querySelector('.row-note').value });
+        });
+        localStorage.setItem('jd_quote_final_v2', JSON.stringify({
+            subject: document.getElementById('in_subject').value, name: document.getElementById('in_name').value, addr: document.getElementById('in_addr').value,
+            tax: document.getElementById('in_tax_toggle').checked, disc: document.getElementById('in_discount').value,
+            p1: document.getElementById('pay_1').value, p2: document.getElementById('pay_2').value, p3: document.getElementById('pay_3').value,
+            warranty: document.getElementById('in_warranty').value, days: document.getElementById('in_days').value, table: table, mode: currentMode
+        }));
+    }
+
+    function loadFromLocal() {
+        const saved = localStorage.getItem('jd_quote_final_v2');
+        if(!saved) { addRow('工程內容', '施工細項描述', 1, '坪', 0, ''); return; }
+        const d = JSON.parse(saved);
+        document.getElementById('in_subject').value = d.subject || "";
+        document.getElementById('in_name').value = d.name || "";
+        document.getElementById('in_addr').value = d.addr || "";
+        document.getElementById('in_tax_toggle').checked = d.tax || false;
+        document.getElementById('in_discount').value = d.disc || "";
+        document.getElementById('pay_1').value = d.p1 || 30;
+        document.getElementById('pay_2').value = d.p2 || 40;
+        document.getElementById('pay_3').value = d.p3 || 30;
+        document.getElementById('in_warranty').value = d.warranty || "";
+        document.getElementById('in_days').value = d.days || "";
+        currentMode = d.mode || 'indoor';
+        document.getElementById('out_tbody').innerHTML = "";
+        d.table.forEach(i => addRow(i.n, i.r, i.q, i.u, i.p, i.note || ''));
+        applyTerms(currentMode); syncData();
+    }
+
+    window.onload = loadFromLocal;
+</script>
 </body>
 </html>
