@@ -10,51 +10,35 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; margin: 0; }
-        
         .sticky-header { 
             position: sticky; top: 0; z-index: 1000; 
             background: #1e293b; padding: 12px 20px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-
         .a4-page { 
             width: 210mm; min-height: 297mm; padding: 15mm; 
             margin: 20px auto; background: white; 
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             position: relative;
         }
-
         input { border-bottom: 1px solid #e2e8f0 !important; outline: none; background: transparent; }
         input:focus { border-bottom: 2px solid #2563eb !important; background: #f8fafc; }
-        
-        /* 刪除按鈕：編輯時顯示，列印時強制隱藏 */
         .del-col { width: 40px; text-align: center; }
         .del-btn { color: #ef4444; cursor: pointer; transition: 0.2s; }
         .del-btn:hover { transform: scale(1.2); color: #dc2626; }
-
         .bank-info { 
             margin-top: 30px; padding: 15px; border-radius: 12px; 
             background: #f8fafc; border: 1px solid #e2e8f0; font-size: 13px;
         }
-
         @media print {
-            /* 列印時隱藏所有不需要的元件 */
-            .no-print, .sticky-header, .del-col, .del-btn { 
-                display: none !important; 
-            }
+            .no-print, .sticky-header, .del-col, .del-btn { display: none !important; }
             body { background: white; }
-            .a4-page { 
-                margin: 0; box-shadow: none; width: 210mm; 
-                page-break-after: always; 
-            }
+            .a4-page { margin: 0; box-shadow: none; width: 210mm; page-break-after: always; }
             input { border: none !important; }
-            /* 隱藏沒填寫的列 */
             .empty-row { display: none !important; }
-            /* 調整表格寬度補足刪除欄位消失的空間 */
             table { width: 100% !important; }
         }
-
         @media screen and (max-width: 768px) {
             .a4-page { width: 100%; padding: 10px; margin: 0; }
             .top-btn-text { display: none; }
@@ -62,7 +46,6 @@
     </style>
 </head>
 <body>
-
     <div class="sticky-header no-print">
         <div class="flex items-center gap-3">
             <button onclick="location.href='index.html'" class="text-white bg-slate-700 p-2 px-4 rounded-xl hover:bg-slate-600 transition">
@@ -118,8 +101,7 @@
                         <th class="w-28 text-right pr-2">小計</th>
                     </tr>
                 </thead>
-                <tbody id="invoiceBody">
-                    </tbody>
+                <tbody id="invoiceBody"></tbody>
             </table>
 
             <div class="flex flex-col md:flex-row justify-between items-end gap-6 mt-10">
@@ -141,8 +123,7 @@
 
         <div class="a4-page">
             <h2 class="text-xl font-black italic border-b-2 border-slate-900 pb-2 mb-6">CALCULATION DETAILS <span class="text-sm font-normal text-slate-400 ml-2">算法附件</span></h2>
-            <div id="calcBody">
-                </div>
+            <div id="calcBody"></div>
         </div>
     </main>
 
@@ -152,12 +133,10 @@
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         let rowIds = [];
-
         window.onload = () => {
             const n = new Date();
             document.getElementById('billDate').value = n.toLocaleDateString('zh-TW');
             document.getElementById('billSerial').innerText = `INV-${n.getTime().toString().slice(-6)}`;
-            // 初始 35 行
             for(let i=0; i<35; i++) addRow();
         };
 
@@ -165,7 +144,6 @@
             const i = Date.now() + Math.random();
             rowIds.push(i);
             
-            // 主表列
             const tr = document.createElement('tr');
             tr.id = `row_${i}`;
             tr.className = 'empty-row border-b border-slate-50';
@@ -179,7 +157,6 @@
             `;
             document.getElementById('invoiceBody').appendChild(tr);
 
-            // 算法列
             const div = document.createElement('div');
             div.id = `formRow_${i}`;
             div.className = 'flex items-center gap-3 py-2 border-b border-slate-50 empty-row';
@@ -201,24 +178,52 @@
 
         function checkStatus(i) {
             const hasData = document.getElementById(`item_${i}`).value || 
-                            document.getElementById(`calc_${i}`).value || 
-                            document.getElementById(`note_${i}`).value;
+                             document.getElementById(`calc_${i}`).value || 
+                             document.getElementById(`note_${i}`).value;
             document.getElementById(`row_${i}`).classList.toggle('empty-row', !hasData);
             document.getElementById(`formRow_${i}`).classList.toggle('empty-row', !hasData);
             updateTotal();
         }
 
+        // --- 優化後的算法邏輯 ---
         function runFormula(i) {
             const c = document.getElementById(`calc_${i}`).value;
+            const resEl = document.getElementById(`res_${i}`);
+            const qtyEl = document.getElementById(`qty_${i}`);
+
             try {
-                let f = c.replace(/x/gi, '*').replace(/ /g, '');
-                if(!f) { document.getElementById(`res_${i}`).innerText = "0.00"; checkStatus(i); return; }
-                let r = new Function('return ' + f.replace(/[^0-9\+\-\*\/\(\)\. ]/g, ''))() || 0;
+                // 1. 清洗字元：處理全形括號、x、以及肉眼不可見的特殊字元
+                let f = c.replace(/（/g, '(')
+                         .replace(/）/g, ')')
+                         .replace(/x/gi, '*')
+                         .replace(/[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, '')
+                         .trim();
+
+                if (!f) {
+                    resEl.innerText = "0.00";
+                    qtyEl.value = "";
+                    checkStatus(i);
+                    return;
+                }
+
+                // 2. 過濾非法字元
+                let sanitized = f.replace(/[^0-9\+\-\*\/\(\)\. ]/g, '');
+                
+                // 3. 執行運算
+                let r = new Function('return ' + sanitized)();
+                
+                if (typeof r !== 'number' || isNaN(r) || !isFinite(r)) throw new Error();
+
+                // 4. 更新結果與主表數量 (取三位小數)
                 let v = Math.round(r * 1000) / 1000;
-                document.getElementById(`res_${i}`).innerText = v.toFixed(3);
-                document.getElementById(`qty_${i}`).value = v;
+                resEl.innerText = v.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                qtyEl.value = v;
+
                 checkStatus(i);
-            } catch(e) { document.getElementById(`res_${i}`).innerText = "Error"; }
+                updateTotal(); 
+            } catch (e) {
+                resEl.innerText = "Error";
+            }
         }
 
         function updateTotal() {
@@ -272,7 +277,7 @@
             if (n === 0) return "零元整";
             const digit = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
             const unit = [['元', '萬', '億'], ['', '拾', '佰', '仟']];
-            let s = '整'; n = Math.floor(n);
+            let s = ''; n = Math.floor(n);
             for (let i = 0; i < unit[0].length && n > 0; i++) {
                 let p = '';
                 for (let j = 0; j < unit[1].length && n > 0; j++) {
@@ -281,7 +286,7 @@
                 }
                 s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
             }
-            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
+            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元") + "整";
         }
     </script>
 </body>
