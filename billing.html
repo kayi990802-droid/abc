@@ -46,10 +46,11 @@
     </style>
 </head>
 <body>
+
     <div class="sticky-header no-print">
         <div class="flex items-center gap-3">
-            <button onclick="location.href='index.html'" class="text-white bg-slate-700 p-2 px-4 rounded-xl hover:bg-slate-600 transition">
-                <i class="fas fa-home"></i>
+            <button onclick="location.reload()" class="text-white bg-slate-700 p-2 px-4 rounded-xl hover:bg-slate-600 transition">
+                <i class="fas fa-sync-alt"></i>
             </button>
             <span class="text-white font-black italic text-xl tracking-tighter">JINDE.</span>
         </div>
@@ -133,6 +134,7 @@
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         let rowIds = [];
+
         window.onload = () => {
             const n = new Date();
             document.getElementById('billDate').value = n.toLocaleDateString('zh-TW');
@@ -141,9 +143,10 @@
         };
 
         function addRow() {
-            const i = Date.now() + Math.random();
+            // 使用更穩定的 ID 生成
+            const i = Math.random().toString(36).substr(2, 9) + Date.now();
             rowIds.push(i);
-            
+
             const tr = document.createElement('tr');
             tr.id = `row_${i}`;
             tr.className = 'empty-row border-b border-slate-50';
@@ -163,7 +166,7 @@
             div.innerHTML = `
                 <div class="del-col no-print"><i class="fas fa-trash-alt del-btn" onclick="removeRow('${i}')"></i></div>
                 <input type="text" id="note_${i}" placeholder="註記" class="w-24 text-blue-800 font-bold text-sm" oninput="checkStatus('${i}')">
-                <input type="text" id="calc_${i}" placeholder="輸入算式..." class="flex-grow font-mono font-bold text-blue-600" oninput="runFormula('${i}')">
+                <input type="text" id="calc_${i}" placeholder="例如: 10+5.5*2" class="flex-grow font-mono font-bold text-blue-600" oninput="runFormula('${i}')">
                 <div class="w-24 text-right font-black text-emerald-600 font-mono" id="res_${i}">0.00</div>
             `;
             document.getElementById('calcBody').appendChild(div);
@@ -177,53 +180,48 @@
         }
 
         function checkStatus(i) {
-            const hasData = document.getElementById(`item_${i}`).value || 
-                             document.getElementById(`calc_${i}`).value || 
-                             document.getElementById(`note_${i}`).value;
+            const hasData = document.getElementById(`item_${i}`).value.trim() !== "" || 
+                            document.getElementById(`calc_${i}`).value.trim() !== "" || 
+                            document.getElementById(`note_${i}`).value.trim() !== "";
             document.getElementById(`row_${i}`).classList.toggle('empty-row', !hasData);
             document.getElementById(`formRow_${i}`).classList.toggle('empty-row', !hasData);
             updateTotal();
         }
 
-        // --- 優化後的算法邏輯 ---
         function runFormula(i) {
-            const c = document.getElementById(`calc_${i}`).value;
+            const input = document.getElementById(`calc_${i}`).value;
             const resEl = document.getElementById(`res_${i}`);
             const qtyEl = document.getElementById(`qty_${i}`);
-
+            
             try {
-                // 1. 清洗字元：處理全形括號、x、以及肉眼不可見的特殊字元
-                let f = c.replace(/（/g, '(')
-                         .replace(/）/g, ')')
-                         .replace(/x/gi, '*')
-                         .replace(/[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, '')
-                         .trim();
-
-                if (!f) {
-                    resEl.innerText = "0.00";
-                    qtyEl.value = "";
-                    checkStatus(i);
-                    return;
+                // 1. 替換常見符號並移除空白
+                let f = input.replace(/x/gi, '*').replace(/ /g, '').replace(/（/g, '(').replace(/）/g, ')');
+                
+                if(!f) { 
+                    resEl.innerText = "0.00"; 
+                    qtyEl.value = ""; 
+                    updateTotal(); 
+                    return; 
                 }
 
-                // 2. 過濾非法字元
-                let sanitized = f.replace(/[^0-9\+\-\*\/\(\)\. ]/g, '');
+                // 2. 只允許數字與運算子，防止非法執行
+                const safeFormula = f.replace(/[^0-9\+\-\*\/\(\)\.]/g, '');
                 
-                // 3. 執行運算
-                let r = new Function('return ' + sanitized)();
+                // 3. 計算結果
+                let r = new Function('return ' + safeFormula)();
                 
-                if (typeof r !== 'number' || isNaN(r) || !isFinite(r)) throw new Error();
-
-                // 4. 更新結果與主表數量 (取三位小數)
-                let v = Math.round(r * 1000) / 1000;
-                resEl.innerText = v.toLocaleString(undefined, { minimumFractionDigits: 2 });
-                qtyEl.value = v;
-
+                if (typeof r === 'number' && isFinite(r)) {
+                    let v = Math.round(r * 1000) / 1000;
+                    resEl.innerText = v.toFixed(3);
+                    qtyEl.value = v; // 連動到主表數量
+                    resEl.classList.remove('text-red-500');
+                }
                 checkStatus(i);
-                updateTotal(); 
-            } catch (e) {
-                resEl.innerText = "Error";
+            } catch(e) { 
+                resEl.innerText = "Error"; 
+                resEl.classList.add('text-red-500');
             }
+            updateTotal();
         }
 
         function updateTotal() {
@@ -244,6 +242,7 @@
             const proj = document.getElementById('projName').value.trim();
             if(!proj) { alert("⚠️ 請填寫案場名稱"); return; }
             const btn = document.getElementById('syncBtn');
+            const originalHTML = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             try {
                 const { data: inv, error: e1 } = await _supabase.from('invoices').insert([{
@@ -270,14 +269,14 @@
                 if (items.length > 0) await _supabase.from('invoice_items').insert(items);
                 alert("✅ 雲端同步存檔成功！");
             } catch (err) { alert("同步失敗：" + err.message); }
-            finally { btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i><span class="top-btn-text">SAVE (存檔)</span>'; }
+            finally { btn.innerHTML = originalHTML; }
         }
 
         function numberToChinese(n) {
             if (n === 0) return "零元整";
             const digit = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
             const unit = [['元', '萬', '億'], ['', '拾', '佰', '仟']];
-            let s = ''; n = Math.floor(n);
+            let s = '整'; n = Math.floor(n);
             for (let i = 0; i < unit[0].length && n > 0; i++) {
                 let p = '';
                 for (let j = 0; j < unit[1].length && n > 0; j++) {
@@ -286,7 +285,7 @@
                 }
                 s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s;
             }
-            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元") + "整";
+            return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^元/, "零元");
         }
     </script>
 </body>
