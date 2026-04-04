@@ -4,48 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JINDE | 錦德工程管理中台</title>
+    
+    <script>
+        if (localStorage.getItem('jinde_verified') !== 'true') {
+            window.location.replace('login.html');
+        }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        :root {
+            --sidebar-bg: #1a222d;
+            --brand-teal: #0d9488;
+        }
+
+        body { 
+            background-color: #f8fafc; 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 側邊欄優化 */
+        .sidebar { 
+            width: 260px; 
+            background: var(--sidebar-bg); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 50; 
+        }
+
+        .nav-link { 
+            padding: 14px 24px; 
+            font-size: 14px; 
+            color: #94a3b8; 
+            transition: all 0.2s ease; 
+            border-left: 4px solid transparent; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            white-space: nowrap; 
+        }
         
-        /* 側邊欄：深色經典風格 */
-        .sidebar { width: 260px; background: #1a222d; color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
-        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; text-decoration: none; display: flex; align-items: center; white-space: nowrap; }
-        .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: #0d9488; }
-        
+        .nav-link:hover, .nav-link.active { 
+            background: #242e3d; 
+            color: white; 
+            border-left-color: var(--brand-teal); 
+        }
+
         /* 主舞台區 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
         .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
-        .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 
-        /* 核心 11 卡片樣式優化 */
-        .action-card { background: white; border: 1px solid #f1f5f9; padding: 24px; border-radius: 28px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; display: flex; flex-direction: column; gap: 14px; position: relative; }
-        .action-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border-color: #0d9488; }
-        .action-card:active { scale: 0.97; }
-        
-        .icon-circle { width: 52px; height: 52px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        /* 卡片樣式優化 */
+        .action-card { 
+            background: white; 
+            border: 1px solid #f1f5f9; 
+            padding: 24px; 
+            border-radius: 28px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+            position: relative; 
+        }
+        .action-card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); 
+            border-color: var(--brand-teal); 
+        }
+        .action-card:active { transform: scale(0.97); }
 
-        /* 響應式：手機版側邊欄收合 */
+        .icon-circle { 
+            width: 52px; height: 52px; border-radius: 18px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 22px; 
+        }
+
+        /* 隱藏滾動條但保持功能 */
+        .content-scroll::-webkit-scrollbar { width: 6px; }
+        .content-scroll::-webkit-scrollbar-track { background: transparent; }
+        .content-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
         @media (max-width: 1024px) {
             .sidebar { width: 70px; }
             .sidebar .nav-text, .sidebar h1, .sidebar p { display: none; }
-            .nav-link { justify-content: center; padding: 20px 0; }
+            .nav-link { justify-content: center; padding: 20px 0; border-left-width: 2px; }
             .nav-link i { margin: 0 !important; font-size: 18px; }
             .top-header { padding: 0 20px; }
         }
     </style>
 </head>
 <body>
-
     <aside class="sidebar">
         <div class="p-8">
             <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-display" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Administrator</p>
+            <p id="user-display" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">Loading...</p>
         </div>
+        
         <nav class="flex-grow">
             <a href="index.html" class="nav-link active"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
             <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
@@ -54,12 +122,15 @@
             <a href="quote.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3 w-5"></i><span class="nav-text">報價系統</span></a>
             <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
         </nav>
+
         <div class="p-6 border-t border-slate-800/50">
             <div class="flex items-center gap-2 mb-1">
-                <span id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                <span id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></span>
                 <span id="status-text" class="text-[10px] font-bold text-slate-500 uppercase">Cloud Sync ON</span>
             </div>
-            <div class="text-[9px] text-slate-600 font-mono tracking-tighter">REFRESH: <span id="logout-timer">30:00</span></div>
+            <div class="text-[9px] text-slate-600 font-mono tracking-tighter">
+                REFRESH: <span id="logout-timer" class="transition-colors duration-300">30:00</span>
+            </div>
         </div>
     </aside>
 
@@ -71,10 +142,10 @@
             </div>
             <div class="flex items-center gap-6">
                 <div class="text-right hidden md:block">
-                    <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase"></p>
+                    <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter"></p>
                     <p id="live-time" class="text-sm font-black text-slate-800 font-mono"></p>
                 </div>
-                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition shadow-sm border border-slate-100">
+                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shadow-sm border border-slate-100 active:scale-90">
                     <i class="fas fa-power-off"></i>
                 </button>
             </div>
@@ -82,7 +153,6 @@
 
         <div class="content-scroll">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                
                 <div class="col-span-2 bg-slate-900 rounded-[32px] p-8 text-white flex justify-between items-center relative overflow-hidden group cursor-pointer" onclick="location.href='calendar.html'">
                     <div class="relative z-10">
                         <div class="flex items-center gap-2 mb-2">
@@ -136,16 +206,13 @@
                     <h3 class="font-black text-sm text-slate-900">財務中心</h3>
                     <p class="text-[10px] text-slate-500 leading-relaxed">各案場損益分析<br>與營收圖表統計</p>
                 </div>
-<div class="action-card" onclick="location.href='工地.html'">
-    <div class="icon-circle bg-orange-50 text-orange-600">
-        <i class="fas fa-search-dollar"></i>
-    </div>
-    <h3 class="font-black text-sm text-slate-800">請款紀錄查詢</h3>
-    <p class="text-[10px] text-slate-400 leading-relaxed">
-        檢索歷史案場資料<br>
-        即時生成與下載 PDF
-    </p>
-</div>
+
+                <div class="action-card" onclick="location.href='工地.html'">
+                    <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-search-dollar"></i></div>
+                    <h3 class="font-black text-sm text-slate-800">請款紀錄查詢</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">檢索歷史案場資料<br>即時生成與下載 PDF</p>
+                </div>
+
                 <div class="action-card" onclick="location.href='docs.html'">
                     <div class="icon-circle bg-cyan-50 text-cyan-600"><i class="far fa-copy"></i></div>
                     <h3 class="font-black text-sm text-slate-800">雲端文件</h3>
@@ -157,21 +224,20 @@
                     <h3 class="font-black text-sm text-slate-800">歷史報價</h3>
                     <p class="text-[10px] text-slate-400 leading-relaxed">過往案場工項<br>單價快速查詢參考</p>
                 </div>
+
                 <div class="action-card" onclick="location.href='實績.html'">
-    <div class="icon-circle bg-rose-50 text-rose-600">
-        <i class="fas fa-medal"></i>
-    </div>
-    <h3 class="font-black text-sm text-slate-800">實績管理</h3>
-    <p class="text-[10px] text-slate-400 leading-relaxed">
-        歷年工程案例紀錄<br>與專業報表產出
-    </p>
-</div>
-               <div class="action-card border-teal-200" onclick="location.href='staff_payroll.html'">
+                    <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-medal"></i></div>
+                    <h3 class="font-black text-sm text-slate-800">實績管理</h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">歷年工程案例紀錄<br>與專業報表產出</p>
+                </div>
+
+                <div class="action-card border-teal-200" onclick="location.href='staff_payroll.html'">
                     <div class="icon-circle bg-teal-100 text-teal-600"><i class="fas fa-calculator"></i></div>
                     <h3 class="font-black text-sm text-slate-700">薪資核算</h3>
                     <p class="text-[10px] text-slate-400 leading-relaxed">日薪天數計算<br>勞健保與 PDF 產出</p>
                 </div>
-                <div class="action-card border-dashed border-slate-200 shadow-none hover:shadow-none" onclick="location.href='settings.html'">
+
+                <div class="action-card border-dashed border-slate-200 shadow-none hover:shadow-none bg-slate-50/50" onclick="location.href='settings.html'">
                     <div class="icon-circle bg-slate-100 text-slate-400"><i class="fas fa-cog"></i></div>
                     <h3 class="font-black text-sm text-slate-500">系統設定</h3>
                     <p class="text-[10px] text-slate-300 leading-relaxed">帳號權限管理<br>與基礎參數定義</p>
@@ -186,37 +252,71 @@
     </main>
 
     <script>
+        // --- 全域狀態 ---
+        let timeLeft = 1800; // 30 分鐘
+        let clockTimer, logoutTimer;
+
         // --- 初始化與時鐘 ---
         function updateClock() {
             const now = new Date();
-            document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
-            document.getElementById('live-time').innerText = now.toLocaleTimeString('zh-TW', { hour12: false });
+            const dateStr = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+            const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false });
+            
+            // 減少 DOM 操作次數
+            if (document.getElementById('live-date').innerText !== dateStr) {
+                document.getElementById('live-date').innerText = dateStr;
+            }
+            document.getElementById('live-time').innerText = timeStr;
         }
 
         // --- 登出功能 ---
-        function logout() {
-            if(confirm('確定要登出錦德管理系統？')) {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            }
+        function logout(isAuto = false) {
+            if(!isAuto && !confirm('確定要安全登出錦德管理系統？')) return;
+            
+            localStorage.clear();
+            window.location.replace('login.html'); // replace 防止點擊後退鍵
         }
 
-        // --- 30分鐘自動登出計時 ---
-        let timeLeft = 1800;
-        setInterval(() => {
-            if (timeLeft <= 0) logout();
-            timeLeft--;
-            let m = Math.floor(timeLeft / 60);
-            let s = timeLeft % 60;
-            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }, 1000);
+        // --- 計時器邏輯 ---
+        function startTimers() {
+            // 時鐘計時器
+            clockTimer = setInterval(updateClock, 1000);
+            
+            // 登出倒數
+            logoutTimer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(logoutTimer);
+                    logout(true);
+                }
+                timeLeft--;
+                
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                const timerDisplay = document.getElementById('logout-timer');
+                
+                timerDisplay.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
 
-        window.onload = () => {
+                // 視覺提示：剩餘 5 分鐘變紅提醒
+                if (timeLeft < 300) {
+                    timerDisplay.classList.add('text-rose-500', 'font-black');
+                }
+            }, 1000);
+        }
+
+        // 頁面初始化
+        window.addEventListener('DOMContentLoaded', () => {
             updateClock();
-            setInterval(updateClock, 1000);
+            startTimers();
+            
             const user = localStorage.getItem('user_name') || '錦德管理員';
             document.getElementById('user-display').innerText = user;
-        };
+        });
+
+        // 頁面關閉時清除計時器
+        window.addEventListener('unload', () => {
+            clearInterval(clockTimer);
+            clearInterval(logoutTimer);
+        });
     </script>
 </body>
 </html>
