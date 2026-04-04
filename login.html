@@ -3,205 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JINDE | 錦德工程管理系統</title>
+    <title>JINDE | 登入系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        
-        body { 
-            font-family: 'Noto Sans TC', sans-serif; 
-            background-color: #0f172a; /* 統一深色背景 */
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        /* 玻璃擬態效果與圓角 */
-        .glass-card {
-            background: white;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            width: 100%;
-            max-width: 360px;
-            padding: 40px 32px;
-            transition: all 0.3s ease;
-        }
-
-        /* 防止手機輸入框自動縮放 */
-        input {
-            font-size: 16px !important; 
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .loading-spinner { 
-            border: 2px solid rgba(255,255,255,.3); 
-            border-top: 2px solid #fff; 
-            border-radius: 50%; 
-            width: 16px; 
-            height: 16px; 
-            animation: spin 1s linear infinite; 
-            display: inline-block; 
-            margin-right: 8px; 
-        }
-        
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+        body { font-family: 'Noto Sans TC', sans-serif; background: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .glass-card { background: white; border-radius: 24px; width: 100%; max-width: 360px; padding: 40px 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .input-group input { width: 100%; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; outline: none; transition: 0.2s; }
+        .input-group input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
         .hidden-view { display: none; }
-
-        /* 輸入框聚焦風格 */
-        .input-group input:focus {
-            border-color: #0d9488;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
-        }
+        .loading-spinner { border: 2px solid #ccc; border-top: 2px solid #333; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; margin-right: 5px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script>
+        // 【權限檢查：總一入口邏輯】
+        // 如果已經登入過，直接送進 index.html，不給看登入頁
+        if (localStorage.getItem('jinde_verified') === 'true') {
+            window.location.replace('index.html');
+        }
+    </script>
 </head>
 <body>
 
     <div id="login-panel" class="glass-card">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-black italic tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[3px] mt-2">工程管理系統</p>
+            <h1 class="text-3xl font-black italic italic">JINDE<span class="text-teal-500">.</span></h1>
+            <p class="text-[10px] font-bold text-slate-400 tracking-[3px] uppercase">工程管理系統入口</p>
         </div>
         
-        <form onsubmit="handleLogin(event)" class="space-y-5">
+        <form onsubmit="handleLogin(event)" class="space-y-4">
             <div class="input-group">
-                <label class="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">帳號 Email</label>
-                <input type="email" id="u_email" inputmode="email" autocapitalize="none" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none transition-all mt-1" placeholder="example@mail.com" required>
+                <label class="text-[10px] font-bold text-slate-400 ml-1">帳號 EMAIL</label>
+                <input type="email" id="u_email" placeholder="example@mail.com" required>
             </div>
-            
             <div class="input-group relative">
-                <label class="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">登入密碼</label>
-                <input type="password" id="u_pw" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none transition-all mt-1" placeholder="••••••••" required>
-                <button type="button" onclick="togglePw('u_pw')" class="absolute right-4 top-10 text-slate-300">
-                    <i class="fas fa-eye" id="eye-u_pw"></i>
-                </button>
+                <label class="text-[10px] font-bold text-slate-400 ml-1">密碼</label>
+                <input type="password" id="u_pw" placeholder="••••••••" required>
             </div>
-
-            <button type="submit" id="l_btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl active:scale-95 transition shadow-xl shadow-slate-900/20 mt-4">
-                進入系統
-            </button>
-            
-            <div class="text-center pt-2">
-                <button type="button" onclick="switchView('reg')" class="text-xs font-bold text-slate-400 hover:text-teal-600 transition underline underline-offset-4">
-                    申請帳號權限
-                </button>
-            </div>
-            
-            <p id="l_msg" class="text-center text-[11px] font-bold mt-2 min-h-[1rem]"></p>
+            <button type="submit" id="l_btn" class="w-full py-3 bg-slate-900 text-white font-bold rounded-xl active:scale-95 transition mt-2">進入系統</button>
+            <div class="text-center"><button type="button" onclick="switchView('reg')" class="text-xs text-slate-400 underline">申請帳號權限</button></div>
+            <p id="l_msg" class="text-center text-xs font-bold mt-2"></p>
         </form>
     </div>
 
     <div id="reg-panel" class="glass-card hidden-view">
-        <div class="text-center mb-8">
-            <h2 class="text-2xl font-black">申請加入成員<span class="text-teal-500">.</span></h2>
-            <p class="text-xs text-slate-400 font-bold mt-2">送出後請聯繫老闆核准</p>
-        </div>
-
+        <h2 class="text-xl font-bold text-center mb-6">申請加入成員</h2>
         <form onsubmit="handleRegister(event)" class="space-y-4">
-            <div class="input-group">
-                <input type="text" id="r_name" placeholder="您的姓名" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500" required>
-            </div>
-            <div class="input-group">
-                <input type="email" id="r_email" placeholder="Email 電子郵件" autocapitalize="none" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500" required>
-            </div>
-            <div class="input-group">
-                <input type="password" id="r_pw" placeholder="設定密碼 (6位以上)" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-teal-500" required>
-            </div>
-            
-            <button type="submit" id="r_btn" class="w-full py-4 bg-teal-600 text-white font-black rounded-2xl active:scale-95 transition shadow-xl shadow-teal-900/20 mt-4">
-                提交申請
-            </button>
-            
-            <div class="text-center pt-2">
-                <button type="button" onclick="switchView('login')" class="text-xs font-bold text-slate-400 hover:text-slate-900 transition underline underline-offset-4">
-                    返回登入頁面
-                </button>
-            </div>
-            
-            <p id="r_msg" class="text-center text-[11px] font-bold mt-2 min-h-[1rem]"></p>
+            <input type="text" id="r_name" placeholder="姓名" class="w-full p-3 bg-slate-50 rounded-xl border" required>
+            <input type="email" id="r_email" placeholder="Email" class="w-full p-3 bg-slate-50 rounded-xl border" required>
+            <input type="password" id="r_pw" placeholder="密碼 (6位以上)" class="w-full p-3 bg-slate-50 rounded-xl border" required>
+            <button type="submit" id="r_btn" class="w-full py-3 bg-teal-600 text-white font-bold rounded-xl active:scale-95 transition">提交申請</button>
+            <div class="text-center"><button type="button" onclick="switchView('login')" class="text-xs text-slate-400 underline">返回登入</button></div>
+            <p id="r_msg" class="text-center text-xs font-bold mt-2"></p>
         </form>
     </div>
 
     <script>
-        // Supabase 初始化
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        // 切換密碼可見性
-        function togglePw(id) {
-            const input = document.getElementById(id);
-            const eye = document.getElementById('eye-' + id);
-            input.type = input.type === 'password' ? 'text' : 'password';
-            eye.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
-        }
-
-        // 切換視圖
         function switchView(v) {
             document.getElementById('login-panel').classList.toggle('hidden-view', v === 'reg');
             document.getElementById('reg-panel').classList.toggle('hidden-view', v === 'login');
-            // 清除訊息
-            document.getElementById('l_msg').innerText = "";
-            document.getElementById('r_msg').innerText = "";
         }
 
-        // 登入處理
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('u_email').value;
-            const pw = document.getElementById('u_pw').value;
-            const msg = document.getElementById('l_msg');
             const btn = document.getElementById('l_btn');
+            const msg = document.getElementById('l_msg');
+            btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> 驗證中...';
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> 驗證中...';
-
-            const { data, error } = await _supabase.from('staff').select('*').eq('email', email).eq('password', pw).maybeSingle();
+            const { data, error } = await _supabase.from('staff')
+                .select('*')
+                .eq('email', document.getElementById('u_email').value)
+                .eq('password', document.getElementById('u_pw').value)
+                .maybeSingle();
 
             if (data) {
                 if (data.status === 'active') {
                     localStorage.setItem('jinde_verified', 'true');
                     localStorage.setItem('user_name', data.name);
-                    window.location.href = 'index.html';
+                    window.location.replace('index.html');
                 } else {
-                    msg.innerText = "⚠️ 帳號審核中，請聯繫林老闆核准";
-                    msg.className = "text-center text-[11px] text-orange-500 font-bold mt-2";
+                    msg.innerText = "⚠️ 帳號審核中，請聯繫林老闆";
+                    msg.className = "text-center text-xs text-orange-500 font-bold mt-2";
                     btn.disabled = false; btn.innerText = "進入系統";
                 }
             } else {
-                msg.innerText = "帳號或密碼錯誤";
-                msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2";
+                msg.innerText = "❌ 帳號或密碼錯誤";
+                msg.className = "text-center text-xs text-rose-500 font-bold mt-2";
                 btn.disabled = false; btn.innerText = "進入系統";
             }
         }
 
-        // 註冊處理
         async function handleRegister(e) {
             e.preventDefault();
-            const name = document.getElementById('r_name').value;
-            const email = document.getElementById('r_email').value;
-            const pw = document.getElementById('r_pw').value;
-            const msg = document.getElementById('r_msg');
             const btn = document.getElementById('r_btn');
-            
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> 處理中...';
-
-            const { error } = await _supabase.from('staff').insert([{ name, email, password: pw, status: 'pending' }]);
-
+            const { error } = await _supabase.from('staff').insert([{
+                name: document.getElementById('r_name').value,
+                email: document.getElementById('r_email').value,
+                password: document.getElementById('r_pw').value,
+                status: 'pending'
+            }]);
             if (!error) {
-                msg.innerText = "✅ 申請成功！請等待管理員核准";
-                msg.className = "text-center text-[11px] text-emerald-500 font-bold mt-2";
-                setTimeout(() => switchView('login'), 2500);
+                alert("申請成功，請等待老闆核准");
+                switchView('login');
             } else {
-                msg.innerText = "此 Email 已被使用或系統錯誤";
-                msg.className = "text-center text-[11px] text-rose-500 font-bold mt-2";
-                btn.disabled = false; btn.innerText = "提交申請";
+                alert("申請失敗，Email 可能重複");
+                btn.disabled = false;
             }
         }
     </script>
