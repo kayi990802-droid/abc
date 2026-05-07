@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JINDE | 錦德工程管理中台</title>
     
-    <!-- 核心安全閘口：90天自動防停權檢查 -->
     <script>
         (function() {
             const isVerified = localStorage.getItem('jinde_verified');
@@ -13,84 +12,80 @@
             const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
             const now = Date.now();
 
+            // 若未驗證，直接踢回登入頁
             if (isVerified !== 'true') {
                 window.location.replace('login.html');
                 return;
             }
 
+            // 檢查 90 天效期
             if (loginTimestamp) {
                 if (now - parseInt(loginTimestamp) > ninetyDaysMs) {
-                    const days = Math.floor((now - parseInt(loginTimestamp)) / (1000 * 60 * 60 * 24));
                     localStorage.clear();
-                    alert(`【資安防護通知】\n您已連續使用本系統 ${days} 天，超過安全規範之 90 天限制。\n系統已自動鎖定，請重新登入驗證。`);
-                    window.location.replace('login.html?reason=expired');
+                    alert('【登入逾期】安全性考量，請重新登入驗證。');
+                    window.location.replace('login.html');
                 }
             } else {
                 localStorage.clear();
-                window.location.replace('login.html?reason=init_security');
+                window.location.replace('login.html');
             }
         })();
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
         :root { --sidebar-bg: #1a222d; --brand-teal: #0d9488; }
-        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; height: 100vh; display: flex; overflow: hidden; }
 
-        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s; z-index: 50; }
-        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: all 0.2s ease; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; white-space: nowrap; }
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; }
+        .nav-link { padding: 14px 24px; font-size: 14px; color: #94a3b8; transition: all 0.2s ease; border-left: 4px solid transparent; cursor: pointer; display: flex; align-items: center; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: var(--brand-teal); }
 
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
-        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; flex-shrink: 0; }
+        .top-header { height: 70px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: white; }
         .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; }
 
         .action-card { background: white; border: 1px solid #f1f5f9; padding: 24px; border-radius: 28px; transition: all 0.3s; cursor: pointer; display: flex; flex-direction: column; gap: 14px; }
         .action-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border-color: var(--brand-teal); }
         .icon-circle { width: 52px; height: 52px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-
-        /* Cron Job 特殊狀態標籤 */
+        
         .cron-tag { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
         <div class="p-8">
-            <h1 class="text-2xl font-black tracking-tighter">JINDE<span class="text-teal-500">.</span></h1>
-            <p id="user-display" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">錦德工程行</p>
+            <h1 class="text-2xl font-black tracking-tighter italic">JINDE<span class="text-teal-500">.</span></h1>
+            <p id="user-name-display" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">錦德工程行</p>
         </div>
         
         <nav class="flex-grow">
-            <a href="index.html" class="nav-link active"><i class="fas fa-th-large mr-3 w-5"></i><span class="nav-text">中台總覽</span></a>
-            <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span class="nav-text">客戶管理</span></a>
-            <a href="project.html" class="nav-link"><i class="fas fa-hammer mr-3 w-5"></i><span class="nav-text">案場進度</span></a>
-            <a href="staff.html" class="nav-link"><i class="fas fa-users-cog mr-3 w-5"></i><span class="nav-text">人員核算</span></a>
-            <a href="quote.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3 w-5"></i><span class="nav-text">報價系統</span></a>
-            <a href="finance.html" class="nav-link"><i class="fas fa-chart-line mr-3 w-5"></i><span class="nav-text">財務中心</span></a>
+            <a href="index.html" class="nav-link active"><i class="fas fa-th-large mr-3 w-5"></i><span>中台總覽</span></a>
+            <a href="customer.html" class="nav-link"><i class="far fa-address-book mr-3 w-5"></i><span>客戶管理</span></a>
+            <a href="project.html" class="nav-link"><i class="fas fa-hammer mr-3 w-5"></i><span>案場進度</span></a>
+            <a href="staff.html" class="nav-link"><i class="fas fa-users-cog mr-3 w-5"></i><span>人員審核</span></a>
+            <a href="quote.html" class="nav-link"><i class="fas fa-file-invoice-dollar mr-3 w-5"></i><span>報價系統</span></a>
         </nav>
 
-        <!-- 下方狀態區：已整合 Cron-job.org 資訊 -->
         <div class="p-6 border-t border-slate-800/50">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></span>
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                     <span class="text-[10px] font-bold text-slate-400 uppercase">System Active</span>
                 </div>
                 <span class="cron-tag">CRON OK</span>
             </div>
-            
             <div class="space-y-1">
                 <div class="text-[9px] text-slate-600 font-mono flex justify-between">
-                    <span>AUTO MAINTAIN:</span>
-                    <span class="text-slate-400">01:00 AM Daily</span>
+                    <span>DB MAINTAIN:</span>
+                    <span class="text-slate-400">01:00 AM</span>
                 </div>
                 <div class="text-[9px] text-slate-600 font-mono flex justify-between">
-                    <span>SECURE SESSION:</span>
+                    <span>SECURE LOGOUT:</span>
                     <span id="logout-timer" class="text-teal-600 font-bold">30:00</span>
                 </div>
             </div>
@@ -108,7 +103,7 @@
                     <p id="live-date" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter"></p>
                     <p id="live-time" class="text-sm font-black text-slate-800 font-mono"></p>
                 </div>
-                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition border border-slate-100 active:scale-90">
+                <button onclick="logout()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-600 transition border border-slate-100">
                     <i class="fas fa-power-off"></i>
                 </button>
             </div>
@@ -116,20 +111,15 @@
 
         <div class="content-scroll">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                <!-- 大型排程卡片 -->
-                <div class="col-span-2 bg-slate-900 rounded-[32px] p-8 text-white flex justify-between items-center relative overflow-hidden group cursor-pointer" onclick="location.href='calendar.html'">
+                
+                <div class="col-span-2 bg-slate-900 rounded-[32px] p-8 text-white relative overflow-hidden group">
                     <div class="relative z-10">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>
-                            <span class="text-teal-400 text-[10px] font-black uppercase tracking-widest">Live Schedule</span>
-                        </div>
-                        <h3 class="text-2xl font-black mb-1">今日派工排程</h3>
-                        <p class="text-slate-400 text-xs">即時查看案場人力配置</p>
+                        <h3 class="text-2xl font-black mb-1">您好，<span id="welcome-name">管理員</span></h3>
+                        <p class="text-slate-400 text-xs">歡迎回到錦德工程管理雲端中台</p>
                     </div>
-                    <i class="fas fa-calendar-check text-8xl text-white/5 absolute -right-4 -bottom-4 transition duration-700"></i>
+                    <i class="fas fa-cloud text-8xl text-white/5 absolute -right-4 -bottom-4"></i>
                 </div>
 
-                <!-- 模組按鈕區 -->
                 <div class="action-card" onclick="location.href='customer.html'">
                     <div class="icon-circle bg-blue-50 text-blue-600"><i class="far fa-address-book"></i></div>
                     <h3 class="font-black text-sm text-slate-800">客戶管理</h3>
@@ -141,8 +131,8 @@
                 </div>
 
                 <div class="action-card" onclick="location.href='staff.html'">
-                    <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-clock"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">人員核算</h3>
+                    <div class="icon-circle bg-indigo-50 text-indigo-600"><i class="fas fa-user-check"></i></div>
+                    <h3 class="font-black text-sm text-slate-800">人員審核</h3>
                 </div>
 
                 <div class="action-card" onclick="location.href='quote.html'">
@@ -150,69 +140,47 @@
                     <h3 class="font-black text-sm text-slate-800">報價系統</h3>
                 </div>
 
-                <div class="action-card" onclick="location.href='warranty.html'">
-                    <div class="icon-circle bg-purple-50 text-purple-600"><i class="fas fa-certificate"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">保固證明</h3>
-                </div>
-
-                <div class="action-card" onclick="location.href='billing.html'">
-                    <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-wallet"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">請款核銷</h3>
-                </div>
-
-                <div class="action-card border-slate-900 bg-slate-50" onclick="location.href='finance.html'">
-                    <div class="icon-circle bg-slate-900 text-white"><i class="fas fa-chart-line"></i></div>
-                    <h3 class="font-black text-sm text-slate-900">財務中心</h3>
-                </div>
-
-                <div class="action-card" onclick="location.href='工地.html'">
-                    <div class="icon-circle bg-orange-50 text-orange-600"><i class="fas fa-search-dollar"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">請款紀錄</h3>
-                </div>
-
-                <div class="action-card" onclick="location.href='實績.html'">
-                    <div class="icon-circle bg-rose-50 text-rose-600"><i class="fas fa-medal"></i></div>
-                    <h3 class="font-black text-sm text-slate-800">實績管理</h3>
-                </div>
-
-                <div class="action-card border-teal-200" onclick="location.href='staff_payroll.html'">
+                <div class="action-card" onclick="location.href='staff_payroll.html'">
                     <div class="icon-circle bg-teal-100 text-teal-600"><i class="fas fa-calculator"></i></div>
                     <h3 class="font-black text-sm text-slate-700">薪資核算</h3>
                 </div>
-            </div>
+                
+                </div>
         </div>
 
         <footer class="p-6 border-t border-slate-100 flex justify-between items-center bg-white text-[9px] text-slate-300 font-black uppercase tracking-[0.4em]">
-            <span>JINDE ENGINEERING CLOUD Hub</span>
-            <span>V4.6.5 - DB MNT OK</span>
+            <span>JINDE ENGINEERING CLOUD V4.6.5</span>
+            <span>DB MAINTAIN SUCCESSFUL</span>
         </footer>
     </main>
 
     <script>
-        let timeLeft = 1800;
-        function updateClock() {
+        // 顯示登入名稱
+        const userName = localStorage.getItem('user_name') || '管理員';
+        document.getElementById('welcome-name').innerText = userName;
+        document.getElementById('user-name-display').innerText = `錦德工程行 - ${userName}`;
+
+        // 系統時間與登出計時
+        let timeLeft = 1800; // 30分鐘
+        function updateUI() {
             const now = new Date();
             document.getElementById('live-date').innerText = now.toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' });
             document.getElementById('live-time').innerText = now.toLocaleTimeString('zh-TW', { hour12:false });
+            
+            if (timeLeft <= 0) logout();
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            document.getElementById('logout-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
-        function logout(isAuto = false) {
-            if(!isAuto && !confirm('確定要安全登出？')) return;
+        function logout() {
             localStorage.clear();
             window.location.replace('login.html');
         }
 
-        setInterval(() => {
-            updateClock();
-            if (timeLeft <= 0) logout(true);
-            timeLeft--;
-            const m = Math.floor(timeLeft / 60);
-            const s = timeLeft % 60;
-            const display = document.getElementById('logout-timer');
-            if (display) display.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }, 1000);
-
-        window.onload = updateClock;
+        setInterval(updateUI, 1000);
+        window.onload = updateUI;
     </script>
 </body>
 </html>
