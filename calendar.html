@@ -13,37 +13,34 @@
         :root { --primary: #0d9488; --dark: #1a222d; }
         body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans TC', sans-serif; display: flex; height: 100vh; overflow: hidden; margin: 0; }
 
-        /* 側邊欄風格 */
         .sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; transition: all 0.3s ease; }
         .nav-link { padding: 16px 28px; font-size: 14px; color: #94a3b8; transition: 0.3s; border-left: 4px solid transparent; display: flex; align-items: center; cursor: pointer; text-decoration: none; }
         .nav-link i { margin-right: 14px; width: 20px; font-size: 16px; opacity: 0.7; }
         .nav-link:hover, .nav-link.active { background: #242e3d; color: white; border-left-color: var(--primary); }
         .nav-link.active i { opacity: 1; color: var(--primary); }
 
-        /* 主舞台區域 */
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-nav { background: white; border-bottom: 1px solid #e2e8f0; height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; z-index: 40; }
         
-        /* 日曆格點優化 */
         .calendar-cell { 
             aspect-ratio: 1.1 / 1; border: 0.5px solid #f1f5f9; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 14px; font-weight: 500; color: #64748b; transition: all 0.2s ease; background: white; cursor: pointer;
+            position: relative;
         }
-        .calendar-cell:hover { background: #f0fdfa; color: var(--primary); }
+        .calendar-cell:hover { background: #f0fdfa; color: var(--primary); z-index: 10; }
         .calendar-cell.active { 
             background: var(--primary) !important; color: white !important; font-weight: 900;
-            box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.3); border-radius: 12px; transform: scale(0.9);
+            box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.3); border-radius: 12px; transform: scale(0.9); z-index: 20;
         }
+        .today-mark { position: absolute; top: 4px; right: 4px; width: 4px; height: 4px; background: #fb7185; rounded-full; }
 
-        /* 任務卡片樣式 */
         .event-card {
             background: white; border: 1px solid #f1f5f9; padding: 20px; border-radius: 24px;
             transition: 0.3s ease; position: relative; overflow: hidden;
         }
         .event-card:hover { transform: translateX(4px); border-color: #cbd5e1; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05); }
 
-        /* 浮動按鈕 */
         .fab { 
             position: fixed; bottom: 32px; right: 32px; width: 60px; height: 60px; 
             background: var(--dark); color: white; border-radius: 18px; 
@@ -51,7 +48,6 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); z-index: 100;
         }
 
-        /* 彈窗控制 */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
             display: none; align-items: center; justify-content: center; z-index: 200;
@@ -64,6 +60,7 @@
             .sidebar .nav-text, .sidebar .logo-text, .sidebar .sub-text { display: none; }
             .nav-link { justify-content: center; padding: 20px 0; }
             .nav-link i { margin: 0; }
+            .top-nav { padding: 0 16px; }
         }
     </style>
 </head>
@@ -82,9 +79,11 @@
 
     <main class="main-stage">
         <header class="top-nav">
-            <div>
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Current View</span>
-                <h1 class="text-xl font-black text-slate-800" id="monthDisplay">Loading...</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="goToToday()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition">Today 今日</button>
+                <div>
+                    <h1 class="text-xl font-black text-slate-800" id="monthDisplay">Loading...</h1>
+                </div>
             </div>
             <div class="flex gap-3">
                 <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-600 active:scale-90 transition shadow-sm hover:bg-slate-50"><i class="fas fa-chevron-left text-xs"></i></button>
@@ -137,27 +136,25 @@
                     <label class="text-[11px] font-black text-slate-500 uppercase ml-1">負責人員</label>
                     <input type="text" id="form_staff" placeholder="指派師傅姓名" class="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold border-2 border-transparent focus:border-teal-500 transition">
                 </div>
-                <button type="submit" class="w-full bg-slate-900 py-5 rounded-2xl text-white font-black text-lg shadow-2xl hover:bg-teal-600 active:scale-95 transition-all">確認發布行程</button>
+                <button type="submit" id="submitBtn" class="w-full bg-slate-900 py-5 rounded-2xl text-white font-black text-lg shadow-2xl hover:bg-teal-600 active:scale-95 transition-all">確認發布行程</button>
             </form>
         </div>
     </div>
 
     <script>
-        // 確認接好的 Supabase 連線資訊
         const S_URL = 'https://wdpxgichzvfebhlukbrl.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkcHhnaWNoenZmZWJobHVrYnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjExMzQsImV4cCI6MjA4NDU5NzEzNH0.--85I0A-7WKt0P-ex1Zdnb8UVspuMNshzQtNaLedKq0';
         const _supabase = supabase.createClient(S_URL, S_KEY);
 
         let viewDate = new Date();
         let allEvents = [];
-        let selectedDateStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+        let selectedDateStr = new Date().toLocaleDateString('sv-SE');
+        const todayStr = new Date().toLocaleDateString('sv-SE');
 
         async function init() {
-            // 從 staff_schedules 表抓取數據
             const { data, error } = await _supabase.from('staff_schedules').select('*');
             if (error) {
                 console.error('Supabase 讀取錯誤:', error.message);
-                alert('連線失敗，請檢查網路或 API 設定');
                 return;
             }
             allEvents = data || [];
@@ -183,9 +180,11 @@
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dayEvents = allEvents.filter(e => e.work_date === dateStr);
                 const isSelected = selectedDateStr === dateStr;
+                const isToday = todayStr === dateStr;
                 
                 body.innerHTML += `
                     <div class="calendar-cell ${isSelected ? 'active' : ''}" onclick="selectDate('${dateStr}')">
+                        ${isToday ? '<div class="today-mark"></div>' : ''}
                         <span>${d}</span>
                         ${dayEvents.length > 0 && !isSelected ? '<div class="w-1.5 h-1.5 bg-teal-500 rounded-full mt-1"></div>' : ''}
                     </div>`;
@@ -205,13 +204,13 @@
             list.innerHTML = dayEvents.map(e => `
                 <div class="event-card group">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="text-[10px] font-black bg-sky-50 text-sky-600 px-3 py-1 rounded-full uppercase tracking-widest">🏗️ 案場施工</span>
+                        <span class="text-[9px] font-black bg-teal-50 text-teal-600 px-3 py-1 rounded-full uppercase tracking-widest">🏗️ 現場施作</span>
                         <button onclick="deleteEvent('${e.id}')" class="text-slate-300 hover:text-rose-500 transition"><i class="fas fa-trash-alt text-xs"></i></button>
                     </div>
-                    <h4 class="text-xl font-black text-slate-800 mb-3">${e.title}</h4>
-                    <div class="flex items-center gap-2 text-slate-400 text-xs font-bold">
-                        <i class="far fa-user-circle"></i>
-                        <span>負責人：${e.staff_names || '未指派'}</span>
+                    <h4 class="text-lg font-black text-slate-800 mb-2 leading-tight">${e.title}</h4>
+                    <div class="flex items-center gap-2 text-slate-400 text-[11px] font-bold">
+                        <i class="fas fa-user-shield text-teal-500/50"></i>
+                        <span>負責師傅：${e.staff_names || '未指派'}</span>
                     </div>
                     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-teal-500"></div>
                 </div>`).join('');
@@ -223,8 +222,19 @@
             loadDayDetail(dateStr);
         }
 
+        function goToToday() {
+            viewDate = new Date();
+            selectedDateStr = todayStr;
+            renderCalendar();
+            loadDayDetail(selectedDateStr);
+        }
+
         async function saveEvent(e) {
             e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>發布中...';
+
             const payload = {
                 work_date: document.getElementById('form_date').value,
                 title: document.getElementById('form_title').value,
@@ -234,14 +244,16 @@
             const { error } = await _supabase.from('staff_schedules').insert([payload]);
             if (!error) {
                 closeAddModal();
-                init(); // 儲存後自動刷新
+                init();
             } else {
                 alert('發布失敗：' + error.message);
             }
+            btn.disabled = false;
+            btn.innerHTML = '確認發布行程';
         }
 
         async function deleteEvent(id) {
-            if (!confirm('確定要移除此行程？')) return;
+            if (!confirm('確定要移除此案場行程？')) return;
             const { error } = await _supabase.from('staff_schedules').delete().eq('id', id);
             if (!error) init();
         }
@@ -258,6 +270,7 @@
 
         function closeAddModal() {
             document.getElementById('addModal').classList.remove('open');
+            document.getElementById('eventForm').reset();
         }
 
         window.onload = init;
