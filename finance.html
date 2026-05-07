@@ -15,7 +15,7 @@
         body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: #1e293b; }
         .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
         
-        /* PDF 報表容器優化 */
+        /* PDF 報表容器 */
         #pdf-report { 
             width: 210mm; 
             min-height: 297mm; 
@@ -25,7 +25,6 @@
             box-sizing: border-box; 
         }
 
-        /* 表格樣式優化 */
         .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .report-table th { 
             background-color: #f1f5f9; 
@@ -42,7 +41,6 @@
             vertical-align: middle;
         }
         
-        /* 防止 PDF 換頁切斷 */
         .report-table tr { page-break-inside: avoid !important; }
         .stat-card-box { page-break-inside: avoid !important; }
 
@@ -125,8 +123,7 @@
                 <div class="w-full max-w-md h-[300px] flex items-center justify-center relative">
                     <canvas id="mainChart"></canvas>
                 </div>
-                <div id="dash-cat-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10 w-full max-w-xl">
-                    </div>
+                <div id="dash-cat-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10 w-full max-w-xl"></div>
             </div>
         </div>
 
@@ -153,15 +150,15 @@
                 </div>
 
                 <div class="grid grid-cols-3 gap-4 mb-8 stat-card-box">
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
                         <p class="text-[8px] font-black text-slate-400 uppercase">總收入 (+)</p>
                         <p class="dash-inc-val text-xl font-black num-font">0</p>
                     </div>
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
                         <p class="text-[8px] font-black text-slate-400 uppercase">總支出 (-)</p>
                         <p class="dash-exp-val text-xl font-black num-font text-rose-500">0</p>
                     </div>
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
                         <p class="text-[8px] font-black text-teal-600 uppercase">淨利結餘</p>
                         <p class="dash-net-val text-xl font-black num-font text-teal-600">0</p>
                     </div>
@@ -171,8 +168,7 @@
                     <div class="w-48 h-48 flex-shrink-0">
                         <canvas id="pdfChart"></canvas>
                     </div>
-                    <div id="pdf-cat-list" class="flex-1 grid grid-cols-2 gap-x-8 gap-y-3">
-                        </div>
+                    <div id="pdf-cat-list" class="flex-1 grid grid-cols-2 gap-x-8 gap-y-3"></div>
                 </div>
 
                 <table class="report-table">
@@ -232,14 +228,17 @@
             document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
             document.getElementById(p + '-page').classList.add('active');
             
-            // 切換按鈕樣式
             document.getElementById('btn-dash').className = p === 'dashboard' ? 'w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-teal-400 text-sm flex items-center gap-3' : 'w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 text-sm flex items-center gap-3';
             document.getElementById('btn-rep').className = p === 'report' ? 'w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-teal-400 text-sm flex items-center gap-3' : 'w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 text-sm flex items-center gap-3';
             
             loadData();
         }
 
-        function openModal() { document.getElementById('entry-modal').classList.add('active'); }
+        function openModal() { 
+            // 開啟時自動填入今天日期
+            document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('entry-modal').classList.add('active'); 
+        }
         function closeModal() { document.getElementById('entry-modal').classList.remove('active'); }
 
         async function saveRecord() {
@@ -248,13 +247,24 @@
             const date = document.getElementById('m-date').value;
             const amount = document.getElementById('m-amount').value;
             if(!date || !amount) return alert('日期與金額必填');
+            
+            // 自動識別標籤邏輯
             let finalCat = cat || (title.match(/\[(.*?)\]/) ? title.match(/\[(.*?)\]/)[1] : '其他');
             
             const { error } = await _sb.from('finance_records').insert([{
                 record_date: date, type: document.getElementById('m-type').value,
                 title: title, category: finalCat, amount: parseInt(amount)
             }]);
-            if(!error) { closeModal(); loadData(); }
+            
+            if(!error) { 
+                closeModal(); 
+                // 清空表單
+                document.getElementById('m-title').value = '';
+                document.getElementById('m-amount').value = '';
+                loadData(); 
+            } else {
+                alert('同步失敗，請檢查網路連接');
+            }
         }
 
         function toggleAllCheckboxes(source) {
@@ -263,14 +273,18 @@
 
         async function deleteSelected() {
             const ids = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.getAttribute('data-id'));
-            if (ids.length === 0) return alert('請先勾選');
-            if (!confirm(`確定刪除這 ${ids.length} 筆資料嗎？`)) return;
+            if (ids.length === 0) return alert('請先勾選欲刪除的項目');
+            if (!confirm(`確定刪除這 ${ids.length} 筆資料嗎？此操作無法還原。`)) return;
+            
             const { error } = await _sb.from('finance_records').delete().in('id', ids);
-            if (!error) { document.getElementById('master-check').checked = false; loadData(); }
+            if (!error) { 
+                document.getElementById('master-check').checked = false; 
+                loadData(); 
+            }
         }
 
         async function loadData() {
-            const { data, error } = await _sb.from('finance_records').select('*').order('record_date', { ascending: true });
+            const { data, error } = await _sb.from('finance_records').select('*').order('record_date', { ascending: false });
             if(error) return;
 
             const sDate = document.getElementById('filter-start').value;
@@ -300,7 +314,6 @@
 
             document.getElementById('table-body').innerHTML = html || '<tr><td colspan="6" class="text-center py-20 text-slate-300 font-bold">目前無符合條件的數據</td></tr>';
             
-            // 更新 UI 數據標籤
             document.querySelectorAll('.dash-inc-val').forEach(el => el.innerText = tInc.toLocaleString());
             document.querySelectorAll('.dash-exp-val').forEach(el => el.innerText = tExp.toLocaleString());
             document.querySelectorAll('.dash-net-val').forEach(el => el.innerText = (tInc - tExp).toLocaleString());
@@ -330,19 +343,17 @@
                 options: { 
                     cutout: '75%', 
                     plugins: { legend: { display: false } }, 
-                    animation: false,
+                    animation: { duration: 500 },
                     maintainAspectRatio: false
                 }
             };
 
-            // 渲染兩個圖表
             if(myChart) myChart.destroy();
             myChart = new Chart(document.getElementById('mainChart').getContext('2d'), chartConfig);
 
             if(pdfChart) pdfChart.destroy();
             pdfChart = new Chart(document.getElementById('pdfChart').getContext('2d'), chartConfig);
 
-            // 生成帶顏色標籤的統計清單
             let listHtml = '';
             labels.forEach((label, i) => {
                 const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
@@ -377,7 +388,12 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak:    { mode: ['avoid-all'] }
             };
-            html2pdf().set(opt).from(element).save();
+            
+            // 執行導出前先切換到報表頁面確保渲染
+            switchPage('report');
+            setTimeout(() => {
+                html2pdf().set(opt).from(element).save();
+            }, 500);
         }
 
         window.onload = () => { loadData(); };
